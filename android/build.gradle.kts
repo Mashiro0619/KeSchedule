@@ -19,6 +19,13 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+allprojects {
+    tasks.withType<JavaCompile> {
+        sourceCompatibility = "17"
+        targetCompatibility = "17"
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

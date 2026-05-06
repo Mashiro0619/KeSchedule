@@ -146,10 +146,16 @@ class AppUpdateCoordinator {
               ],
             ),
           ),
-          actions: _buildUpdateDialogActions(
-            context,
-            showIgnoreButton: showIgnoreButton,
-          ),
+          actions: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _buildUpdateDialogActions(
+                context,
+                showIgnoreButton: showIgnoreButton,
+              ),
+            ),
+          ],
         );
       },
     );
@@ -166,10 +172,16 @@ class AppUpdateCoordinator {
         return AlertDialog(
           title: Text(l10n.updateCheckFailedTitle),
           content: Text(l10n.updateCheckFailedMessage),
-          actions: _buildUpdateDialogActions(
-            context,
-            showIgnoreButton: showIgnoreButton,
-          ),
+          actions: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _buildUpdateDialogActions(
+                context,
+                showIgnoreButton: showIgnoreButton,
+              ),
+            ),
+          ],
         );
       },
     );
