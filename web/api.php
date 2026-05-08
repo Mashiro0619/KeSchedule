@@ -67,21 +67,24 @@ function sanitize_source_content(string $content): string
 
 function get_client_ip(): string
 {
-    $keys = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
-    foreach ($keys as $key) {
-        $value = trim((string) ($_SERVER[$key] ?? ''));
-        if ($value === '') {
-            continue;
-        }
-        if ($key === 'HTTP_X_FORWARDED_FOR') {
-            $parts = array_map('trim', explode(',', $value));
-            $value = (string) ($parts[0] ?? '');
-        }
-        if ($value !== '') {
-            return $value;
+    $remoteAddr = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    if ($remoteAddr !== '' && $remoteAddr !== '127.0.0.1' && $remoteAddr !== '::1') {
+        return $remoteAddr;
+    }
+    // Only trust forward headers when behind a trusted proxy (localhost).
+    $cfIp = trim((string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''));
+    if ($cfIp !== '') {
+        return $cfIp;
+    }
+    $forwarded = trim((string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
+    if ($forwarded !== '') {
+        $parts = array_map('trim', explode(',', $forwarded));
+        $firstIp = (string) ($parts[0] ?? '');
+        if ($firstIp !== '') {
+            return $firstIp;
         }
     }
-    return 'unknown';
+    return $remoteAddr !== '' ? $remoteAddr : 'unknown';
 }
 
 function get_rate_limit_file_path(string $ip): string
@@ -348,6 +351,10 @@ Rules:
 16. If the total week count is not visible, use 18.
 17. If the start date is not visible, use the best reasonable YYYY-MM-DD value from the context; if unavailable, use today's date.
 18. Only include real courses that appear in the provided content.
+
+Return the final JSON using exactly this outer schema:
+{"ok":true,"meta":{"sourceUrl":"string","pageTitle":"string","parser":"string","warnings":["string"]},"timetable":{"name":"string","startDate":"YYYY-MM-DD","totalWeeks":18,"periodTimeSet":{"name":"string","periodTimes":[{"index":1,"startMinutes":480,"endMinutes":525}]},"courses":[{"name":"string","teacher":"string","location":"string","dayOfWeek":1,"semesterWeeks":[1,2],"periods":[1,2],"startMinutes":480,"endMinutes":570,"credit":0,"remarks":"string","customFields":{}}]}}.
+Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.sourceUrl from the provided url when possible, meta.pageTitle from the provided title when possible, meta.parser with a non-empty parser label, and meta.warnings as an array. If some meta fields are unknown, still return valid JSON with safe defaults instead of prose.
 PROMPT;
 
     $userPayload = [
@@ -357,6 +364,8 @@ PROMPT;
         'sourceHint' => $sourceHint,
         'content' => $cleanSourceContent,
     ];
+
+    $stream = (bool) ($body['stream'] ?? false);
 
     $relayPayload = [
         'model' => $model,
@@ -370,68 +379,150 @@ PROMPT;
                 'content' => json_encode($userPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ],
         ],
-        'stream' => false,
+        'stream' => $stream,
         'temperature' => 0.1,
+        'response_format' => ['type' => 'json_object'],
     ];
+
+    $relayBody = json_encode($relayPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    // ── Non-streaming path ──
+    if (!$stream) {
+        $ch = curl_init($relayUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $relayToken,
+            ],
+            CURLOPT_POSTFIELDS => $relayBody,
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_TIMEOUT => $timeoutSeconds,
+        ]);
+
+        $raw = curl_exec($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($raw === false || $raw === '') {
+            throw new RuntimeException('Relay request failed.');
+        }
+
+        if ($status < 200 || $status >= 300) {
+            throw new RuntimeException('Relay request failed (' . $status . ').');
+        }
+
+        $relayJson = json_decode((string) $raw, true);
+        if (!is_array($relayJson)) {
+            throw new RuntimeException('Relay returned invalid JSON.');
+        }
+
+        $content = $relayJson['choices'][0]['message']['content']
+            ?? $relayJson['message']['content']
+            ?? $relayJson['content']
+            ?? '';
+
+        $contentText = trim(extract_text_content($content));
+        if ($contentText === '') {
+            throw new RuntimeException('Relay returned empty content.');
+        }
+
+        $schedule = decode_json_object($contentText);
+        if (!is_array($schedule)) {
+            throw new RuntimeException('AI content is not valid timetable JSON.');
+        }
+
+        $normalized = normalize_payload($schedule);
+        $normalized['ok'] = true;
+
+        success([
+            'meta' => [
+                'sourceUrl' => $url,
+                'pageTitle' => $title,
+                'parser' => 'deepseek_html',
+                'warnings' => [],
+            ],
+            'timetable' => $normalized,
+        ]);
+    }
+
+    // ── Streaming path ──
+    header('Content-Type: application/x-ndjson; charset=utf-8');
+    header('Cache-Control: no-cache');
+    header('X-Accel-Buffering: no');
+    if (ob_get_level()) { ob_end_flush(); }
+
+    $accumulatedContent = '';
+    $lineBuffer = '';
 
     $ch = curl_init($relayUrl);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
-        CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $relayToken,
         ],
-        CURLOPT_POSTFIELDS => json_encode($relayPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        CURLOPT_POSTFIELDS => $relayBody,
         CURLOPT_CONNECTTIMEOUT => 15,
         CURLOPT_TIMEOUT => $timeoutSeconds,
+        CURLOPT_WRITEFUNCTION => function ($ch, $data) use (&$accumulatedContent, &$lineBuffer) {
+            $lineBuffer .= $data;
+            $lines = explode("\n", $lineBuffer);
+            $lineBuffer = array_pop($lines);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if ($line === '' || !str_starts_with($line, 'data: ')) {
+                    continue;
+                }
+                $jsonStr = trim(substr($line, 6));
+                if ($jsonStr === '[DONE]') { continue; }
+                $chunk = json_decode($jsonStr, true);
+                if (!is_array($chunk)) { continue; }
+                $delta = $chunk['choices'][0]['delta']['content'] ?? '';
+                if ($delta === '') { continue; }
+                $accumulatedContent .= $delta;
+                echo json_encode(['delta' => $delta], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+                flush();
+            }
+            return strlen($data);
+        },
     ]);
 
-    $raw = curl_exec($ch);
+    curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
     curl_close($ch);
 
-    if ($raw === false || $raw === '') {
-        $detail = $curlError !== '' ? $curlError : 'empty response';
-        throw new RuntimeException('Relay request failed: ' . $detail);
-    }
-
     if ($status < 200 || $status >= 300) {
-        throw new RuntimeException('Relay request failed (' . $status . '): ' . mb_substr((string) $raw, 0, 1000, 'UTF-8'));
+        echo json_encode(['error' => 'Relay request failed (' . $status . ').'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+        flush();
+        exit;
     }
 
-    $relayJson = json_decode((string) $raw, true);
-    if (!is_array($relayJson)) {
-        throw new RuntimeException('Relay returned invalid JSON: ' . mb_substr((string) $raw, 0, 1000, 'UTF-8'));
+    if ($accumulatedContent === '') {
+        echo json_encode(['error' => 'Relay request failed: empty response.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+        flush();
+        exit;
     }
 
-    $content = $relayJson['choices'][0]['message']['content']
-        ?? $relayJson['message']['content']
-        ?? $relayJson['content']
-        ?? '';
-
-    $contentText = trim(extract_text_content($content));
-    if ($contentText === '') {
-        throw new RuntimeException('Relay returned empty content: ' . mb_substr((string) $raw, 0, 1000, 'UTF-8'));
-    }
-
-    $schedule = decode_json_object($contentText);
+    $schedule = decode_json_object($accumulatedContent);
     if (!is_array($schedule)) {
-        throw new RuntimeException('AI content is not valid timetable JSON: ' . mb_substr($contentText, 0, 1000, 'UTF-8'));
+        echo json_encode(['error' => 'AI content is not valid timetable JSON.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+        flush();
+        exit;
     }
 
-    $normalized = normalize_payload($schedule);
-
-    success([
-        'meta' => [
-            'sourceUrl' => $url,
-            'pageTitle' => $title,
-            'parser' => 'deepseek_html',
-            'warnings' => [],
-        ],
-        'timetable' => $normalized,
-    ]);
+    try {
+        $normalized = normalize_payload($schedule);
+        $normalized['ok'] = true;
+        echo json_encode(['done' => true, 'timetable' => $normalized, 'meta' => ['sourceUrl' => $url, 'pageTitle' => $title, 'parser' => 'deepseek_html', 'warnings' => []]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    } catch (InvalidArgumentException $error) {
+        echo json_encode(['error' => $error->getMessage()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    }
+    flush();
+    exit;
 } catch (InvalidArgumentException $error) {
     error_response($error->getMessage(), 400);
 } catch (RuntimeException $error) {

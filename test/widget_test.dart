@@ -127,6 +127,20 @@ class FakeSchoolImportApi extends SchoolImportApi {
     lastParserSettings = parserSettings;
     return onImport(payload, parserSettings);
   }
+
+  @override
+  Stream<SchoolImportStreamEvent> importCurrentPageStream(
+    SchoolImportPagePayload payload, {
+    SchoolImportParserSettings? parserSettings,
+    http.Client? client,
+  }) async* {
+    callCount += 1;
+    lastPayload = payload;
+    lastParserSettings = parserSettings;
+    final result = await onImport(payload, parserSettings);
+    yield ParseDelta(result.rawBody);
+    yield ParseDone(response: result.response);
+  }
 }
 
 Widget _buildLocalizedApp(Widget child, {Locale locale = const Locale('zh')}) {
@@ -2093,7 +2107,7 @@ void main() {
       await tester.pump();
 
       expect(fakeApi.callCount, 1);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNWidgets(2));
 
       completer.complete(
         SchoolImportApiResult(

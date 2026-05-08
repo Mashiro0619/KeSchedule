@@ -35,9 +35,9 @@ enum _UpdateAction { github, website, googlePlay, quark, ignore, cancel }
 class AppUpdateCoordinator {
   static const _updateService = UpdateService();
   static const _googlePlayDeepLink =
-      'market://details?id=com.mashiro.KeSchedule';
+      'market://details?id=com.mashiro.classmate';
   static const _googlePlayUrl =
-      'https://play.google.com/store/apps/details?id=com.mashiro.KeSchedule';
+      'https://play.google.com/store/apps/details?id=com.mashiro.classmate';
   static const _quarkPanUrl = 'https://pan.quark.cn/s/420966ed21ec';
 
   static Future<void> checkForUpdates(

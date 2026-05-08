@@ -6,6 +6,22 @@ import '../config/app_config.dart';
 import '../models/school_import_models.dart';
 import '../models/timetable_models.dart';
 
+sealed class SchoolImportStreamEvent {
+  const SchoolImportStreamEvent();
+}
+class ParseDelta extends SchoolImportStreamEvent {
+  const ParseDelta(this.text);
+  final String text;
+}
+class ParseDone extends SchoolImportStreamEvent {
+  const ParseDone({required this.response});
+  final SchoolImportResponse response;
+}
+class ParseError extends SchoolImportStreamEvent {
+  const ParseError(this.message);
+  final String message;
+}
+
 class SchoolImportApiResult {
   const SchoolImportApiResult({
     required this.response,
@@ -418,6 +434,209 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
       }
     }
     return null;
+  }
+
+  Stream<SchoolImportStreamEvent> importCurrentPageStream(
+    SchoolImportPagePayload payload, {
+    SchoolImportParserSettings? parserSettings,
+    http.Client? client,
+  }) async* {
+    final settings = parserSettings ?? const SchoolImportParserSettings();
+    if (settings.source == schoolImportParserSourceCustomOpenAi) {
+      yield* _importStreamWithCustomOpenAi(payload, settings, client: client);
+      return;
+    }
+    yield* _importStreamWithOfficialApi(payload, client: client);
+  }
+
+  Stream<SchoolImportStreamEvent> _importStreamWithOfficialApi(
+    SchoolImportPagePayload payload, {
+    http.Client? client,
+  }) async* {
+    if (!AppConfig.hasSchoolImportApiBaseUrl) {
+      yield const ParseError('School import API base URL is not configured.');
+      return;
+    }
+
+    final effectiveClient = client ?? _client ?? http.Client();
+    try {
+      final baseUri = Uri.parse(AppConfig.schoolImportApiBaseUrl);
+      final path = baseUri.path.trim().toLowerCase().endsWith('.php')
+          ? baseUri.path
+          : _joinPath(baseUri.path, 'api.php');
+      final uri = baseUri.replace(
+        path: path,
+        queryParameters: const {'action': 'import_timetable'},
+      );
+
+      final body = jsonEncode({
+        ...payload.toJson(),
+        'stream': true,
+      });
+
+      final request = http.Request('POST', uri)
+        ..headers.addAll(const {
+          'Content-Type': 'application/json',
+          'Accept': 'application/x-ndjson',
+        })
+        ..body = body;
+
+      final response = await effectiveClient.send(request);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final rawBody = await response.stream.bytesToString();
+        yield ParseError('Import request failed (${response.statusCode}).\n\n$rawBody');
+        return;
+      }
+
+      final stream = response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
+
+      await for (final line in stream) {
+        if (line.trim().isEmpty) continue;
+        final Map<String, dynamic> json;
+        try {
+          json = Map<String, dynamic>.from(jsonDecode(line) as Map);
+        } catch (_) {
+          continue;
+        }
+        if (json.containsKey('delta')) {
+          yield ParseDelta((json['delta'] as String?) ?? '');
+        } else if (json.containsKey('done')) {
+          try {
+            yield ParseDone(
+              response: _buildResponseFromPhpDone(json),
+            );
+          } catch (e) {
+            yield ParseError('Import response parse failed.\n\n$line\n\n$e');
+          }
+          return;
+        } else if (json.containsKey('error')) {
+          yield ParseError((json['error'] as String?) ?? 'Unknown error');
+          return;
+        }
+      }
+    } catch (e) {
+      yield ParseError('Unable to connect to the import service.\n\n$e');
+    }
+  }
+
+  Stream<SchoolImportStreamEvent> _importStreamWithCustomOpenAi(
+    SchoolImportPagePayload payload,
+    SchoolImportParserSettings settings, {
+    http.Client? client,
+  }) async* {
+    final normalizedBaseUrl = settings.customBaseUrl.trim();
+    final normalizedApiKey = settings.customApiKey.trim();
+    final normalizedModel = settings.customModel.trim();
+    if (normalizedBaseUrl.isEmpty ||
+        normalizedApiKey.isEmpty ||
+        normalizedModel.isEmpty) {
+      yield const ParseError('Custom parser configuration is incomplete.');
+      return;
+    }
+
+    final effectiveClient = client ?? _client ?? http.Client();
+    try {
+      final uri = _buildOpenAiChatUri(normalizedBaseUrl);
+      final body = jsonEncode({
+        'model': normalizedModel,
+        'temperature': 0,
+        'stream': true,
+        'messages': [
+          {
+            'role': 'system',
+            'content': _buildCustomOpenAiSystemPrompt(settings),
+          },
+          {
+            'role': 'user',
+            'content': _buildOpenAiUserPrompt(payload),
+          },
+        ],
+      });
+
+      final request = http.Request('POST', uri)
+        ..headers.addAll({
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+          'Authorization': 'Bearer $normalizedApiKey',
+        })
+        ..body = body;
+
+      final response = await effectiveClient.send(request);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final rawBody = await response.stream.bytesToString();
+        yield ParseError('Import request failed (${response.statusCode}).\n\n$rawBody');
+        return;
+      }
+
+      final stream = response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
+
+      String accumulatedContent = '';
+      await for (final line in stream) {
+        final trimmed = line.trim();
+        if (trimmed.isEmpty || !trimmed.startsWith('data: ')) continue;
+        final jsonStr = trimmed.substring(6).trim();
+        if (jsonStr == '[DONE]') continue;
+        try {
+          final json = Map<String, dynamic>.from(
+            jsonDecode(jsonStr) as Map,
+          );
+          final delta = json['choices']?[0]?['delta']?['content'] as String? ?? '';
+          if (delta.isNotEmpty) {
+            accumulatedContent += delta;
+            yield ParseDelta(delta);
+          }
+        } catch (_) {}
+      }
+
+      if (accumulatedContent.isEmpty) {
+        yield const ParseError('AI returned empty content.');
+        return;
+      }
+
+      final parsedJson = _tryDecodeJson(accumulatedContent);
+      if (parsedJson is! Map<String, dynamic>) {
+        yield ParseError('Import response parse failed.\n\n$accumulatedContent');
+        return;
+      }
+
+      final normalizedResponseJson = _normalizeCustomImportResponse(
+        parsedJson,
+        payload: payload,
+        model: normalizedModel,
+      );
+      yield ParseDone(
+        response: SchoolImportResponse.fromJson(normalizedResponseJson),
+      );
+    } catch (e) {
+      yield ParseError('Unable to connect to the import service.\n\n$e');
+    }
+  }
+
+  SchoolImportResponse _buildResponseFromPhpDone(Map<String, dynamic> json) {
+    final rawTimetable =
+        Map<String, dynamic>.from(json['timetable'] as Map? ?? const {});
+    final periodTimeSetData =
+        Map<String, dynamic>.from(rawTimetable['periodTimeSet'] as Map? ?? const {});
+
+    final wrapped = <String, dynamic>{
+      'ok': json['ok'] ?? true,
+      'meta': json['meta'] ?? const {},
+      'timetable': {
+        'config': {
+          'name': rawTimetable['name'] ?? '',
+          'startDate': rawTimetable['startDate'] ?? '',
+          'totalWeeks': rawTimetable['totalWeeks'] ?? 18,
+          'periodTimeSetId': 'imported_period_times',
+          'periodTimes': periodTimeSetData['periodTimes'] ?? [],
+        },
+        'courses': rawTimetable['courses'] ?? [],
+      },
+    };
+    return SchoolImportResponse.fromJson(wrapped);
   }
 
   String _joinPath(String basePath, String child) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
@@ -9,7 +10,7 @@ import '../providers/timetable_provider.dart';
 import '../services/school_import_api.dart';
 import '../services/school_import_apply_service.dart';
 import '../services/school_import_content_sanitizer.dart';
-import '../services/school_import_parser_service.dart';
+import '../widgets/school_import_stream_dialog.dart';
 import '../widgets/school_web_import_result_sheet.dart';
 import 'school_import_parser_settings_page.dart';
 
@@ -35,7 +36,6 @@ class SchoolHtmlImportPage extends StatefulWidget {
 
 class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
   late final SchoolImportApi _api;
-  late final SchoolImportParserService _parserService;
   final SchoolImportApplyService _applyService = const SchoolImportApplyService();
   final TextEditingController _htmlController = TextEditingController();
 
@@ -78,7 +78,6 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
   void initState() {
     super.initState();
     _api = widget.api ?? const SchoolImportApi();
-    _parserService = SchoolImportParserService(api: _api);
     if (widget.initialContent.isNotEmpty) {
       _htmlController.text = widget.initialContent;
     }
@@ -268,91 +267,64 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
     final parserSettings = provider.schoolImportParserSettings;
     final sanitizedContent = _htmlController.text.trim();
 
-    _showMessage(l10n.schoolHtmlImportParsingMayTakeLong);
     setState(() => _isSubmitting = true);
+
+    final httpClient = http.Client();
+    SchoolImportResponse? response;
     try {
-      final result = await _parserService.parse(
-        request: SchoolImportParseRequest(
-          source: SchoolImportSourcePayload(
-            url: widget.initialUrl,
-            title: widget.initialTitle,
-            content: sanitizedContent,
-          ),
+      final stream = _api.importCurrentPageStream(
+        SchoolImportPagePayload(
+          url: widget.initialUrl,
+          title: widget.initialTitle,
+          html: sanitizedContent,
           locale: localeCode,
           sourceHint: parserSettings.source,
         ),
         parserSettings: parserSettings,
+        client: httpClient,
       );
-      if (!mounted) {
-        return;
-      }
-      await _showApiResponseDialog(result.rawBody);
-      if (!mounted) {
-        return;
-      }
-      final response = result.response;
-      final periodTimeSets = provider.periodTimeSets;
-      final selectedPeriodTimeSetId =
-          provider.activePeriodTimeSetOrNull?.id ??
-          (periodTimeSets.isEmpty ? '' : periodTimeSets.first.id);
-      final importResult = await showModalBottomSheet<SchoolImportApplyRequest>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => SchoolWebImportResultSheet(
-          response: response,
-          canReplaceCurrent: canReplaceCurrent,
-          periodTimeSets: periodTimeSets,
-          initialPeriodTimeSetId: selectedPeriodTimeSetId,
-          provider: provider,
-        ),
-      );
-      if (importResult == null || !mounted) {
-        return;
-      }
-      await _applyService.apply(provider, importResult);
-      if (!mounted) {
-        return;
-      }
-      _showMessage(l10n.schoolWebImportSuccess);
-      Navigator.of(context).pop();
-    } on FormatException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      await _showApiResponseDialog(error.message);
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      _showMessage(l10n.importFailedCheckContent);
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
-    }
-  }
 
-  Future<void> _showApiResponseDialog(String message) async {
-    if (!mounted) {
+      if (!mounted) return;
+      response = await showDialog<SchoolImportResponse>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => SchoolImportStreamDialog(stream: stream),
+      );
+    } finally {
+      httpClient.close();
+    }
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (response == null) {
       return;
     }
-    final l10n = AppLocalizations.of(context);
-    await showDialog<void>(
+    final finalResponse = response;
+
+    final periodTimeSets = provider.periodTimeSets;
+    final selectedPeriodTimeSetId =
+        provider.activePeriodTimeSetOrNull?.id ??
+        (periodTimeSets.isEmpty ? '' : periodTimeSets.first.id);
+    final importResult = await showModalBottomSheet<SchoolImportApplyRequest>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(l10n.apiResponseTitle),
-          content: SingleChildScrollView(child: SelectableText(message)),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.confirm),
-            ),
-          ],
-        );
-      },
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => SchoolWebImportResultSheet(
+        response: finalResponse,
+        canReplaceCurrent: canReplaceCurrent,
+        periodTimeSets: periodTimeSets,
+        initialPeriodTimeSetId: selectedPeriodTimeSetId,
+        provider: provider,
+      ),
     );
+    if (importResult == null || !mounted) {
+      return;
+    }
+    await _applyService.apply(provider, importResult);
+    if (!mounted) return;
+    _showMessage(l10n.schoolWebImportSuccess);
+    Navigator.of(context).pop();
   }
 
   void _showMessage(String message) {
