@@ -2,6 +2,7 @@ import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 import '../data/timetable_storage.dart';
 import '../l10n/app_locale.dart' as app_locale;
@@ -99,15 +100,62 @@ class TimetableProvider extends ChangeNotifier {
   double get liveCourseOutlineWidth => _appData.liveCourseOutlineWidth;
   String? get ignoredUpdateVersion => _appData.ignoredUpdateVersion;
   String? get availableUpdateVersion => _appData.availableUpdateVersion;
-  String get activePrivacyPolicyVersion => currentPrivacyPolicyVersion;
+
+  // ── Privacy policy (remote-version driven) ──
+
+  String? _remotePrivacyPolicyVersion;
+
+  /// The latest version fetched from the web. Null until the first fetch
+  /// succeeds — the app treats null as "nothing to enforce" so the user is
+  /// never blocked by a network failure.
+  String? get activePrivacyPolicyVersion => _remotePrivacyPolicyVersion;
+
   String? get acceptedPrivacyPolicyVersion => _appData.privacyPolicyAcceptedVersion;
+
   DateTime? get privacyPolicyAcceptedAt {
     final value = _appData.privacyPolicyAcceptedAtIso;
     return value == null ? null : DateTime.tryParse(value);
   }
 
-  bool get hasAcceptedCurrentPrivacyPolicy =>
-      _appData.privacyPolicyAcceptedVersion == activePrivacyPolicyVersion;
+  /// Returns true when there is no remote version to compare against (network
+  /// not yet fetched or fetch failed) — the user is never gated by a missing
+  /// network response.
+  bool get hasAcceptedCurrentPrivacyPolicy {
+    if (_remotePrivacyPolicyVersion == null) return true;
+    return _appData.privacyPolicyAcceptedVersion == _remotePrivacyPolicyVersion;
+  }
+
+  /// For testing only — injects a remote version so consent-gate tests can
+  /// run without hitting the network.
+  void injectRemotePrivacyPolicyVersion(String version) {
+    _remotePrivacyPolicyVersion = version;
+  }
+
+  /// Quietly fetches the privacy page and extracts the version from
+  /// `<meta name="privacy-policy-version" content="...">`.
+  /// On failure (network timeout, parse error, non-200) it silently returns
+  /// without changing any state.
+  Future<void> fetchRemotePrivacyPolicyVersion() async {
+    try {
+      final uri = Uri.parse('https://mashiro.tech/classmate/privacy.html');
+      final response = await http.get(uri).timeout(
+        const Duration(seconds: 10),
+      );
+      if (response.statusCode != 200) return;
+      final body = response.body;
+      final match = RegExp(
+        r'<meta\s+name="privacy-policy-version"\s+content="([^"]*)"',
+      ).firstMatch(body);
+      if (match == null) return;
+      final version = match.group(1)!.trim();
+      if (version.isEmpty) return;
+      if (_remotePrivacyPolicyVersion == version) return;
+      _remotePrivacyPolicyVersion = version;
+      notifyListeners();
+    } catch (_) {
+      // Network / parse / timeout — silently skip.
+    }
+  }
 
   TimetableData? get activeTimetableOrNull {
     if (_appData.timetables.isEmpty) {
@@ -1150,11 +1198,11 @@ class TimetableProvider extends ChangeNotifier {
   }
 
   Future<void> acceptPrivacyPolicyCurrentVersion() async {
-    if (_appData.privacyPolicyAcceptedVersion == activePrivacyPolicyVersion) {
-      return;
-    }
+    final active = _remotePrivacyPolicyVersion;
+    if (active == null) return;
+    if (_appData.privacyPolicyAcceptedVersion == active) return;
     _appData = _appData.copyWith(
-      privacyPolicyAcceptedVersion: activePrivacyPolicyVersion,
+      privacyPolicyAcceptedVersion: active,
       privacyPolicyAcceptedAtIso: DateTime.now().toIso8601String(),
     );
     await _saveAndNotify();

@@ -670,7 +670,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      '课表、课表设置、节次时间集和学校站点配置只会保存在你的设备或浏览器本地。只有在你主动使用导入、网页解析、外部链接或分享等功能时，应用才会读取相关内容或把对应操作交给系统处理。';
+      'Classmate 为本地优先的课程表工具。课表数据、节次时间集和学校站点配置仅保存在你的设备或浏览器本地，不会自动上传。应用仅在你主动触发导入、网页解析、分享或打开外部链接等操作时才会处理对应内容。完整隐私政策可在线查看。';
 
   @override
   String get privacyPolicyLocalStorageTitle => '本地存储';
@@ -732,9 +732,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       '导入、导出和分享仅在你主动操作时触发；网页解析只会发送你主动提交的压缩后内容，并在保存前让你预览解析结果。';
-
-  @override
-  String get privacyGateSummaryExternal => '打开 GitHub 等外部链接会交给系统浏览器或其他应用处理。';
 
   @override
   String get privacyGateSummaryUpdates =>
@@ -1812,7 +1809,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get privacyPolicyIntro =>
-      '課表、課表設定、節次時間集和學校站點設定只會儲存在你的裝置或瀏覽器本機。只有在你主動使用匯入、網頁解析、外部連結或分享等功能時，應用才會讀取相關內容或把對應操作交給系統處理。';
+      'Classmate 為本地優先的課程表工具。課表資料、節次時間集和學校站點設定僅保存在你的裝置或瀏覽器本機，不會自動上傳。應用僅在你主動觸發匯入、網頁解析、分享或開啟外部連結等操作時才會處理對應內容。完整隱私政策可於線上查看。';
 
   @override
   String get privacyPolicyLocalStorageTitle => '本機儲存';
@@ -1874,9 +1871,6 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get privacyGateSummaryImportExport =>
       '匯入、匯出和分享僅在你主動操作時觸發；網頁解析只會發送你主動提交的壓縮後內容，並在儲存前讓你預覽解析結果。';
-
-  @override
-  String get privacyGateSummaryExternal => '開啟 GitHub 等外部連結會交給系統瀏覽器或其他應用處理。';
 
   @override
   String get privacyGateSummaryUpdates =>

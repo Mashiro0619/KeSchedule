@@ -14,7 +14,6 @@ import '../services/export_service.dart';
 import '../services/update_service.dart';
 import '../widgets/period_time_set_picker_dialog.dart';
 import 'language_settings_page.dart';
-import 'privacy_policy_page.dart';
 import 'school_html_import_page.dart';
 import 'theme_settings_page.dart';
 import 'timetable_display_settings_page.dart';
@@ -542,9 +541,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _openPrivacyPolicyPage() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()),
-    );
+    final uri = Uri.parse('https://mashiro.tech/classmate/privacy.html');
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   void _openLicensesPage() {

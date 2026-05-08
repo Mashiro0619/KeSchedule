@@ -1,13 +1,43 @@
+<div align="center">
+
 # Classmate
+### 一个基于 Flutter 的课程表应用
 
-[![Flutter](https://img.shields.io/badge/Flutter-App-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
-[![Material 3](https://img.shields.io/badge/Material%203-Enabled-6750A4?style=for-the-badge)](https://m3.material.io)
-[![License](https://img.shields.io/badge/License-AGPL%20v3-A42E2B?style=for-the-badge)](LICENSE)
+<a href="README_EN.md">English</a>
+&nbsp;&nbsp;|&nbsp;&nbsp;
+简体中文
+</p>
 
-[English README](README_EN.md)
+[![GitHub release](https://img.shields.io/github/v/release/Mashiro0619/classmate?color=black&label=Stable&logo=github)](https://github.com/Mashiro0619/classmate/releases/latest/)
+[![GitHub all releases](https://img.shields.io/github/downloads/Mashiro0619/classmate/total?label=Downloads&logo=github)](https://github.com/Mashiro0619/classmate/releases/)
+[![GitHub Repo stars](https://img.shields.io/github/stars/Mashiro0619/classmate?color=informational&label=Stars)](https://github.com/Mashiro0619/classmate/stargazers)
+[![Flutter](https://img.shields.io/badge/Flutter-App-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![License](https://img.shields.io/badge/License-AGPL%20v3-A42E2B?logo=gnu)](LICENSE)
 
-Classmate 是一个基于 Flutter 的课程表应用，支持多课表管理、课程编辑、节次时间集复用、主题与显示设置、隐私政策确认、更新检查，以及通过学校网页或 HTML 内容导入课表。
+</div>
+
+
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.mashiro.classmate">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="100">
+  </a>
+  <br>
+  <a href="https://github.com/Mashiro0619/classmate/releases">
+    <img src="https://img.shields.io/badge/Get%20it%20on-GitHub%20Releases-blue?style=for-the-badge&logo=github" alt="Get it on GitHub Releases" height="28">
+  </a>
+</p>
+
+## 截图展示
+
+<div align="center">
+<img src="docs/screenshots/s1.jpg" width="20%" />
+<img src="docs/screenshots/s2.jpg" width="20%" />
+<img src="docs/screenshots/s3.jpg" width="20%" />
+<img src="docs/screenshots/s4.jpg" width="20%" />
+<img src="docs/screenshots/s5.jpg" width="20%" />
+<img src="docs/screenshots/s6.jpg" width="20%" />
+<img src="docs/screenshots/s7.jpg" width="20%" />
+</div>
 
 ## 功能特性
 
@@ -23,36 +53,6 @@ Classmate 是一个基于 Flutter 的课程表应用，支持多课表管理、�
 
 
 欢迎大家通过提交 PR 为 `assets/school_sites.json` 补充和扩展学校站点配置。
-
-## 截图展示
-
-<table>
-  <tr>
-    <td align="center"><img src="docs/screenshots/s1.jpg" alt="主页" width="240"></td>
-    <td align="center"><img src="docs/screenshots/s2.jpg" alt="查看课程详情" width="240"></td>
-    <td align="center"><img src="docs/screenshots/s3.jpg" alt="设置页" width="240"></td>
-    <td align="center"><img src="docs/screenshots/s4.jpg" alt="编辑节次时间集页" width="240"></td>
-  </tr>
-  <tr>
-    <td align="center">主页</td>
-    <td align="center">查看课程详情</td>
-    <td align="center">设置页</td>
-    <td align="center">编辑节次时间集页</td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/s5.jpg" alt="主题设置页" width="240"></td>
-    <td align="center"><img src="docs/screenshots/s6.jpg" alt="课表显示与交互设置页" width="240"></td>
-    <td align="center"><img src="docs/screenshots/s7.jpg" alt="解析课表页面内容" width="240"></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td align="center">主题设置页</td>
-    <td align="center">课表显示与交互设置页</td>
-    <td align="center">解析课表页面内容</td>
-    <td></td>
-  </tr>
-</table>
-
 
 
 ## 项目结构
@@ -81,7 +81,7 @@ web/
 课表、课表设置、节次时间集和学校站点配置保存在设备或浏览器本地，不会自动上传到开发者服务器。
 只有在你主动使用导入、导出、分享、外部链接、更新检查或网页解析等功能时，应用才会读取相关内容或把对应操作交给系统或你配置的解析接口处理。
 
-首次进入应用时会显示隐私政策确认；隐私政策全文也可在应用内“设置 → 隐私政策”查看。
+首次进入应用时会显示隐私政策确认；隐私政策全文可在 [https://mashiro.tech/classmate/privacy.html](https://mashiro.tech/classmate/privacy.html) 查看。
 
 
 ## 学校网页导入后端

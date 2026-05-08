@@ -711,7 +711,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Az osztálytárs csak az Ön eszközén vagy böngészőjében tárolja az ütemterveket, az ütemterv beállításait, az időtartam-készleteket és az iskola-helyszín konfigurációját. Az alkalmazás csak helyi fájlokat olvas el, weboldal tartalmát küld elemzésre, külső linkeket nyit meg, vagy rendszermegosztást használ, amikor kifejezetten elindítja ezeket a műveleteket.';
+      'A Classmate egy helyi alapú órarend eszköz. Az órarendek, az időtartam-készletek és az iskolahely konfigurációja csak az Ön eszközén vagy böngészőjében tárolódik, és soha nem kerül automatikusan feltöltésre. Az alkalmazás csak akkor dolgoz fel adatokat, amikor kifejezetten olyan műveleteket indít, mint az importálás, a weboldal-elemzés, a megosztás vagy a külső hivatkozások megnyitása. A teljes adatvédelmi szabályzat online érhető el.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Helyi tárolás';
@@ -775,10 +775,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Az import, az export és a megosztás csak akkor történik, ha kifejezetten elindítja őket; A weboldal elemzése csak az Ön által beküldött tömörített tartalmat küld a konfigurált elemzési végponthoz, és a mentés előtt felülvizsgálhatja a elemzett ütemtervet.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'A GitHub vagy más külső hivatkozások megnyitása átadja a műveletet a böngészőjének vagy egy másik alkalmazásnak.';
 
   @override
   String get privacyGateSummaryUpdates =>

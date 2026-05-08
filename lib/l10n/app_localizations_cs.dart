@@ -702,7 +702,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate ukládá harmonogramy, nastavení harmonogramu, časové sady a konfiguraci školního místa pouze na vašem zařízení nebo ve vašem prohlížeči. Aplikace čte pouze lokální soubory, odesílá obsah webové stránky k analýze, otevírá externí odkazy nebo používá sdílení systému, když explicitně spustíte tyto akce.';
+      'Classmate je rozvrhový nástroj upřednostňující lokální ukládání. Rozvrhy, časové sady a konfigurace školních stránek jsou uloženy pouze ve vašem zařízení nebo prohlížeči a nikdy nejsou automaticky nahrávány. Aplikace zpracovává data pouze tehdy, když výslovně spustíte akce jako import, analýzu webových stránek, sdílení nebo otevírání externích odkazů. Úplné zásady ochrany osobních údajů jsou k dispozici online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lokální skladování';
@@ -765,10 +765,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Import, export a sdílení se odehrávají pouze tehdy, když je explicitně spustíte; Analýza webových stránek odesílá pouze komprimovaný obsah, který odešlete do nakonfigurovaného koncového bodu analýzy, a před uložením můžete zkontrolovat analyzovaný časový rozvrh.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Otevření GitHubu nebo jiných externích odkazů předává akci vašemu prohlížeči nebo jiné aplikaci.';
 
   @override
   String get privacyGateSummaryUpdates =>

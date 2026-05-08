@@ -506,7 +506,7 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "Classmate speichert Stundenpläne, Stundenplan-Einstellungen, Stundenzeiten-Sets und Schulwebsite-Konfigurationen nur auf Ihrem Gerät oder in Ihrem Browser. Die App liest lokale Dateien, sendet Webseiteninhalte zur Analyse, öffnet externe Links oder nutzt die Systemfreigabe nur, wenn Sie diese Aktionen ausdrücklich starten.",
+  "privacyPolicyIntro": "Classmate ist ein lokal ausgerichtetes Stundenplan-Werkzeug. Stundenpläne, Stundenzeiten-Sets und Schulwebsite-Konfigurationen werden nur auf Ihrem Gerät oder in Ihrem Browser gespeichert und niemals automatisch hochgeladen. Die App verarbeitet Daten nur, wenn Sie ausdrücklich Aktionen wie Import, Webseitenanalyse, Teilen oder das Öffnen externer Links starten. Die vollständige Datenschutzrichtlinie ist online verfügbar.",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "Lokaler Speicher",
   "@privacyPolicyLocalStorageTitle": {},
@@ -546,8 +546,6 @@
   "@privacyGateSummaryStorage": {},
   "privacyGateSummaryImportExport": "Import, Export und Teilen erfolgen nur, wenn Sie diese ausdrücklich starten; die Webseitenanalyse sendet nur den von Ihnen eingereichten komprimierten Inhalt an den konfigurierten Analyse-Endpunkt, und Sie können den analysierten Stundenplan vor dem Speichern überprüfen.",
   "@privacyGateSummaryImportExport": {},
-  "privacyGateSummaryExternal": "Das Öffnen von GitHub oder anderen externen Links übergibt die Aktion an Ihren Browser oder eine andere App.",
-  "@privacyGateSummaryExternal": {},
   "privacyGateSummaryUpdates": "Wenn eine spätere Version die Datenverarbeitung ändert, fordert die App Sie möglicherweise auf, die aktualisierte Datenschutzrichtlinie erneut zu prüfen.",
   "@privacyGateSummaryUpdates": {},
   "schoolWebImportEntry": "Von Schulwebseite importieren",

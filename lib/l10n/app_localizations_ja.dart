@@ -681,7 +681,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate は時間割、時間割設定、時限時間セット、学校サイト設定を、お使いの端末またはブラウザ内にのみ保存します。アプリは、あなたが明示的に操作を開始した場合にのみ、ローカルファイルの読み込み、Webページ内容の解析送信、外部リンクのオープン、またはシステム共有を行います。';
+      'Classmate はローカル優先の時間割ツールです。時間割、時限時間セット、学校サイト設定はお使いの端末またはブラウザ内にのみ保存され、自動的にアップロードされることはありません。アプリは、インポート、ウェブページ解析、共有、外部リンクの起動など、あなたが明示的に操作を行った場合にのみデータを処理します。完全なプライバシーポリシーはオンラインで確認できます。';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'ローカル保存';
@@ -743,10 +743,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'インポート、エクスポート、共有は、あなたが明示的に開始した場合にのみ行われます。Webページ解析では、送信した圧縮済み内容のみが設定した解析エンドポイントへ送られ、保存前に解析結果の時間割を確認できます。';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'GitHub やその他の外部リンクを開くと、その操作はブラウザまたは別のアプリへ引き渡されます。';
 
   @override
   String get privacyGateSummaryUpdates =>

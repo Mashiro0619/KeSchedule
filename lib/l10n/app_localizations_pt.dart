@@ -711,7 +711,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'O Classmate armazena horários, configurações de horários, conjuntos de horários dos períodos e configurações de sites escolares apenas no seu dispositivo ou no seu navegador. O app só lê arquivos locais, envia conteúdo de páginas web para análise, abre links externos ou usa o compartilhamento do sistema quando você inicia essas ações explicitamente.';
+      'O Classmate é uma ferramenta de horários com foco local. Os horários, conjuntos de períodos e configurações de sites escolares são armazenados apenas no seu dispositivo ou navegador e nunca são enviados automaticamente. O app só processa dados quando você aciona explicitamente ações como importar, analisar páginas web, compartilhar ou abrir links externos. A política de privacidade completa está disponível online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Armazenamento local';
@@ -774,10 +774,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Importação, exportação e compartilhamento só acontecem quando você os inicia explicitamente; a análise de página web envia apenas o conteúdo compactado que você enviar ao endpoint configurado, e você pode revisar o horário analisado antes de salvar.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Abrir o GitHub ou outros links externos entrega a ação ao seu navegador ou a outro app.';
 
   @override
   String get privacyGateSummaryUpdates =>

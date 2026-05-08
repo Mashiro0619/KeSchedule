@@ -506,7 +506,7 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "Az osztálytárs csak az Ön eszközén vagy böngészőjében tárolja az ütemterveket, az ütemterv beállításait, az időtartam-készleteket és az iskola-helyszín konfigurációját. Az alkalmazás csak helyi fájlokat olvas el, weboldal tartalmát küld elemzésre, külső linkeket nyit meg, vagy rendszermegosztást használ, amikor kifejezetten elindítja ezeket a műveleteket.",
+  "privacyPolicyIntro": "A Classmate egy helyi alapú órarend eszköz. Az órarendek, az időtartam-készletek és az iskolahely konfigurációja csak az Ön eszközén vagy böngészőjében tárolódik, és soha nem kerül automatikusan feltöltésre. Az alkalmazás csak akkor dolgoz fel adatokat, amikor kifejezetten olyan műveleteket indít, mint az importálás, a weboldal-elemzés, a megosztás vagy a külső hivatkozások megnyitása. A teljes adatvédelmi szabályzat online érhető el.",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "Helyi tárolás",
   "@privacyPolicyLocalStorageTitle": {},
@@ -546,8 +546,6 @@
   "@privacyGateSummaryStorage": {},
   "privacyGateSummaryImportExport": "Az import, az export és a megosztás csak akkor történik, ha kifejezetten elindítja őket; A weboldal elemzése csak az Ön által beküldött tömörített tartalmat küld a konfigurált elemzési végponthoz, és a mentés előtt felülvizsgálhatja a elemzett ütemtervet.",
   "@privacyGateSummaryImportExport": {},
-  "privacyGateSummaryExternal": "A GitHub vagy más külső hivatkozások megnyitása átadja a műveletet a böngészőjének vagy egy másik alkalmazásnak.",
-  "@privacyGateSummaryExternal": {},
   "privacyGateSummaryUpdates": "Ha egy későbbi verzió megváltoztatja az adatok kezelésének módját, az alkalmazás megkérheti Önt, hogy újra ellenőrizze a frissített adatvédelmi szabályzatot.",
   "@privacyGateSummaryUpdates": {},
   "schoolWebImportEntry": "Importálás az iskola weboldaláról",

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/timetable_models.dart';
@@ -14,7 +15,6 @@ import '../widgets/course_details_sheet.dart';
 import '../widgets/course_editor_sheet.dart';
 import '../widgets/text_transfer_widgets.dart';
 import '../widgets/timetable_grid.dart';
-import 'privacy_policy_page.dart';
 import 'settings_page.dart';
 import 'timetable_import_flow.dart';
 
@@ -28,6 +28,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   PageController? _pageController;
   bool _hasScheduledStartupUpdateCheck = false;
+  bool _hasStartedPrivacyPolicyFetch = false;
   bool _isShowingPrivacyConsentDialog = false;
   Timer? _liveCourseTimer;
 
@@ -36,6 +37,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _liveCourseTimer?.cancel();
     _pageController?.dispose();
     super.dispose();
+  }
+
+  void _startPrivacyPolicyFetch(TimetableProvider provider) {
+    if (_hasStartedPrivacyPolicyFetch) return;
+    _hasStartedPrivacyPolicyFetch = true;
+    provider.fetchRemotePrivacyPolicyVersion();
   }
 
   void _scheduleStartupUpdateCheck(TimetableProvider provider) {
@@ -113,8 +120,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           text: l10n.privacyGateSummaryImportExport,
                         ),
                         const SizedBox(height: 8),
-                        _PrivacySummaryRow(text: l10n.privacyGateSummaryExternal),
-                        const SizedBox(height: 8),
                         _PrivacySummaryRow(text: l10n.privacyGateSummaryUpdates),
                       ],
                     ),
@@ -122,17 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 actions: [
                   TextButton(
-                    onPressed: () async {
-                      await _openPrivacyPolicyPage(
-                        dialogContext,
-                        provider,
-                        showConsentActions: true,
-                      );
-                      if (dialogContext.mounted &&
-                          provider.hasAcceptedCurrentPrivacyPolicy) {
-                        Navigator.of(dialogContext).pop();
-                      }
-                    },
+                    onPressed: () => _openPrivacyPolicyPage(),
                     child: Text(l10n.privacyViewFullPolicy),
                   ),
                   TextButton(
@@ -169,6 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
             body: Center(child: CircularProgressIndicator()),
           );
         }
+        _startPrivacyPolicyFetch(provider);
         _ensurePrivacyConsentDialog(provider);
         _scheduleStartupUpdateCheck(provider);
         _ensureLiveCourseTimer(provider);
@@ -887,29 +883,9 @@ class _HomeScreenState extends State<HomeScreen> {
     await TimetableImportFlow.openSchoolSitesPage(context, provider);
   }
 
-  Future<void> _openPrivacyPolicyPage(
-    BuildContext context,
-    TimetableProvider provider, {
-    bool showConsentActions = false,
-  }) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (pageContext) => PrivacyPolicyPage(
-          showConsentActions: showConsentActions,
-          onAccept: !showConsentActions
-              ? null
-              : () async {
-                  await provider.acceptPrivacyPolicyCurrentVersion();
-                  if (pageContext.mounted) {
-                    Navigator.of(pageContext).pop();
-                  }
-                },
-          onDecline: !showConsentActions
-              ? null
-              : () => _declinePrivacyPolicy(pageContext),
-        ),
-      ),
-    );
+  Future<void> _openPrivacyPolicyPage() async {
+    final uri = Uri.parse('https://mashiro.tech/classmate/privacy.html');
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _declinePrivacyPolicy(BuildContext context) async {

@@ -709,7 +709,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate przechowuje harmonogramy, ustawienia harmonogramu, zestawy czasu okresu i konfigurację szkoły tylko na urządzeniu lub w przeglądarce. Aplikacja odczytuje tylko pliki lokalne, wysyła zawartość strony internetowej do analizy, otwiera linki zewnętrzne lub używa udostępniania systemu, gdy wyraźnie rozpoczynasz te działania.';
+      'Classmate to narzędzie do planów lekcji działające lokalnie. Plany lekcji, zestawy okresów i konfiguracja strony szkoły są przechowywane tylko na Twoim urządzeniu lub w przeglądarce i nigdy nie są automatycznie przesyłane. Aplikacja przetwarza dane tylko wtedy, gdy jawnie uruchamiasz działania takie jak import, analiza stron internetowych, udostępnianie lub otwieranie zewnętrznych linków. Pełna polityka prywatności jest dostępna online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lokalne przechowywanie';
@@ -772,10 +772,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Importowanie, eksportowanie i udostępnianie następują tylko wtedy, gdy wyraźnie je uruchomisz; Analiza stron internetowych wysyła tylko skompresowaną zawartość, którą przesyłasz do skonfigurowanego punktu końcowego analizowania, a przed zapisaniem możesz sprawdzić analizowany harmonogram.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Otwieranie GitHub lub innych linków zewnętrznych przekazuje akcję przeglądarce lub innej aplikacji.';
 
   @override
   String get privacyGateSummaryUpdates =>

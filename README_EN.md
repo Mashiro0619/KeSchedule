@@ -1,13 +1,42 @@
+<div align="center">
+
 # Classmate
+### A Flutter timetable app
 
-[![Flutter](https://img.shields.io/badge/Flutter-App-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
-[![Material 3](https://img.shields.io/badge/Material%203-Enabled-6750A4?style=for-the-badge)](https://m3.material.io)
-[![License](https://img.shields.io/badge/License-AGPL%20v3-A42E2B?style=for-the-badge)](LICENSE)
+<a href="README.md">中文</a>
+&nbsp;&nbsp;|&nbsp;&nbsp;
+English
+</p>
 
-[中文 README](README.md)
+[![GitHub release](https://img.shields.io/github/v/release/Mashiro0619/classmate?color=black&label=Stable&logo=github)](https://github.com/Mashiro0619/classmate/releases/latest/)
+[![GitHub all releases](https://img.shields.io/github/downloads/Mashiro0619/classmate/total?label=Downloads&logo=github)](https://github.com/Mashiro0619/classmate/releases/)
+[![GitHub Repo stars](https://img.shields.io/github/stars/Mashiro0619/classmate?color=informational&label=Stars)](https://github.com/Mashiro0619/classmate/stargazers)
+[![Flutter](https://img.shields.io/badge/Flutter-App-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![License](https://img.shields.io/badge/License-AGPL%20v3-A42E2B?logo=gnu)](LICENSE)
 
-Classmate is a Flutter timetable app that supports multi-timetable management, course editing, reusable period-time sets, theme and display settings, privacy policy consent, update checks, and timetable import from school webpages or pasted HTML content.
+</div>
+
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.mashiro.classmate">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="100">
+  </a>
+  <br>
+  <a href="https://github.com/Mashiro0619/classmate/releases">
+    <img src="https://img.shields.io/badge/Get%20it%20on-GitHub%20Releases-blue?style=for-the-badge&logo=github" alt="Get it on GitHub Releases" height="28">
+  </a>
+</p>
+
+## Screenshots
+
+<div align="center">
+<img src="docs/screenshots/s1_en.jpg" width="20%" />
+<img src="docs/screenshots/s2_en.jpg" width="20%" />
+<img src="docs/screenshots/s3_en.jpg" width="20%" />
+<img src="docs/screenshots/s4_en.jpg" width="20%" />
+<img src="docs/screenshots/s5_en.jpg" width="20%" />
+<img src="docs/screenshots/s6_en.jpg" width="20%" />
+<img src="docs/screenshots/s7_en.jpg" width="20%" />
+</div>
 
 ## Features
 
@@ -22,35 +51,6 @@ Classmate is a Flutter timetable app that supports multi-timetable management, c
 - School site management: add, edit, delete, and import or export school-site JSON entries
 
 Everyone is welcome to submit PRs to expand `assets/school_sites.json` with more school site entries.
-
-## Screenshots
-
-<table>
-  <tr>
-    <td align="center"><img src="docs/screenshots/s1.jpg" alt="Home" width="240"></td>
-    <td align="center"><img src="docs/screenshots/s2.jpg" alt="Course details" width="240"></td>
-    <td align="center"><img src="docs/screenshots/s3.jpg" alt="Settings" width="240"></td>
-    <td align="center"><img src="docs/screenshots/s4.jpg" alt="Edit period time set" width="240"></td>
-  </tr>
-  <tr>
-    <td align="center">Home</td>
-    <td align="center">Course details</td>
-    <td align="center">Settings</td>
-    <td align="center">Edit period time set</td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/s5.jpg" alt="Theme settings" width="240"></td>
-    <td align="center"><img src="docs/screenshots/s6.jpg" alt="Timetable display and interaction settings" width="240"></td>
-    <td align="center"><img src="docs/screenshots/s7.jpg" alt="Timetable parsing page" width="240"></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td align="center">Theme settings</td>
-    <td align="center">Timetable display & interaction settings</td>
-    <td align="center">Timetable parsing page</td>
-    <td></td>
-  </tr>
-</table>
 
 ## Project structure
 
@@ -78,7 +78,7 @@ web/
 Timetables, timetable settings, period-time sets, and school-site configuration are stored locally on your device or in the browser, and are not automatically uploaded to the developer's server.
 Only when you actively use features such as import, export, sharing, external links, update checks, or webpage parsing will the app read related content or hand the corresponding operation off to the system or your configured parsing endpoint.
 
-A privacy policy consent dialog is shown on first launch. The full privacy policy can also be viewed in the app under `Settings → Privacy Policy`.
+A privacy policy consent dialog is shown on first launch. The full privacy policy is available at [https://mashiro.tech/classmate/privacy.html](https://mashiro.tech/classmate/privacy.html).
 
 ## School import backend
 

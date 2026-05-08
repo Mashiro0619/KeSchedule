@@ -33,7 +33,6 @@ const defaultLiveCourseOutlineWidth = 2.5;
 const minLiveCourseOutlineWidth = 1.0;
 const maxLiveCourseOutlineWidth = 4.0;
 const maxTimetableWeeks = 100;
-const currentPrivacyPolicyVersion = '2026-04-20';
 
 AppStrings _stringsForLocale(String localeCode) {
   return AppStrings.forLocaleCode(localeCode);

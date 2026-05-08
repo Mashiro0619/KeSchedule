@@ -704,7 +704,7 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate tallentaa aikataulut, aikatauluasetukset, ajanjaksojen asetukset ja koulun sivuston konfiguraatiot vain laitteellasi tai selaimessasi. Sovellus lukee vain paikallisia tiedostoja, lähettää verkkosivun sisältöä analysointiin, avaa ulkoisia linkkejä tai käyttää järjestelmän jakamista, kun nimenomaisesti aloitat nämä toimet.';
+      'Classmate on paikalliskäyttöön keskittyvä lukujärjestystyökalu. Lukujärjestykset, ajanjaksot ja koulusivuston asetukset tallennetaan vain laitteellesi tai selaimeesi, eikä niitä koskaan ladata automaattisesti. Sovellus käsittelee tietoja vain, kun käynnistät nimenomaisesti toimintoja kuten tuonnin, verkkosivujen analysoinnin, jakamisen tai ulkoisten linkkien avaamisen. Täydellinen tietosuojakäytäntö on saatavilla verkossa.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Paikallinen varastointi';
@@ -767,10 +767,6 @@ class AppLocalizationsFi extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Tuo, vienti ja jakaminen tapahtuu vain, kun käynnistät ne nimenomaisesti; verkkosivujen analysointi lähettää vain toimittamasi pakkautetun sisällön määritettyyn analysointipäätepisteeseen, ja voit tarkistaa analysoidun aikataulun ennen tallennusta.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'GitHubin tai muiden ulkoisten linkkien avaaminen antaa toiminnon selaimellesi tai muulle sovellukselle.';
 
   @override
   String get privacyGateSummaryUpdates =>

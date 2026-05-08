@@ -506,7 +506,7 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "Klassikaaslane salvestab ajakavad, ajakava seaded, perioodide ja kooli saidi konfiguratsioonid ainult teie seadmes või brauseris. Rakendus loeb ainult kohalikke faile, saadab veebilehe sisu analüüsimiseks, avab välislinge või kasutab süsteemi jagamist, kui neid toiminguid selgesõnaliselt alustate.",
+  "privacyPolicyIntro": "Classmate on lokaalselt töötav tunniplaani tööriist. Tunniplaanid, perioodide komplektid ja kooli saidi konfiguratsioon salvestatakse ainult teie seadmes või brauseris ning neid ei laadita kunagi automaatselt üles. Rakendus töötleb andmeid ainult siis, kui käivitate selgesõnaliselt selliseid toiminguid nagu importimine, veebilehe analüüs, jagamine või väliste linkide avamine. Täielik privaatsuspoliitika on saadaval veebis.",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "Kohalik ladustamine",
   "@privacyPolicyLocalStorageTitle": {},
@@ -546,8 +546,6 @@
   "@privacyGateSummaryStorage": {},
   "privacyGateSummaryImportExport": "Import, eksport ja jagamine toimuvad ainult siis, kui neid selgesõnaliselt käivitate; Veebilehe analüüsimine saadab ainult teie konfigureeritud analüüsimise lõpppunktile esitatud surutud sisu ja enne salvestamist saate analüüsitud ajakava vaadata.",
   "@privacyGateSummaryImportExport": {},
-  "privacyGateSummaryExternal": "GitHubi või muude väliste linkide avamine annab tegevuse teie brauserile või muule rakendusele.",
-  "@privacyGateSummaryExternal": {},
   "privacyGateSummaryUpdates": "Kui hilisem versioon muudab andmete töötlemise viisi, võib rakendus paluda teil uuendatud privaatsuspoliitikat uuesti vaadata.",
   "@privacyGateSummaryUpdates": {},
   "schoolWebImportEntry": "Import kooli veebilehelt",

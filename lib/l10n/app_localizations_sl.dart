@@ -704,7 +704,7 @@ class AppLocalizationsSl extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate shranjuje urnike, nastavitve urnika, nabore obdobja in konfiguracije šolskega mesta samo v napravi ali brskalniku. Aplikacija bere le lokalne datoteke, pošlje vsebino spletne strani za razčlenitev, odpira zunanje povezave ali uporablja sistemsko skupno rabo, ko izrecno začnete ta dejanja.';
+      'Classmate je orodje za urnike, ki daje prednost lokalni hrambi. Urniki, nabori obdobij in konfiguracija šolskega mesta so shranjeni samo v vaši napravi ali brskalniku in se nikoli ne naložijo samodejno. Aplikacija obdeluje podatke samo, ko izrecno sprožite dejanja, kot so uvoz, razčlenjevanje spletnih strani, deljenje ali odpiranje zunanjih povezav. Celotna politika zasebnosti je na voljo na spletu.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lokalno shranjevanje';
@@ -767,10 +767,6 @@ class AppLocalizationsSl extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Uvoz, izvoz in skupna raba se zgodijo le, ko jih izrecno zaženete; Razčlenjevanje spletne strani pošlje samo stisnjeno vsebino, ki jo pošljete na konfigurirano končno točko razčlenjanja, preden shranite, pa lahko pregledate razčlenjen časovni razpored.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Odpiranje GitHub ali drugih zunanjih povezav daje dejanje vašemu brskalniku ali drugi aplikaciji.';
 
   @override
   String get privacyGateSummaryUpdates =>

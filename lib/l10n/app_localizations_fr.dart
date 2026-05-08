@@ -719,7 +719,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate stocke les emplois du temps, les paramètres d\'emploi du temps, les jeux d\'horaires des périodes et la configuration des sites scolaires uniquement sur votre appareil ou dans votre navigateur. L\'application ne lit des fichiers locaux, n\'envoie du contenu de page web à analyser, n\'ouvre des liens externes ou n\'utilise le partage système que lorsque vous lancez explicitement ces actions.';
+      'Classmate est un outil d\'emploi du temps qui privilégie le stockage local. Les emplois du temps, les jeux d\'horaires des périodes et la configuration des sites scolaires sont stockés uniquement sur votre appareil ou dans votre navigateur et ne sont jamais téléversés automatiquement. L\'application ne traite les données que lorsque vous déclenchez explicitement des actions comme l\'importation, l\'analyse de pages web, le partage ou l\'ouverture de liens externes. La politique de confidentialité complète est disponible en ligne.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Stockage local';
@@ -783,10 +783,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'L\'importation, l\'exportation et le partage ne se produisent que lorsque vous les lancez explicitement ; l\'analyse de pages web envoie uniquement le contenu compressé que vous soumettez au point de terminaison configuré, et vous pouvez vérifier l\'emploi du temps analysé avant de l\'enregistrer.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Ouvrir GitHub ou d\'autres liens externes transmet l\'action à votre navigateur ou à une autre application.';
 
   @override
   String get privacyGateSummaryUpdates =>

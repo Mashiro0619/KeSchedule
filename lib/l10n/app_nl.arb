@@ -506,7 +506,7 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "Classmate stores timetables, timetable settings, period-time sets, and school-site configuration only on your device or in your browser. The app only reads local files, sends webpage content for parsing, opens external links, or uses system sharing when you explicitly start those actions.",
+  "privacyPolicyIntro": "Classmate is een lokaal-eerst roosterhulpmiddel. Roosters, periodetijdsets en schoolwebsiteconfiguratie worden alleen op je apparaat of in je browser opgeslagen en worden nooit automatisch geüpload. De app verwerkt alleen gegevens wanneer je expliciet acties start zoals importeren, webpagina-analyse, delen of het openen van externe links. Het volledige privacybeleid is online beschikbaar.",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "Local storage",
   "@privacyPolicyLocalStorageTitle": {},
@@ -546,8 +546,6 @@
   "@privacyGateSummaryStorage": {},
   "privacyGateSummaryImportExport": "Import, export, and sharing only happen when you explicitly start them; webpage parsing sends only the compressed content you submit to your configured parsing endpoint, and you can review the parsed timetable before saving.",
   "@privacyGateSummaryImportExport": {},
-  "privacyGateSummaryExternal": "Opening GitHub or other external links hands the action to your browser or another app.",
-  "@privacyGateSummaryExternal": {},
   "privacyGateSummaryUpdates": "If a later version changes how data is handled, the app may ask you to review the updated privacy policy again.",
   "@privacyGateSummaryUpdates": {},
   "schoolWebImportEntry": "Import from school webpage",

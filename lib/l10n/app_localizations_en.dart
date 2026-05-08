@@ -700,7 +700,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate stores timetables, timetable settings, period-time sets, and school-site configuration only on your device or in your browser. The app only reads local files, sends webpage content for parsing, opens external links, or uses system sharing when you explicitly start those actions.';
+      'Classmate is a local-first timetable tool. Timetables, period-time sets, and school-site configuration are stored only on your device or in your browser, and are never automatically uploaded. The app only processes data when you explicitly trigger actions such as import, webpage parsing, sharing, or opening external links. The full privacy policy is available online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Local storage';
@@ -763,10 +763,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Import, export, and sharing only happen when you explicitly start them; webpage parsing sends only the compressed content you submit to your configured parsing endpoint, and you can review the parsed timetable before saving.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Opening GitHub or other external links hands the action to your browser or another app.';
 
   @override
   String get privacyGateSummaryUpdates =>

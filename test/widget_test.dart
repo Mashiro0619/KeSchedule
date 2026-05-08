@@ -217,7 +217,7 @@ AppData _buildTestAppData() {
     activeTimetableId: primaryTimetable.id,
     timetables: [primaryTimetable, backupTimetable],
     periodTimeSets: [defaultSet, shortSet],
-    privacyPolicyAcceptedVersion: currentPrivacyPolicyVersion,
+    privacyPolicyAcceptedVersion: '2026-04-20',
   );
 }
 
@@ -2664,6 +2664,7 @@ void main() {
         ),
       );
       await provider.load();
+      provider.injectRemotePrivacyPolicyVersion('2026-04-20');
 
       await tester.pumpWidget(
         ChangeNotifierProvider<TimetableProvider>.value(
@@ -2892,7 +2893,7 @@ void main() {
                 ],
               ),
             ],
-            privacyPolicyAcceptedVersion: currentPrivacyPolicyVersion,
+            privacyPolicyAcceptedVersion: '2026-04-20',
           ),
         ),
       );
@@ -3422,7 +3423,7 @@ void main() {
               colorfulUiSecondaryKey: 0xFF223344,
               colorfulUiTertiaryKey: 0xFF334455,
             },
-            privacyPolicyAcceptedVersion: currentPrivacyPolicyVersion,
+            privacyPolicyAcceptedVersion: '2026-04-20',
           ),
         ),
       );

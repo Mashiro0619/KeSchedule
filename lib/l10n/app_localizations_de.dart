@@ -710,7 +710,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate speichert Stundenpläne, Stundenplan-Einstellungen, Stundenzeiten-Sets und Schulwebsite-Konfigurationen nur auf Ihrem Gerät oder in Ihrem Browser. Die App liest lokale Dateien, sendet Webseiteninhalte zur Analyse, öffnet externe Links oder nutzt die Systemfreigabe nur, wenn Sie diese Aktionen ausdrücklich starten.';
+      'Classmate ist ein lokal ausgerichtetes Stundenplan-Werkzeug. Stundenpläne, Stundenzeiten-Sets und Schulwebsite-Konfigurationen werden nur auf Ihrem Gerät oder in Ihrem Browser gespeichert und niemals automatisch hochgeladen. Die App verarbeitet Daten nur, wenn Sie ausdrücklich Aktionen wie Import, Webseitenanalyse, Teilen oder das Öffnen externer Links starten. Die vollständige Datenschutzrichtlinie ist online verfügbar.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lokaler Speicher';
@@ -773,10 +773,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Import, Export und Teilen erfolgen nur, wenn Sie diese ausdrücklich starten; die Webseitenanalyse sendet nur den von Ihnen eingereichten komprimierten Inhalt an den konfigurierten Analyse-Endpunkt, und Sie können den analysierten Stundenplan vor dem Speichern überprüfen.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Das Öffnen von GitHub oder anderen externen Links übergibt die Aktion an Ihren Browser oder eine andere App.';
 
   @override
   String get privacyGateSummaryUpdates =>

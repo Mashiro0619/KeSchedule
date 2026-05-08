@@ -506,7 +506,7 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "Classmate ukládá harmonogramy, nastavení harmonogramu, časové sady a konfiguraci školního místa pouze na vašem zařízení nebo ve vašem prohlížeči. Aplikace čte pouze lokální soubory, odesílá obsah webové stránky k analýze, otevírá externí odkazy nebo používá sdílení systému, když explicitně spustíte tyto akce.",
+  "privacyPolicyIntro": "Classmate je rozvrhový nástroj upřednostňující lokální ukládání. Rozvrhy, časové sady a konfigurace školních stránek jsou uloženy pouze ve vašem zařízení nebo prohlížeči a nikdy nejsou automaticky nahrávány. Aplikace zpracovává data pouze tehdy, když výslovně spustíte akce jako import, analýzu webových stránek, sdílení nebo otevírání externích odkazů. Úplné zásady ochrany osobních údajů jsou k dispozici online.",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "Lokální skladování",
   "@privacyPolicyLocalStorageTitle": {},
@@ -546,8 +546,6 @@
   "@privacyGateSummaryStorage": {},
   "privacyGateSummaryImportExport": "Import, export a sdílení se odehrávají pouze tehdy, když je explicitně spustíte; Analýza webových stránek odesílá pouze komprimovaný obsah, který odešlete do nakonfigurovaného koncového bodu analýzy, a před uložením můžete zkontrolovat analyzovaný časový rozvrh.",
   "@privacyGateSummaryImportExport": {},
-  "privacyGateSummaryExternal": "Otevření GitHubu nebo jiných externích odkazů předává akci vašemu prohlížeči nebo jiné aplikaci.",
-  "@privacyGateSummaryExternal": {},
   "privacyGateSummaryUpdates": "Pokud pozdější verze změní způsob zpracování dat, aplikace vás může požádat, abyste znovu přezkoumali aktualizované zásady ochrany osobních údajů.",
   "@privacyGateSummaryUpdates": {},
   "schoolWebImportEntry": "Import ze školní stránky",

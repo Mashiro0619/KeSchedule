@@ -704,7 +704,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate lagrar tidstabeller, tidstabellinställningar, periodtidsuppsättningar och skolans konfiguration endast på din enhet eller i din webbläsare. Appen läser bara lokala filer, skickar webbsidoinnehåll för tolkning, öppnar externa länkar eller använder systemdelning när du uttryckligen startar dessa åtgärder.';
+      'Classmate är ett lokalt-först schemaverktyg. Scheman, periodtidsuppsättningar och skolwebbplatskonfiguration lagras endast på din enhet eller i din webbläsare och laddas aldrig upp automatiskt. Appen behandlar endast data när du uttryckligen startar åtgärder som import, webbsidoparsning, delning eller öppnande av externa länkar. Den fullständiga integritetspolicyn finns tillgänglig online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lokal förvaring';
@@ -767,10 +767,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Import, export och delning sker endast när du uttryckligen startar dem. Webbsidoparsning skickar endast det komprimerade innehållet du skickar till din konfigurerade parseringsändpunkt, och du kan granska den parserade tidsplanen innan du sparar.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Öppna GitHub eller andra externa länkar ger åtgärden till din webbläsare eller en annan app.';
 
   @override
   String get privacyGateSummaryUpdates =>

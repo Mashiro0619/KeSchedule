@@ -703,7 +703,7 @@ class AppLocalizationsEt extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Klassikaaslane salvestab ajakavad, ajakava seaded, perioodide ja kooli saidi konfiguratsioonid ainult teie seadmes või brauseris. Rakendus loeb ainult kohalikke faile, saadab veebilehe sisu analüüsimiseks, avab välislinge või kasutab süsteemi jagamist, kui neid toiminguid selgesõnaliselt alustate.';
+      'Classmate on lokaalselt töötav tunniplaani tööriist. Tunniplaanid, perioodide komplektid ja kooli saidi konfiguratsioon salvestatakse ainult teie seadmes või brauseris ning neid ei laadita kunagi automaatselt üles. Rakendus töötleb andmeid ainult siis, kui käivitate selgesõnaliselt selliseid toiminguid nagu importimine, veebilehe analüüs, jagamine või väliste linkide avamine. Täielik privaatsuspoliitika on saadaval veebis.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Kohalik ladustamine';
@@ -766,10 +766,6 @@ class AppLocalizationsEt extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Import, eksport ja jagamine toimuvad ainult siis, kui neid selgesõnaliselt käivitate; Veebilehe analüüsimine saadab ainult teie konfigureeritud analüüsimise lõpppunktile esitatud surutud sisu ja enne salvestamist saate analüüsitud ajakava vaadata.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'GitHubi või muude väliste linkide avamine annab tegevuse teie brauserile või muule rakendusele.';
 
   @override
   String get privacyGateSummaryUpdates =>

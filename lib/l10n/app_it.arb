@@ -506,7 +506,7 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "Classmate memorizza orari, impostazioni degli orari, set di orari dei periodi e configurazione dei siti scolastici solo sul tuo dispositivo o nel tuo browser. L'app legge file locali, invia contenuti di pagine web per il parsing, apre link esterni o usa la condivisione di sistema solo quando avvii esplicitamente queste azioni.",
+  "privacyPolicyIntro": "Classmate è uno strumento di orari che privilegia l'archiviazione locale. Orari, set di periodi e configurazione dei siti scolastici sono memorizzati solo sul tuo dispositivo o nel browser e non vengono mai caricati automaticamente. L'app elabora i dati solo quando attivi esplicitamente azioni come importazione, parsing di pagine web, condivisione o apertura di link esterni. L'informativa completa sulla privacy è disponibile online.",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "Archiviazione locale",
   "@privacyPolicyLocalStorageTitle": {},
@@ -546,8 +546,6 @@
   "@privacyGateSummaryStorage": {},
   "privacyGateSummaryImportExport": "Importazione, esportazione e condivisione avvengono solo quando le avvii esplicitamente; il parsing delle pagine web invia solo il contenuto compresso che hai inviato al tuo endpoint di parsing configurato e puoi controllare l'orario analizzato prima di salvarlo.",
   "@privacyGateSummaryImportExport": {},
-  "privacyGateSummaryExternal": "L'apertura di GitHub o di altri link esterni passa l'azione al browser o a un'altra app.",
-  "@privacyGateSummaryExternal": {},
   "privacyGateSummaryUpdates": "Se una versione successiva cambia il modo in cui vengono gestiti i dati, l'app potrebbe chiederti di rivedere di nuovo l'informativa aggiornata.",
   "@privacyGateSummaryUpdates": {},
   "schoolWebImportEntry": "Importa dalla pagina web della scuola",

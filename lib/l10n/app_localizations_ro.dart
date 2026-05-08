@@ -712,7 +712,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate stochează orarele, setările orarului, seturile de perioade și configurația site-ului școlii numai pe dispozitivul dvs. sau în browser-ul dvs. Aplicația citește doar fișiere locale, trimite conținut de pagină web pentru analizare, deschide link-uri externe sau utilizează partajarea sistemului atunci când începeți în mod explicit aceste acțiuni.';
+      'Classmate este un instrument de orar care prioritizează stocarea locală. Orarele, seturile de perioade și configurația site-ului școlii sunt stocate numai pe dispozitivul dvs. sau în browser și nu sunt niciodată încărcate automat. Aplicația procesează datele numai atunci când declanșați explicit acțiuni precum importul, analizarea paginilor web, partajarea sau deschiderea linkurilor externe. Politica de confidențialitate completă este disponibilă online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Depozitare locală';
@@ -775,10 +775,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Importul, exportul și partajarea se întâmplă numai atunci când le porniți în mod explicit; analizarea paginilor web trimite doar conținutul comprimat pe care îl trimiteți la punctul final de analizare configurat și puteți revizui programul analizat înainte de a salva.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Deschiderea GitHub sau a altor link-uri externe transmite acțiunea browserului sau unei alte aplicații.';
 
   @override
   String get privacyGateSummaryUpdates =>

@@ -699,7 +699,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Classmate gemmer tidsplaner, tidsplanindstillinger, tidssæt og konfiguration af skolens websted kun på din enhed eller i din browser. Appen læser kun lokale filer, sender websideindhold til analyse, åbner eksterne links eller bruger systemdeling, når du udtrykkeligt starter disse handlinger.';
+      'Classmate er et lokalt-først skemaværktøj. Skemaer, tidssæt og skolewebstedskonfiguration gemmes kun på din enhed eller i din browser og uploades aldrig automatisk. Appen behandler kun data, når du udtrykkeligt starter handlinger som import, websideanalyse, deling eller åbning af eksterne links. Den fulde fortrolighedspolitik er tilgængelig online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lokal opbevaring';
@@ -762,10 +762,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Import, eksport og deling sker kun, når du udtrykkeligt starter dem. Websideanalysering sender kun det komprimerede indhold, du sender til dit konfigurerede analyseringsendepunkt, og du kan gennemgå den analyserede tidsplan, før du gemmer den.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Åbning af GitHub eller andre eksterne links giver handlingen til din browser eller en anden app.';
 
   @override
   String get privacyGateSummaryUpdates =>

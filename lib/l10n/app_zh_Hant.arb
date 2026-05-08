@@ -508,7 +508,7 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "課表、課表設定、節次時間集和學校站點設定只會儲存在你的裝置或瀏覽器本機。只有在你主動使用匯入、網頁解析、外部連結或分享等功能時，應用才會讀取相關內容或把對應操作交給系統處理。",
+  "privacyPolicyIntro": "Classmate 為本地優先的課程表工具。課表資料、節次時間集和學校站點設定僅保存在你的裝置或瀏覽器本機，不會自動上傳。應用僅在你主動觸發匯入、網頁解析、分享或開啟外部連結等操作時才會處理對應內容。完整隱私政策可於線上查看。",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "本機儲存",
   "@privacyPolicyLocalStorageTitle": {},
@@ -548,8 +548,6 @@
   "@privacyGateSummaryStorage": {},
   "privacyGateSummaryImportExport": "匯入、匯出和分享僅在你主動操作時觸發；網頁解析只會發送你主動提交的壓縮後內容，並在儲存前讓你預覽解析結果。",
   "@privacyGateSummaryImportExport": {},
-  "privacyGateSummaryExternal": "開啟 GitHub 等外部連結會交給系統瀏覽器或其他應用處理。",
-  "@privacyGateSummaryExternal": {},
   "privacyGateSummaryUpdates": "如果後續版本調整了資料處理方式，應用可能會要求你重新查看更新後的隱私政策。",
   "@privacyGateSummaryUpdates": {},
   "schoolWebImportEntry": "從學校網頁匯入",

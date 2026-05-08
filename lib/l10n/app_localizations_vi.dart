@@ -704,7 +704,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'Bạn cùng lớp lưu trữ lịch trình, cài đặt lịch trình, bộ thời gian và cấu hình trang web trường học chỉ trên thiết bị của bạn hoặc trong trình duyệt của bạn. Ứng dụng chỉ đọc các tệp cục bộ, gửi nội dung trang web để phân tích, mở liên kết bên ngoài hoặc sử dụng chia sẻ hệ thống khi bạn bắt đầu rõ ràng các hành động đó.';
+      'Classmate là công cụ thời khóa biểu ưu tiên lưu trữ cục bộ. Thời khóa biểu, bộ thời gian và cấu hình trang web trường học chỉ được lưu trên thiết bị hoặc trình duyệt của bạn và không bao giờ được tự động tải lên. Ứng dụng chỉ xử lý dữ liệu khi bạn chủ động kích hoạt các thao tác như nhập, phân tích trang web, chia sẻ hoặc mở liên kết bên ngoài. Chính sách bảo mật đầy đủ có sẵn trực tuyến.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lưu trữ địa phương';
@@ -768,10 +768,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get privacyGateSummaryImportExport =>
       'Nhập, xuất và chia sẻ chỉ xảy ra khi bạn bắt đầu chúng một cách rõ ràng; Phân tích trang web chỉ gửi nội dung nén mà bạn gửi đến điểm cuối phân tích được cấu hình của bạn, và bạn có thể xem xét lịch trình phân tích trước khi lưu.';
-
-  @override
-  String get privacyGateSummaryExternal =>
-      'Mở GitHub hoặc các liên kết bên ngoài khác chuyển hành động đến trình duyệt của bạn hoặc ứng dụng khác.';
 
   @override
   String get privacyGateSummaryUpdates =>
