@@ -1,6 +1,6 @@
 {
   "@@locale": "es",
-  "appTitle": "KeSchedule",
+  "appTitle": "Sked",
   "@appTitle": {},
   "weekLabel": "Semana {week}",
   "@weekLabel": {
@@ -506,11 +506,11 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "KeSchedule es una herramienta de horarios que prioriza el almacenamiento local. Los horarios, conjuntos de periodos y configuración de sitios escolares se almacenan solo en tu dispositivo o navegador y nunca se suben automáticamente. La app solo procesa datos cuando activas explícitamente acciones como importar, analizar páginas web, compartir o abrir enlaces externos. La política de privacidad completa está disponible en línea.",
+  "privacyPolicyIntro": "Sked es una herramienta de horarios que prioriza el almacenamiento local. Los horarios, conjuntos de periodos y configuración de sitios escolares se almacenan solo en tu dispositivo o navegador y nunca se suben automáticamente. La app solo procesa datos cuando activas explícitamente acciones como importar, analizar páginas web, compartir o abrir enlaces externos. La política de privacidad completa está disponible en línea.",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "Almacenamiento local",
   "@privacyPolicyLocalStorageTitle": {},
-  "privacyPolicyLocalStorageBody": "Los datos del horario y los ajustes relacionados se almacenan en un archivo local llamado KeSchedule_data.json dentro del directorio de documentos de la app. La configuración editable de sitios escolares se almacena por separado en KeSchedule_school_sites.json. Los ajustes personalizados del analizador de horarios, incluidos cualquier Base URL personalizada, API key y modelo seleccionado, también se almacenan localmente en los mismos datos de la app y no están protegidos por un almacén de credenciales del sistema. Cuando se usa en un navegador, el mismo tipo de datos se almacena en el almacenamiento del navegador. La app no sube automáticamente estos datos locales a un servidor controlado por el desarrollador.",
+  "privacyPolicyLocalStorageBody": "Los datos del horario y los ajustes relacionados se almacenan en un archivo local llamado Sked_data.json dentro del directorio de documentos de la app. La configuración editable de sitios escolares se almacena por separado en Sked_school_sites.json. Los ajustes personalizados del analizador de horarios, incluidos cualquier Base URL personalizada, API key y modelo seleccionado, también se almacenan localmente en los mismos datos de la app y no están protegidos por un almacén de credenciales del sistema. Cuando se usa en un navegador, el mismo tipo de datos se almacena en el almacenamiento del navegador. La app no sube automáticamente estos datos locales a un servidor controlado por el desarrollador.",
   "@privacyPolicyLocalStorageBody": {},
   "privacyPolicyImportExportTitle": "Importación y exportación",
   "@privacyPolicyImportExportTitle": {},
@@ -526,7 +526,7 @@
   "@privacyPolicyExternalLinksBody": {},
   "privacyPolicyNoCollectionTitle": "Qué no recopila la app",
   "@privacyPolicyNoCollectionTitle": {},
-  "privacyPolicyNoCollectionBody": "La app no requiere una cuenta de KeSchedule y no habilita análisis, identificadores publicitarios ni copia de seguridad en la nube. Tampoco ofrece un campo dedicado para recopilar contraseñas de cuentas escolares. Si inicias sesión en un sitio web escolar dentro de la app, esa interacción ocurre en la página escolar que abriste.",
+  "privacyPolicyNoCollectionBody": "La app no requiere una cuenta de Sked y no habilita análisis, identificadores publicitarios ni copia de seguridad en la nube. Tampoco ofrece un campo dedicado para recopilar contraseñas de cuentas escolares. Si inicias sesión en un sitio web escolar dentro de la app, esa interacción ocurre en la página escolar que abriste.",
   "@privacyPolicyNoCollectionBody": {},
   "privacyPolicyFutureFeatureTitle": "Análisis de páginas web",
   "@privacyPolicyFutureFeatureTitle": {},
@@ -588,7 +588,7 @@
   },
   "schoolSitesFormInvalid": "Primero completa el nombre de la escuela y la URL de inicio de sesión.",
   "@schoolSitesFormInvalid": {},
-  "schoolSitesJsonFileName": "KeSchedule_school_sites.json",
+  "schoolSitesJsonFileName": "Sked_school_sites.json",
   "@schoolSitesJsonFileName": {},
   "schoolHtmlImportEntry": "Importar pegando el contenido de la página del horario",
   "@schoolHtmlImportEntry": {},

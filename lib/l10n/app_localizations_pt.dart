@@ -9,7 +9,7 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
-  String get appTitle => 'KeSchedule';
+  String get appTitle => 'Sked';
 
   @override
   String weekLabel(int week) {
@@ -711,14 +711,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'O KeSchedule é uma ferramenta de horários com foco local. Os horários, conjuntos de períodos e configurações de sites escolares são armazenados apenas no seu dispositivo ou navegador e nunca são enviados automaticamente. O app só processa dados quando você aciona explicitamente ações como importar, analisar páginas web, compartilhar ou abrir links externos. A política de privacidade completa está disponível online.';
+      'O Sked é uma ferramenta de horários com foco local. Os horários, conjuntos de períodos e configurações de sites escolares são armazenados apenas no seu dispositivo ou navegador e nunca são enviados automaticamente. O app só processa dados quando você aciona explicitamente ações como importar, analisar páginas web, compartilhar ou abrir links externos. A política de privacidade completa está disponível online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Armazenamento local';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      'Os dados do horário e as configurações relacionadas são armazenados em um arquivo local chamado KeSchedule_data.json dentro do diretório de documentos do app. A configuração editável de sites escolares é armazenada separadamente em KeSchedule_school_sites.json. As configurações personalizadas do analisador de horários, incluindo qualquer URL base personalizada, chave de API e modelo selecionado, também são armazenadas localmente nos mesmos dados do app e não são protegidas por um cofre de credenciais do sistema. Quando usado em um navegador, os mesmos tipos de dados são armazenados no armazenamento do navegador. O app não envia automaticamente esses dados locais para um servidor controlado pelo desenvolvedor.';
+      'Os dados do horário e as configurações relacionadas são armazenados em um arquivo local chamado Sked_data.json dentro do diretório de documentos do app. A configuração editável de sites escolares é armazenada separadamente em Sked_school_sites.json. As configurações personalizadas do analisador de horários, incluindo qualquer URL base personalizada, chave de API e modelo selecionado, também são armazenadas localmente nos mesmos dados do app e não são protegidas por um cofre de credenciais do sistema. Quando usado em um navegador, os mesmos tipos de dados são armazenados no armazenamento do navegador. O app não envia automaticamente esses dados locais para um servidor controlado pelo desenvolvedor.';
 
   @override
   String get privacyPolicyImportExportTitle => 'Importação e exportação';
@@ -746,7 +746,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'O app não exige uma conta do KeSchedule e não ativa análise, identificadores de publicidade nem backup em nuvem. Ele também não fornece um campo dedicado para coletar senhas de contas escolares. Se você entrar em um site escolar dentro do app, essa interação acontece na página escolar que você abriu.';
+      'O app não exige uma conta do Sked e não ativa análise, identificadores de publicidade nem backup em nuvem. Ele também não fornece um campo dedicado para coletar senhas de contas escolares. Se você entrar em um site escolar dentro do app, essa interação acontece na página escolar que você abriu.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Análise de página web';
@@ -839,7 +839,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Preencha primeiro o nome da escola e a URL de login.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry =>

@@ -1,6 +1,6 @@
 <div align="center">
 
-# KeSchedule
+# Sked
 ### A Flutter timetable app
 
 <a href="README.md">中文</a>
@@ -17,7 +17,7 @@ English
 </div>
 
 <p align="center">
-  <a href="https://play.google.com/store/apps/details?id=com.mashiro.classmate">
+  <a href="https://play.google.com/store/apps/details?id=com.mashiro.sked">
     <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="100">
   </a>
   <br>

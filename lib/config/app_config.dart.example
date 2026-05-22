@@ -8,7 +8,7 @@ class AppConfig {
   );
 
   static const updateVersionUrl = String.fromEnvironment(
-    'KeSchedule_UPDATE_VERSION_URL',
+    'SKED_UPDATE_VERSION_URL',
     defaultValue: '', //更新文档接口，参数version（v1.6.1）、updateContent
   );
 

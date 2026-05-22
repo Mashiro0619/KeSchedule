@@ -1,4 +1,4 @@
-package com.mashiro.classmate
+package com.mashiro.sked
 
 import io.flutter.embedding.android.FlutterActivity
 

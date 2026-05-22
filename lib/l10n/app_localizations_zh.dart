@@ -9,7 +9,7 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => 'KeSchedule';
+  String get appTitle => 'Sked';
 
   @override
   String weekLabel(int week) {
@@ -670,14 +670,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule 为本地优先的课程表工具。课表数据、节次时间集和学校站点配置仅保存在你的设备或浏览器本地，不会自动上传。应用仅在你主动触发导入、网页解析、分享或打开外部链接等操作时才会处理对应内容。完整隐私政策可在线查看。';
+      'Sked 为本地优先的课程表工具。课表数据、节次时间集和学校站点配置仅保存在你的设备或浏览器本地，不会自动上传。应用仅在你主动触发导入、网页解析、分享或打开外部链接等操作时才会处理对应内容。完整隐私政策可在线查看。';
 
   @override
   String get privacyPolicyLocalStorageTitle => '本地存储';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      '课表数据和相关设置会保存在应用文档目录中的本地文件 KeSchedule_data.json，可编辑的学校站点配置会单独保存在 KeSchedule_school_sites.json。自定义课表解析设置中填写的 Base URL、API 密钥和所选模型也会随同应用数据保存在本地，当前实现不会使用系统安全凭据库进行保护。若在浏览器中使用，同类数据会保存在浏览器本地存储中。应用不会自动把这些本地数据上传到开发者控制的服务器。';
+      '课表数据和相关设置会保存在应用文档目录中的本地文件 Sked_data.json，可编辑的学校站点配置会单独保存在 Sked_school_sites.json。自定义课表解析设置中填写的 Base URL、API 密钥和所选模型也会随同应用数据保存在本地，当前实现不会使用系统安全凭据库进行保护。若在浏览器中使用，同类数据会保存在浏览器本地存储中。应用不会自动把这些本地数据上传到开发者控制的服务器。';
 
   @override
   String get privacyPolicyImportExportTitle => '导入与导出';
@@ -705,7 +705,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      '应用不要求你注册 KeSchedule 账号，也不会启用分析统计、广告标识符或云端备份。应用本身也没有专门用于采集学校账号密码的输入字段；如果你在应用内打开的学校网页中登录，该交互发生在你访问的学校页面内。';
+      '应用不要求你注册 Sked 账号，也不会启用分析统计、广告标识符或云端备份。应用本身也没有专门用于采集学校账号密码的输入字段；如果你在应用内打开的学校网页中登录，该交互发生在你访问的学校页面内。';
 
   @override
   String get privacyPolicyFutureFeatureTitle => '网页解析';
@@ -794,7 +794,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get schoolSitesFormInvalid => '请完整填写学校名称和登录页链接。';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry => '粘贴课程表页面内容导入';
@@ -1148,7 +1148,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   AppLocalizationsZhHant() : super('zh_Hant');
 
   @override
-  String get appTitle => 'KeSchedule';
+  String get appTitle => 'Sked';
 
   @override
   String weekLabel(int week) {
@@ -1809,14 +1809,14 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule 為本地優先的課程表工具。課表資料、節次時間集和學校站點設定僅保存在你的裝置或瀏覽器本機，不會自動上傳。應用僅在你主動觸發匯入、網頁解析、分享或開啟外部連結等操作時才會處理對應內容。完整隱私政策可於線上查看。';
+      'Sked 為本地優先的課程表工具。課表資料、節次時間集和學校站點設定僅保存在你的裝置或瀏覽器本機，不會自動上傳。應用僅在你主動觸發匯入、網頁解析、分享或開啟外部連結等操作時才會處理對應內容。完整隱私政策可於線上查看。';
 
   @override
   String get privacyPolicyLocalStorageTitle => '本機儲存';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      '課表資料和相關設定會儲存在應用文件目錄中的本機檔案 KeSchedule_data.json，可編輯的學校站點設定會單獨儲存在 KeSchedule_school_sites.json。自訂課表解析設定中填寫的 Base URL、API 金鑰和所選模型也會隨同應用資料儲存在本機，目前實作不會使用系統安全憑證庫進行保護。若在瀏覽器中使用，同類資料會儲存在瀏覽器本機儲存中。應用不會自動把這些本機資料上傳到開發者控制的伺服器。';
+      '課表資料和相關設定會儲存在應用文件目錄中的本機檔案 Sked_data.json，可編輯的學校站點設定會單獨儲存在 Sked_school_sites.json。自訂課表解析設定中填寫的 Base URL、API 金鑰和所選模型也會隨同應用資料儲存在本機，目前實作不會使用系統安全憑證庫進行保護。若在瀏覽器中使用，同類資料會儲存在瀏覽器本機儲存中。應用不會自動把這些本機資料上傳到開發者控制的伺服器。';
 
   @override
   String get privacyPolicyImportExportTitle => '匯入與匯出';
@@ -1844,7 +1844,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      '應用不要求你註冊 KeSchedule 帳號，也不會啟用分析統計、廣告識別碼或雲端備份。應用本身也沒有專門用於收集學校帳號密碼的輸入欄位；如果你在應用內開啟的學校網頁中登入，該互動發生在你造訪的學校頁面內。';
+      '應用不要求你註冊 Sked 帳號，也不會啟用分析統計、廣告識別碼或雲端備份。應用本身也沒有專門用於收集學校帳號密碼的輸入欄位；如果你在應用內開啟的學校網頁中登入，該互動發生在你造訪的學校頁面內。';
 
   @override
   String get privacyPolicyFutureFeatureTitle => '網頁解析';
@@ -1933,7 +1933,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get schoolSitesFormInvalid => '請完整填寫學校名稱和登入頁連結。';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry => '貼上課程表頁面內容匯入';

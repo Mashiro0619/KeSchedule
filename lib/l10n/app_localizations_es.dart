@@ -9,7 +9,7 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
-  String get appTitle => 'KeSchedule';
+  String get appTitle => 'Sked';
 
   @override
   String weekLabel(int week) {
@@ -715,14 +715,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule es una herramienta de horarios que prioriza el almacenamiento local. Los horarios, conjuntos de periodos y configuración de sitios escolares se almacenan solo en tu dispositivo o navegador y nunca se suben automáticamente. La app solo procesa datos cuando activas explícitamente acciones como importar, analizar páginas web, compartir o abrir enlaces externos. La política de privacidad completa está disponible en línea.';
+      'Sked es una herramienta de horarios que prioriza el almacenamiento local. Los horarios, conjuntos de periodos y configuración de sitios escolares se almacenan solo en tu dispositivo o navegador y nunca se suben automáticamente. La app solo procesa datos cuando activas explícitamente acciones como importar, analizar páginas web, compartir o abrir enlaces externos. La política de privacidad completa está disponible en línea.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Almacenamiento local';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      'Los datos del horario y los ajustes relacionados se almacenan en un archivo local llamado KeSchedule_data.json dentro del directorio de documentos de la app. La configuración editable de sitios escolares se almacena por separado en KeSchedule_school_sites.json. Los ajustes personalizados del analizador de horarios, incluidos cualquier Base URL personalizada, API key y modelo seleccionado, también se almacenan localmente en los mismos datos de la app y no están protegidos por un almacén de credenciales del sistema. Cuando se usa en un navegador, el mismo tipo de datos se almacena en el almacenamiento del navegador. La app no sube automáticamente estos datos locales a un servidor controlado por el desarrollador.';
+      'Los datos del horario y los ajustes relacionados se almacenan en un archivo local llamado Sked_data.json dentro del directorio de documentos de la app. La configuración editable de sitios escolares se almacena por separado en Sked_school_sites.json. Los ajustes personalizados del analizador de horarios, incluidos cualquier Base URL personalizada, API key y modelo seleccionado, también se almacenan localmente en los mismos datos de la app y no están protegidos por un almacén de credenciales del sistema. Cuando se usa en un navegador, el mismo tipo de datos se almacena en el almacenamiento del navegador. La app no sube automáticamente estos datos locales a un servidor controlado por el desarrollador.';
 
   @override
   String get privacyPolicyImportExportTitle => 'Importación y exportación';
@@ -750,7 +750,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'La app no requiere una cuenta de KeSchedule y no habilita análisis, identificadores publicitarios ni copia de seguridad en la nube. Tampoco ofrece un campo dedicado para recopilar contraseñas de cuentas escolares. Si inicias sesión en un sitio web escolar dentro de la app, esa interacción ocurre en la página escolar que abriste.';
+      'La app no requiere una cuenta de Sked y no habilita análisis, identificadores publicitarios ni copia de seguridad en la nube. Tampoco ofrece un campo dedicado para recopilar contraseñas de cuentas escolares. Si inicias sesión en un sitio web escolar dentro de la app, esa interacción ocurre en la página escolar que abriste.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Análisis de páginas web';
@@ -844,7 +844,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Primero completa el nombre de la escuela y la URL de inicio de sesión.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry =>

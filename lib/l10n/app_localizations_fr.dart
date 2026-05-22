@@ -9,7 +9,7 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
-  String get appTitle => 'KeSchedule';
+  String get appTitle => 'Sked';
 
   @override
   String weekLabel(int week) {
@@ -719,14 +719,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule est un outil d\'emploi du temps qui privilégie le stockage local. Les emplois du temps, les jeux d\'horaires des périodes et la configuration des sites scolaires sont stockés uniquement sur votre appareil ou dans votre navigateur et ne sont jamais téléversés automatiquement. L\'application ne traite les données que lorsque vous déclenchez explicitement des actions comme l\'importation, l\'analyse de pages web, le partage ou l\'ouverture de liens externes. La politique de confidentialité complète est disponible en ligne.';
+      'Sked est un outil d\'emploi du temps qui privilégie le stockage local. Les emplois du temps, les jeux d\'horaires des périodes et la configuration des sites scolaires sont stockés uniquement sur votre appareil ou dans votre navigateur et ne sont jamais téléversés automatiquement. L\'application ne traite les données que lorsque vous déclenchez explicitement des actions comme l\'importation, l\'analyse de pages web, le partage ou l\'ouverture de liens externes. La politique de confidentialité complète est disponible en ligne.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Stockage local';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      'Les données d\'emploi du temps et les paramètres associés sont stockés dans un fichier local nommé KeSchedule_data.json dans le répertoire de documents de l\'application. La configuration modifiable des sites scolaires est stockée séparément dans KeSchedule_school_sites.json. Les paramètres personnalisés de l\'analyseur d\'emploi du temps, y compris toute Base URL personnalisée, API key et le modèle sélectionné, sont également stockés localement dans les mêmes données d\'application et ne sont pas protégés par un coffre-fort d\'identifiants système. Dans un navigateur, le même type de données est stocké dans le stockage du navigateur. L\'application ne téléverse pas automatiquement ces données locales vers un serveur contrôlé par le développeur.';
+      'Les données d\'emploi du temps et les paramètres associés sont stockés dans un fichier local nommé Sked_data.json dans le répertoire de documents de l\'application. La configuration modifiable des sites scolaires est stockée séparément dans Sked_school_sites.json. Les paramètres personnalisés de l\'analyseur d\'emploi du temps, y compris toute Base URL personnalisée, API key et le modèle sélectionné, sont également stockés localement dans les mêmes données d\'application et ne sont pas protégés par un coffre-fort d\'identifiants système. Dans un navigateur, le même type de données est stocké dans le stockage du navigateur. L\'application ne téléverse pas automatiquement ces données locales vers un serveur contrôlé par le développeur.';
 
   @override
   String get privacyPolicyImportExportTitle => 'Importation et exportation';
@@ -755,7 +755,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'L\'application n\'exige pas de compte KeSchedule et n\'active ni analytics, ni identifiants publicitaires, ni sauvegarde cloud. Elle ne fournit pas non plus de champ dédié à la collecte des mots de passe des comptes scolaires. Si vous vous connectez à un site scolaire dans l\'application, cette interaction se produit sur la page scolaire que vous avez ouverte.';
+      'L\'application n\'exige pas de compte Sked et n\'active ni analytics, ni identifiants publicitaires, ni sauvegarde cloud. Elle ne fournit pas non plus de champ dédié à la collecte des mots de passe des comptes scolaires. Si vous vous connectez à un site scolaire dans l\'application, cette interaction se produit sur la page scolaire que vous avez ouverte.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Analyse de pages web';
@@ -850,7 +850,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Renseignez d\'abord le nom de l\'établissement et l\'URL de connexion.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry =>

@@ -1,6 +1,6 @@
 {
   "@@locale": "zh_Hant",
-  "appTitle": "KeSchedule",
+  "appTitle": "Sked",
   "@appTitle": {},
   "weekLabel": "第 {week} 週",
   "@weekLabel": {
@@ -508,11 +508,11 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "KeSchedule 為本地優先的課程表工具。課表資料、節次時間集和學校站點設定僅保存在你的裝置或瀏覽器本機，不會自動上傳。應用僅在你主動觸發匯入、網頁解析、分享或開啟外部連結等操作時才會處理對應內容。完整隱私政策可於線上查看。",
+  "privacyPolicyIntro": "Sked 為本地優先的課程表工具。課表資料、節次時間集和學校站點設定僅保存在你的裝置或瀏覽器本機，不會自動上傳。應用僅在你主動觸發匯入、網頁解析、分享或開啟外部連結等操作時才會處理對應內容。完整隱私政策可於線上查看。",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "本機儲存",
   "@privacyPolicyLocalStorageTitle": {},
-  "privacyPolicyLocalStorageBody": "課表資料和相關設定會儲存在應用文件目錄中的本機檔案 KeSchedule_data.json，可編輯的學校站點設定會單獨儲存在 KeSchedule_school_sites.json。自訂課表解析設定中填寫的 Base URL、API 金鑰和所選模型也會隨同應用資料儲存在本機，目前實作不會使用系統安全憑證庫進行保護。若在瀏覽器中使用，同類資料會儲存在瀏覽器本機儲存中。應用不會自動把這些本機資料上傳到開發者控制的伺服器。",
+  "privacyPolicyLocalStorageBody": "課表資料和相關設定會儲存在應用文件目錄中的本機檔案 Sked_data.json，可編輯的學校站點設定會單獨儲存在 Sked_school_sites.json。自訂課表解析設定中填寫的 Base URL、API 金鑰和所選模型也會隨同應用資料儲存在本機，目前實作不會使用系統安全憑證庫進行保護。若在瀏覽器中使用，同類資料會儲存在瀏覽器本機儲存中。應用不會自動把這些本機資料上傳到開發者控制的伺服器。",
   "@privacyPolicyLocalStorageBody": {},
   "privacyPolicyImportExportTitle": "匯入與匯出",
   "@privacyPolicyImportExportTitle": {},
@@ -528,7 +528,7 @@
   "@privacyPolicyExternalLinksBody": {},
   "privacyPolicyNoCollectionTitle": "不會收集的內容",
   "@privacyPolicyNoCollectionTitle": {},
-  "privacyPolicyNoCollectionBody": "應用不要求你註冊 KeSchedule 帳號，也不會啟用分析統計、廣告識別碼或雲端備份。應用本身也沒有專門用於收集學校帳號密碼的輸入欄位；如果你在應用內開啟的學校網頁中登入，該互動發生在你造訪的學校頁面內。",
+  "privacyPolicyNoCollectionBody": "應用不要求你註冊 Sked 帳號，也不會啟用分析統計、廣告識別碼或雲端備份。應用本身也沒有專門用於收集學校帳號密碼的輸入欄位；如果你在應用內開啟的學校網頁中登入，該互動發生在你造訪的學校頁面內。",
   "@privacyPolicyNoCollectionBody": {},
   "privacyPolicyFutureFeatureTitle": "網頁解析",
   "@privacyPolicyFutureFeatureTitle": {},
@@ -590,7 +590,7 @@
   },
   "schoolSitesFormInvalid": "請完整填寫學校名稱和登入頁連結。",
   "@schoolSitesFormInvalid": {},
-  "schoolSitesJsonFileName": "KeSchedule_school_sites.json",
+  "schoolSitesJsonFileName": "Sked_school_sites.json",
   "@schoolSitesJsonFileName": {},
   "schoolHtmlImportEntry": "貼上課程表頁面內容匯入",
   "@schoolHtmlImportEntry": {},

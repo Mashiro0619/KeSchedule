@@ -9,7 +9,7 @@ class AppLocalizationsKo extends AppLocalizations {
   AppLocalizationsKo([String locale = 'ko']) : super(locale);
 
   @override
-  String get appTitle => 'KeSchedule';
+  String get appTitle => 'Sked';
 
   @override
   String weekLabel(int week) {
@@ -686,14 +686,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule는 로컬 우선 시간표 도구입니다. 시간표, 교시 시간 세트, 학교 사이트 설정은 기기 또는 브라우저에만 저장되며 자동으로 업로드되지 않습니다. 앱은 가져오기, 웹페이지 파싱, 공유, 외부 링크 열기와 같은 작업을 사용자가 명시적으로 실행할 때만 데이터를 처리합니다. 전체 개인정보 처리방침은 온라인에서 확인할 수 있습니다.';
+      'Sked는 로컬 우선 시간표 도구입니다. 시간표, 교시 시간 세트, 학교 사이트 설정은 기기 또는 브라우저에만 저장되며 자동으로 업로드되지 않습니다. 앱은 가져오기, 웹페이지 파싱, 공유, 외부 링크 열기와 같은 작업을 사용자가 명시적으로 실행할 때만 데이터를 처리합니다. 전체 개인정보 처리방침은 온라인에서 확인할 수 있습니다.';
 
   @override
   String get privacyPolicyLocalStorageTitle => '로컬 저장소';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      '시간표 데이터와 관련 설정은 앱 문서 디렉터리 안의 KeSchedule_data.json이라는 로컬 파일에 저장됩니다. 수정 가능한 학교 사이트 설정은 KeSchedule_school_sites.json에 별도로 저장됩니다. 사용자 지정 시간표 파서 설정(사용자 지정 Base URL, API key, 선택한 모델 포함)도 같은 앱 데이터에 로컬로 저장되며 시스템 자격 증명 저장소로 보호되지 않습니다. 브라우저에서 사용할 경우 동일한 종류의 데이터가 브라우저 저장소에 저장됩니다. 앱은 이 로컬 데이터를 개발자가 제어하는 서버로 자동 업로드하지 않습니다.';
+      '시간표 데이터와 관련 설정은 앱 문서 디렉터리 안의 Sked_data.json이라는 로컬 파일에 저장됩니다. 수정 가능한 학교 사이트 설정은 Sked_school_sites.json에 별도로 저장됩니다. 사용자 지정 시간표 파서 설정(사용자 지정 Base URL, API key, 선택한 모델 포함)도 같은 앱 데이터에 로컬로 저장되며 시스템 자격 증명 저장소로 보호되지 않습니다. 브라우저에서 사용할 경우 동일한 종류의 데이터가 브라우저 저장소에 저장됩니다. 앱은 이 로컬 데이터를 개발자가 제어하는 서버로 자동 업로드하지 않습니다.';
 
   @override
   String get privacyPolicyImportExportTitle => '가져오기 및 내보내기';
@@ -721,7 +721,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      '앱은 KeSchedule 계정을 요구하지 않으며, 분석, 광고 식별자, 클라우드 백업을 활성화하지 않습니다. 또한 학교 계정 비밀번호를 수집하기 위한 전용 입력란도 제공하지 않습니다. 앱 내부에서 학교 사이트에 로그인하는 경우, 그 상호작용은 사용자가 연 학교 페이지에서 이루어집니다.';
+      '앱은 Sked 계정을 요구하지 않으며, 분석, 광고 식별자, 클라우드 백업을 활성화하지 않습니다. 또한 학교 계정 비밀번호를 수집하기 위한 전용 입력란도 제공하지 않습니다. 앱 내부에서 학교 사이트에 로그인하는 경우, 그 상호작용은 사용자가 연 학교 페이지에서 이루어집니다.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => '웹페이지 파싱';
@@ -811,7 +811,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get schoolSitesFormInvalid => '먼저 학교 이름과 로그인 URL을 입력하세요.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry => '시간표 페이지 내용을 붙여넣어 가져오기';

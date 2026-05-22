@@ -1,6 +1,6 @@
 {
   "@@locale": "nl",
-  "appTitle": "KeSchedule",
+  "appTitle": "Sked",
   "@appTitle": {},
   "weekLabel": "Week {week}",
   "@weekLabel": {
@@ -506,11 +506,11 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "KeSchedule is een lokaal-eerst roosterhulpmiddel. Roosters, periodetijdsets en schoolwebsiteconfiguratie worden alleen op je apparaat of in je browser opgeslagen en worden nooit automatisch geüpload. De app verwerkt alleen gegevens wanneer je expliciet acties start zoals importeren, webpagina-analyse, delen of het openen van externe links. Het volledige privacybeleid is online beschikbaar.",
+  "privacyPolicyIntro": "Sked is een lokaal-eerst roosterhulpmiddel. Roosters, periodetijdsets en schoolwebsiteconfiguratie worden alleen op je apparaat of in je browser opgeslagen en worden nooit automatisch geüpload. De app verwerkt alleen gegevens wanneer je expliciet acties start zoals importeren, webpagina-analyse, delen of het openen van externe links. Het volledige privacybeleid is online beschikbaar.",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "Local storage",
   "@privacyPolicyLocalStorageTitle": {},
-  "privacyPolicyLocalStorageBody": "Timetable data and related settings are stored in a local file named KeSchedule_data.json inside the app documents directory. Editable school-site configuration is stored separately in KeSchedule_school_sites.json. Custom timetable parser settings, including any custom Base URL, API key, and selected model, are also stored locally in the same app data and are not protected by a system credential vault. When used in a browser, the same kinds of data are stored in browser storage. The app does not automatically upload this local data to a developer-controlled server.",
+  "privacyPolicyLocalStorageBody": "Timetable data and related settings are stored in a local file named Sked_data.json inside the app documents directory. Editable school-site configuration is stored separately in Sked_school_sites.json. Custom timetable parser settings, including any custom Base URL, API key, and selected model, are also stored locally in the same app data and are not protected by a system credential vault. When used in a browser, the same kinds of data are stored in browser storage. The app does not automatically upload this local data to a developer-controlled server.",
   "@privacyPolicyLocalStorageBody": {},
   "privacyPolicyImportExportTitle": "Import and export",
   "@privacyPolicyImportExportTitle": {},
@@ -526,7 +526,7 @@
   "@privacyPolicyExternalLinksBody": {},
   "privacyPolicyNoCollectionTitle": "What the app does not collect",
   "@privacyPolicyNoCollectionTitle": {},
-  "privacyPolicyNoCollectionBody": "The app does not require a KeSchedule account and does not enable analytics, advertising identifiers, or cloud backup. It also does not provide a dedicated field for collecting school account passwords. If you sign in to a school website inside the app, that interaction happens on the school page you opened.",
+  "privacyPolicyNoCollectionBody": "The app does not require a Sked account and does not enable analytics, advertising identifiers, or cloud backup. It also does not provide a dedicated field for collecting school account passwords. If you sign in to a school website inside the app, that interaction happens on the school page you opened.",
   "@privacyPolicyNoCollectionBody": {},
   "privacyPolicyFutureFeatureTitle": "Webpage parsing",
   "@privacyPolicyFutureFeatureTitle": {},
@@ -588,7 +588,7 @@
   },
   "schoolSitesFormInvalid": "Fill in the school name and login URL first.",
   "@schoolSitesFormInvalid": {},
-  "schoolSitesJsonFileName": "KeSchedule_school_sites.json",
+  "schoolSitesJsonFileName": "Sked_school_sites.json",
   "@schoolSitesJsonFileName": {},
   "schoolHtmlImportEntry": "Import by pasting timetable page content",
   "@schoolHtmlImportEntry": {},

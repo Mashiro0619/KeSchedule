@@ -699,14 +699,14 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule er et lokalt-først skemaværktøj. Skemaer, tidssæt og skolewebstedskonfiguration gemmes kun på din enhed eller i din browser og uploades aldrig automatisk. Appen behandler kun data, når du udtrykkeligt starter handlinger som import, websideanalyse, deling eller åbning af eksterne links. Den fulde fortrolighedspolitik er tilgængelig online.';
+      'Sked er et lokalt-først skemaværktøj. Skemaer, tidssæt og skolewebstedskonfiguration gemmes kun på din enhed eller i din browser og uploades aldrig automatisk. Appen behandler kun data, når du udtrykkeligt starter handlinger som import, websideanalyse, deling eller åbning af eksterne links. Den fulde fortrolighedspolitik er tilgængelig online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lokal opbevaring';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      'Tidsplan data og relaterede indstillinger gemmes i en lokal fil ved navn KeSchedule_data.json inde i app dokumenter mappe. Redigerbar skole-site konfiguration gemmes separat i KeSchedule_school_sites.json. Tilpassede tidsplan parser indstillinger, herunder eventuelle tilpassede Base URL, API-nøgle og valgte model, gemmes også lokalt i de samme app data og er ikke beskyttet af en systemlogin vault. Når de bruges i en browser, gemmes de samme typer data i browserlagringen. Appen uploader ikke automatisk disse lokale data til en udviklerkontrolleret server.';
+      'Tidsplan data og relaterede indstillinger gemmes i en lokal fil ved navn Sked_data.json inde i app dokumenter mappe. Redigerbar skole-site konfiguration gemmes separat i Sked_school_sites.json. Tilpassede tidsplan parser indstillinger, herunder eventuelle tilpassede Base URL, API-nøgle og valgte model, gemmes også lokalt i de samme app data og er ikke beskyttet af en systemlogin vault. Når de bruges i en browser, gemmes de samme typer data i browserlagringen. Appen uploader ikke automatisk disse lokale data til en udviklerkontrolleret server.';
 
   @override
   String get privacyPolicyImportExportTitle => 'Import og eksport';
@@ -734,7 +734,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'Appen kræver ikke en KeSchedule-konto og aktiverer ikke analyse, reklame-identifikatorer eller sikkerhedskopiering i skyen. Det giver heller ikke et dedikeret felt til indsamling af skolekonto adgangskoder. Hvis du logger på en skole hjemmeside i appen, sker denne interaktion på den skole side, du åbnede.';
+      'Appen kræver ikke en Sked-konto og aktiverer ikke analyse, reklame-identifikatorer eller sikkerhedskopiering i skyen. Det giver heller ikke et dedikeret felt til indsamling af skolekonto adgangskoder. Hvis du logger på en skole hjemmeside i appen, sker denne interaktion på den skole side, du åbnede.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Analysering af websider';
@@ -827,7 +827,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Udfyld skolens navn og login URL først.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry =>

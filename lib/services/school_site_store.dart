@@ -8,8 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SchoolSiteStore {
   const SchoolSiteStore();
 
-  static const _storageKey = 'KeSchedule_school_sites_json';
-  static const _fileName = 'KeSchedule_school_sites.json';
+  static const _storageKey = 'Sked_school_sites_json';
+  static const _fileName = 'Sked_school_sites.json';
 
   Future<String?> load() async {
     if (kIsWeb) {

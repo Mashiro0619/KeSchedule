@@ -704,14 +704,14 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule là công cụ thời khóa biểu ưu tiên lưu trữ cục bộ. Thời khóa biểu, bộ thời gian và cấu hình trang web trường học chỉ được lưu trên thiết bị hoặc trình duyệt của bạn và không bao giờ được tự động tải lên. Ứng dụng chỉ xử lý dữ liệu khi bạn chủ động kích hoạt các thao tác như nhập, phân tích trang web, chia sẻ hoặc mở liên kết bên ngoài. Chính sách bảo mật đầy đủ có sẵn trực tuyến.';
+      'Sked là công cụ thời khóa biểu ưu tiên lưu trữ cục bộ. Thời khóa biểu, bộ thời gian và cấu hình trang web trường học chỉ được lưu trên thiết bị hoặc trình duyệt của bạn và không bao giờ được tự động tải lên. Ứng dụng chỉ xử lý dữ liệu khi bạn chủ động kích hoạt các thao tác như nhập, phân tích trang web, chia sẻ hoặc mở liên kết bên ngoài. Chính sách bảo mật đầy đủ có sẵn trực tuyến.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lưu trữ địa phương';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      'Dữ liệu lịch trình và các cài đặt liên quan được lưu trữ trong một tệp cục bộ có tên KeSchedule_data.json bên trong thư mục tài liệu ứng dụng. Cấu hình trang web trường có thể chỉnh sửa được lưu trữ riêng biệt trong KeSchedule_school_sites.json. Cài đặt phân tích lịch trình tùy chỉnh, bao gồm bất kỳ URL cơ sở tùy chỉnh nào, khóa API và mô hình được chọn, cũng được lưu trữ tại địa phương trong cùng dữ liệu ứng dụng và không được bảo vệ bởi kho thông tin hệ thống. Khi được sử dụng trong trình duyệt, cùng một loại dữ liệu được lưu trữ trong lưu trữ trình duyệt. Ứng dụng không tự động tải dữ liệu cục bộ này lên máy chủ do nhà phát triển kiểm soát.';
+      'Dữ liệu lịch trình và các cài đặt liên quan được lưu trữ trong một tệp cục bộ có tên Sked_data.json bên trong thư mục tài liệu ứng dụng. Cấu hình trang web trường có thể chỉnh sửa được lưu trữ riêng biệt trong Sked_school_sites.json. Cài đặt phân tích lịch trình tùy chỉnh, bao gồm bất kỳ URL cơ sở tùy chỉnh nào, khóa API và mô hình được chọn, cũng được lưu trữ tại địa phương trong cùng dữ liệu ứng dụng và không được bảo vệ bởi kho thông tin hệ thống. Khi được sử dụng trong trình duyệt, cùng một loại dữ liệu được lưu trữ trong lưu trữ trình duyệt. Ứng dụng không tự động tải dữ liệu cục bộ này lên máy chủ do nhà phát triển kiểm soát.';
 
   @override
   String get privacyPolicyImportExportTitle => 'Nhập khẩu và xuất khẩu';
@@ -740,7 +740,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'Ứng dụng không yêu cầu tài khoản KeSchedule và không cho phép phân tích, nhận dạng quảng cáo hoặc sao lưu đám mây. Nó cũng không cung cấp một trường chuyên dụng để thu thập mật khẩu tài khoản trường học. Nếu bạn đăng nhập vào trang web của trường bên trong ứng dụng, tương tác đó xảy ra trên trang trường bạn đã mở.';
+      'Ứng dụng không yêu cầu tài khoản Sked và không cho phép phân tích, nhận dạng quảng cáo hoặc sao lưu đám mây. Nó cũng không cung cấp một trường chuyên dụng để thu thập mật khẩu tài khoản trường học. Nếu bạn đăng nhập vào trang web của trường bên trong ứng dụng, tương tác đó xảy ra trên trang trường bạn đã mở.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Phân tích trang web';
@@ -833,7 +833,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Điền vào tên trường và URL đăng nhập trước.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry =>

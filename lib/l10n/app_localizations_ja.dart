@@ -9,7 +9,7 @@ class AppLocalizationsJa extends AppLocalizations {
   AppLocalizationsJa([String locale = 'ja']) : super(locale);
 
   @override
-  String get appTitle => 'KeSchedule';
+  String get appTitle => 'Sked';
 
   @override
   String weekLabel(int week) {
@@ -681,14 +681,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule はローカル優先の時間割ツールです。時間割、時限時間セット、学校サイト設定はお使いの端末またはブラウザ内にのみ保存され、自動的にアップロードされることはありません。アプリは、インポート、ウェブページ解析、共有、外部リンクの起動など、あなたが明示的に操作を行った場合にのみデータを処理します。完全なプライバシーポリシーはオンラインで確認できます。';
+      'Sked はローカル優先の時間割ツールです。時間割、時限時間セット、学校サイト設定はお使いの端末またはブラウザ内にのみ保存され、自動的にアップロードされることはありません。アプリは、インポート、ウェブページ解析、共有、外部リンクの起動など、あなたが明示的に操作を行った場合にのみデータを処理します。完全なプライバシーポリシーはオンラインで確認できます。';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'ローカル保存';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      '時間割データと関連設定は、アプリのドキュメントディレクトリ内の KeSchedule_data.json というローカルファイルに保存されます。編集可能な学校サイト設定は KeSchedule_school_sites.json に別保存されます。カスタム時間割パーサー設定（カスタム Base URL、API key、選択したモデルを含む）も同じアプリデータ内にローカル保存され、システムの資格情報保管庫では保護されません。ブラウザで使用する場合も、同種のデータはブラウザストレージに保存されます。アプリがこのローカルデータを開発者管理のサーバーへ自動アップロードすることはありません。';
+      '時間割データと関連設定は、アプリのドキュメントディレクトリ内の Sked_data.json というローカルファイルに保存されます。編集可能な学校サイト設定は Sked_school_sites.json に別保存されます。カスタム時間割パーサー設定（カスタム Base URL、API key、選択したモデルを含む）も同じアプリデータ内にローカル保存され、システムの資格情報保管庫では保護されません。ブラウザで使用する場合も、同種のデータはブラウザストレージに保存されます。アプリがこのローカルデータを開発者管理のサーバーへ自動アップロードすることはありません。';
 
   @override
   String get privacyPolicyImportExportTitle => 'インポートとエクスポート';
@@ -716,7 +716,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'アプリは KeSchedule アカウントを必要とせず、分析、広告識別子、クラウドバックアップも有効にしません。また、学校アカウントのパスワードを収集する専用入力欄も提供しません。アプリ内で学校サイトにログインする場合、その操作はあなたが開いた学校ページ上で行われます。';
+      'アプリは Sked アカウントを必要とせず、分析、広告識別子、クラウドバックアップも有効にしません。また、学校アカウントのパスワードを収集する専用入力欄も提供しません。アプリ内で学校サイトにログインする場合、その操作はあなたが開いた学校ページ上で行われます。';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Webページ解析';
@@ -806,7 +806,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get schoolSitesFormInvalid => '先に学校名とログインURLを入力してください。';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry => '時間割ページ内容を貼り付けてインポート';

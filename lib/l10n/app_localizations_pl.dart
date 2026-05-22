@@ -709,14 +709,14 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule to narzędzie do planów lekcji działające lokalnie. Plany lekcji, zestawy okresów i konfiguracja strony szkoły są przechowywane tylko na Twoim urządzeniu lub w przeglądarce i nigdy nie są automatycznie przesyłane. Aplikacja przetwarza dane tylko wtedy, gdy jawnie uruchamiasz działania takie jak import, analiza stron internetowych, udostępnianie lub otwieranie zewnętrznych linków. Pełna polityka prywatności jest dostępna online.';
+      'Sked to narzędzie do planów lekcji działające lokalnie. Plany lekcji, zestawy okresów i konfiguracja strony szkoły są przechowywane tylko na Twoim urządzeniu lub w przeglądarce i nigdy nie są automatycznie przesyłane. Aplikacja przetwarza dane tylko wtedy, gdy jawnie uruchamiasz działania takie jak import, analiza stron internetowych, udostępnianie lub otwieranie zewnętrznych linków. Pełna polityka prywatności jest dostępna online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lokalne przechowywanie';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      'Dane harmonogramu i powiązane z nim ustawienia są przechowywane w lokalnym pliku o nazwie KeSchedule_data.json w katalogu dokumentów aplikacji. Edytowalna konfiguracja strony szkolnej jest przechowywana oddzielnie w KeSchedule_school_sites.json. Niestandardowe ustawienia analizera harmonogramu, w tym dowolny niestandardowy adres URL bazowy, klucz API i wybrany model, są również przechowywane lokalnie w tych samych danych aplikacji i nie są chronione przez skrzydło uwierzytelniające systemu. W przypadku używania w przeglądarce te same rodzaje danych są przechowywane w magazynie przeglądarki. Aplikacja nie przesyła tych danych lokalnych automatycznie na serwer kontrolowany przez programistę.';
+      'Dane harmonogramu i powiązane z nim ustawienia są przechowywane w lokalnym pliku o nazwie Sked_data.json w katalogu dokumentów aplikacji. Edytowalna konfiguracja strony szkolnej jest przechowywana oddzielnie w Sked_school_sites.json. Niestandardowe ustawienia analizera harmonogramu, w tym dowolny niestandardowy adres URL bazowy, klucz API i wybrany model, są również przechowywane lokalnie w tych samych danych aplikacji i nie są chronione przez skrzydło uwierzytelniające systemu. W przypadku używania w przeglądarce te same rodzaje danych są przechowywane w magazynie przeglądarki. Aplikacja nie przesyła tych danych lokalnych automatycznie na serwer kontrolowany przez programistę.';
 
   @override
   String get privacyPolicyImportExportTitle => 'Import i eksport';
@@ -744,7 +744,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'Aplikacja nie wymaga konta KeSchedule i nie umożliwia analizy, identyfikatorów reklamowych ani tworzenia kopii zapasowych w chmurze. Nie zapewnia również dedykowanego pola do zbierania haseł do kont szkolnych. Jeśli zalogujesz się do strony internetowej szkoły w aplikacji, ta interakcja odbywa się na stronie szkoły, którą otworzyłeś.';
+      'Aplikacja nie wymaga konta Sked i nie umożliwia analizy, identyfikatorów reklamowych ani tworzenia kopii zapasowych w chmurze. Nie zapewnia również dedykowanego pola do zbierania haseł do kont szkolnych. Jeśli zalogujesz się do strony internetowej szkoły w aplikacji, ta interakcja odbywa się na stronie szkoły, którą otworzyłeś.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Analiza strony internetowej';
@@ -837,7 +837,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Najpierw wpisz nazwę szkoły i adres URL logowania.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry =>

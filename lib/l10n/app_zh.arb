@@ -1,6 +1,6 @@
 {
   "@@locale": "zh",
-  "appTitle": "KeSchedule",
+  "appTitle": "Sked",
   "@appTitle": {},
   "weekLabel": "第 {week} 周",
   "@weekLabel": {
@@ -506,11 +506,11 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "KeSchedule 为本地优先的课程表工具。课表数据、节次时间集和学校站点配置仅保存在你的设备或浏览器本地，不会自动上传。应用仅在你主动触发导入、网页解析、分享或打开外部链接等操作时才会处理对应内容。完整隐私政策可在线查看。",
+  "privacyPolicyIntro": "Sked 为本地优先的课程表工具。课表数据、节次时间集和学校站点配置仅保存在你的设备或浏览器本地，不会自动上传。应用仅在你主动触发导入、网页解析、分享或打开外部链接等操作时才会处理对应内容。完整隐私政策可在线查看。",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "本地存储",
   "@privacyPolicyLocalStorageTitle": {},
-  "privacyPolicyLocalStorageBody": "课表数据和相关设置会保存在应用文档目录中的本地文件 KeSchedule_data.json，可编辑的学校站点配置会单独保存在 KeSchedule_school_sites.json。自定义课表解析设置中填写的 Base URL、API 密钥和所选模型也会随同应用数据保存在本地，当前实现不会使用系统安全凭据库进行保护。若在浏览器中使用，同类数据会保存在浏览器本地存储中。应用不会自动把这些本地数据上传到开发者控制的服务器。",
+  "privacyPolicyLocalStorageBody": "课表数据和相关设置会保存在应用文档目录中的本地文件 Sked_data.json，可编辑的学校站点配置会单独保存在 Sked_school_sites.json。自定义课表解析设置中填写的 Base URL、API 密钥和所选模型也会随同应用数据保存在本地，当前实现不会使用系统安全凭据库进行保护。若在浏览器中使用，同类数据会保存在浏览器本地存储中。应用不会自动把这些本地数据上传到开发者控制的服务器。",
   "@privacyPolicyLocalStorageBody": {},
   "privacyPolicyImportExportTitle": "导入与导出",
   "@privacyPolicyImportExportTitle": {},
@@ -526,7 +526,7 @@
   "@privacyPolicyExternalLinksBody": {},
   "privacyPolicyNoCollectionTitle": "不会收集的内容",
   "@privacyPolicyNoCollectionTitle": {},
-  "privacyPolicyNoCollectionBody": "应用不要求你注册 KeSchedule 账号，也不会启用分析统计、广告标识符或云端备份。应用本身也没有专门用于采集学校账号密码的输入字段；如果你在应用内打开的学校网页中登录，该交互发生在你访问的学校页面内。",
+  "privacyPolicyNoCollectionBody": "应用不要求你注册 Sked 账号，也不会启用分析统计、广告标识符或云端备份。应用本身也没有专门用于采集学校账号密码的输入字段；如果你在应用内打开的学校网页中登录，该交互发生在你访问的学校页面内。",
   "@privacyPolicyNoCollectionBody": {},
   "privacyPolicyFutureFeatureTitle": "网页解析",
   "@privacyPolicyFutureFeatureTitle": {},
@@ -588,7 +588,7 @@
   },
   "schoolSitesFormInvalid": "请完整填写学校名称和登录页链接。",
   "@schoolSitesFormInvalid": {},
-  "schoolSitesJsonFileName": "KeSchedule_school_sites.json",
+  "schoolSitesJsonFileName": "Sked_school_sites.json",
   "@schoolSitesJsonFileName": {},
   "schoolHtmlImportEntry": "粘贴课程表页面内容导入",
   "@schoolHtmlImportEntry": {},

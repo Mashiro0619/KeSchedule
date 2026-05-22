@@ -35,9 +35,9 @@ enum _UpdateAction { github, website, googlePlay, quark, ignore, cancel }
 class AppUpdateCoordinator {
   static const _updateService = UpdateService();
   static const _googlePlayDeepLink =
-      'market://details?id=com.mashiro.classmate';
+      'market://details?id=com.mashiro.sked';
   static const _googlePlayUrl =
-      'https://play.google.com/store/apps/details?id=com.mashiro.classmate';
+      'https://play.google.com/store/apps/details?id=com.mashiro.sked';
   static const _quarkPanUrl = 'https://pan.quark.cn/s/420966ed21ec';
 
   static Future<void> checkForUpdates(
@@ -546,7 +546,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _openLicensesPage() {
-    showLicensePage(context: context, applicationName: 'KeSchedule');
+    showLicensePage(context: context, applicationName: 'Sked');
   }
 
   String _buildUpdateSubtitle(
@@ -812,7 +812,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
     try {
       final content = provider.exportSelectedTimetablesJson(selectedIds);
-      const fileName = 'KeSchedule_timetables.json';
+      const fileName = 'Sked_timetables.json';
       if (share) {
         await _shareJson(fileName, content);
       } else {

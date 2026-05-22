@@ -7,7 +7,7 @@ TimetableStorage createTimetableStorage() => _BrowserTimetableStorage();
 
 /// Web 没有稳定的本地文件路径，就退回浏览器存储，但数据格式还是保持同一份 JSON。
 class _BrowserTimetableStorage implements TimetableStorage {
-  static const _storageKey = 'KeSchedule_app_data';
+  static const _storageKey = 'Sked_app_data';
 
   @override
   Future<AppData?> load() async {
@@ -27,5 +27,5 @@ class _BrowserTimetableStorage implements TimetableStorage {
 
   @override
   Future<String?> filePath() async =>
-      'browser://local-storage/KeSchedule_app_data';
+      'browser://local-storage/Sked_app_data';
 }

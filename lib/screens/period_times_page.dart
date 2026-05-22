@@ -388,7 +388,7 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
   Future<void> _shareTemplate() async {
     await _exportService.shareFile(
       ExportPayload(
-        fileName: 'KeSchedule_period_times.json',
+        fileName: 'Sked_period_times.json',
         content: encodePeriodTimesEnvelope(_periodTimes),
       ),
     );
@@ -407,7 +407,7 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
     final l10n = AppLocalizations.of(context);
     final result = await _exportService.saveFile(
       ExportPayload(
-        fileName: 'KeSchedule_period_times.json',
+        fileName: 'Sked_period_times.json',
         content: encodePeriodTimesEnvelope(_periodTimes),
       ),
     );
@@ -415,7 +415,7 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
     switch (result.status) {
       case ExportSaveStatus.saved:
         _showMessage(
-          l10n.savedToPath(result.path ?? 'KeSchedule_period_times.json'),
+          l10n.savedToPath(result.path ?? 'Sked_period_times.json'),
         );
         return;
       case ExportSaveStatus.cancelled:

@@ -1,11 +1,11 @@
 {
-    "name": "KeSchedule",
-    "short_name": "KeSchedule",
+    "name": "Sked",
+    "short_name": "Sked",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "A local-first, multi-platform timetable management app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

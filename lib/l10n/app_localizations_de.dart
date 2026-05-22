@@ -9,7 +9,7 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
-  String get appTitle => 'KeSchedule';
+  String get appTitle => 'Sked';
 
   @override
   String weekLabel(int week) {
@@ -710,14 +710,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule ist ein lokal ausgerichtetes Stundenplan-Werkzeug. Stundenpläne, Stundenzeiten-Sets und Schulwebsite-Konfigurationen werden nur auf Ihrem Gerät oder in Ihrem Browser gespeichert und niemals automatisch hochgeladen. Die App verarbeitet Daten nur, wenn Sie ausdrücklich Aktionen wie Import, Webseitenanalyse, Teilen oder das Öffnen externer Links starten. Die vollständige Datenschutzrichtlinie ist online verfügbar.';
+      'Sked ist ein lokal ausgerichtetes Stundenplan-Werkzeug. Stundenpläne, Stundenzeiten-Sets und Schulwebsite-Konfigurationen werden nur auf Ihrem Gerät oder in Ihrem Browser gespeichert und niemals automatisch hochgeladen. Die App verarbeitet Daten nur, wenn Sie ausdrücklich Aktionen wie Import, Webseitenanalyse, Teilen oder das Öffnen externer Links starten. Die vollständige Datenschutzrichtlinie ist online verfügbar.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lokaler Speicher';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      'Stundenplandaten und zugehörige Einstellungen werden in einer lokalen Datei namens KeSchedule_data.json im Dokumentenverzeichnis der App gespeichert. Bearbeitbare Schulwebsite-Konfigurationen werden separat in KeSchedule_school_sites.json gespeichert. Benutzerdefinierte Einstellungen des Stundenplan-Parsers, einschließlich einer benutzerdefinierten Base URL, API key und des ausgewählten Modells, werden ebenfalls lokal in denselben App-Daten gespeichert und sind nicht durch einen System-Anmeldedatenspeicher geschützt. Im Browser werden dieselben Datentypen im Browserspeicher abgelegt. Die App lädt diese lokalen Daten nicht automatisch auf einen vom Entwickler kontrollierten Server hoch.';
+      'Stundenplandaten und zugehörige Einstellungen werden in einer lokalen Datei namens Sked_data.json im Dokumentenverzeichnis der App gespeichert. Bearbeitbare Schulwebsite-Konfigurationen werden separat in Sked_school_sites.json gespeichert. Benutzerdefinierte Einstellungen des Stundenplan-Parsers, einschließlich einer benutzerdefinierten Base URL, API key und des ausgewählten Modells, werden ebenfalls lokal in denselben App-Daten gespeichert und sind nicht durch einen System-Anmeldedatenspeicher geschützt. Im Browser werden dieselben Datentypen im Browserspeicher abgelegt. Die App lädt diese lokalen Daten nicht automatisch auf einen vom Entwickler kontrollierten Server hoch.';
 
   @override
   String get privacyPolicyImportExportTitle => 'Import und Export';
@@ -745,7 +745,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'Die App benötigt kein KeSchedule-Konto und aktiviert weder Analysen noch Werbe-IDs oder Cloud-Backups. Außerdem gibt es kein spezielles Feld zum Erfassen von Schulzugangspasswörtern. Wenn Sie sich innerhalb der App auf einer Schulwebsite anmelden, findet diese Interaktion auf der von Ihnen geöffneten Schulseite statt.';
+      'Die App benötigt kein Sked-Konto und aktiviert weder Analysen noch Werbe-IDs oder Cloud-Backups. Außerdem gibt es kein spezielles Feld zum Erfassen von Schulzugangspasswörtern. Wenn Sie sich innerhalb der App auf einer Schulwebsite anmelden, findet diese Interaktion auf der von Ihnen geöffneten Schulseite statt.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Webseitenanalyse';
@@ -839,7 +839,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Füllen Sie zuerst den Schulnamen und die Login-URL aus.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry =>

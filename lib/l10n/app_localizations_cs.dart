@@ -702,14 +702,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule je rozvrhový nástroj upřednostňující lokální ukládání. Rozvrhy, časové sady a konfigurace školních stránek jsou uloženy pouze ve vašem zařízení nebo prohlížeči a nikdy nejsou automaticky nahrávány. Aplikace zpracovává data pouze tehdy, když výslovně spustíte akce jako import, analýzu webových stránek, sdílení nebo otevírání externích odkazů. Úplné zásady ochrany osobních údajů jsou k dispozici online.';
+      'Sked je rozvrhový nástroj upřednostňující lokální ukládání. Rozvrhy, časové sady a konfigurace školních stránek jsou uloženy pouze ve vašem zařízení nebo prohlížeči a nikdy nejsou automaticky nahrávány. Aplikace zpracovává data pouze tehdy, když výslovně spustíte akce jako import, analýzu webových stránek, sdílení nebo otevírání externích odkazů. Úplné zásady ochrany osobních údajů jsou k dispozici online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Lokální skladování';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      'Data o rozvrhu a související nastavení jsou uložena v lokálním souboru s názvem KeSchedule_data.json uvnitř adresáře dokumentů aplikace. Upravitelná konfigurace školního webu je uložena samostatně v KeSchedule_school_sites.json. Vlastní nastavení parseru časového rozvrhu, včetně jakékoli vlastní základní adresy URL, klíče API a vybraného modelu, jsou také uloženy lokálně ve stejných datech aplikace a nejsou chráněny trezorem systémových přihlášení. Při použití v prohlížeči jsou stejné druhy dat uloženy v úložišti prohlížeče. Aplikace tyto lokální data automaticky nenahrává na server řízený vývojářem.';
+      'Data o rozvrhu a související nastavení jsou uložena v lokálním souboru s názvem Sked_data.json uvnitř adresáře dokumentů aplikace. Upravitelná konfigurace školního webu je uložena samostatně v Sked_school_sites.json. Vlastní nastavení parseru časového rozvrhu, včetně jakékoli vlastní základní adresy URL, klíče API a vybraného modelu, jsou také uloženy lokálně ve stejných datech aplikace a nejsou chráněny trezorem systémových přihlášení. Při použití v prohlížeči jsou stejné druhy dat uloženy v úložišti prohlížeče. Aplikace tyto lokální data automaticky nenahrává na server řízený vývojářem.';
 
   @override
   String get privacyPolicyImportExportTitle => 'Import a export';
@@ -737,7 +737,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'Aplikace nevyžaduje účet KeSchedule a neumožňuje analýzu, reklamní identifikátory ani cloudové zálohování. Také neposkytuje vyhrazené pole pro shromažďování hesel školních účtů. Pokud se přihlásíte na webové stránky školy uvnitř aplikace, dojde k této interakci na stránce školy, kterou jste otevřeli.';
+      'Aplikace nevyžaduje účet Sked a neumožňuje analýzu, reklamní identifikátory ani cloudové zálohování. Také neposkytuje vyhrazené pole pro shromažďování hesel školních účtů. Pokud se přihlásíte na webové stránky školy uvnitř aplikace, dojde k této interakci na stránce školy, kterou jste otevřeli.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Analýza webových stránek';
@@ -830,7 +830,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nejprve vyplňte název školy a přihlašovací adresu.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry =>

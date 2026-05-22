@@ -1,6 +1,6 @@
 {
   "@@locale": "de",
-  "appTitle": "KeSchedule",
+  "appTitle": "Sked",
   "@appTitle": {},
   "weekLabel": "Woche {week}",
   "@weekLabel": {
@@ -506,11 +506,11 @@
       "version": {}
     }
   },
-  "privacyPolicyIntro": "KeSchedule ist ein lokal ausgerichtetes Stundenplan-Werkzeug. Stundenpläne, Stundenzeiten-Sets und Schulwebsite-Konfigurationen werden nur auf Ihrem Gerät oder in Ihrem Browser gespeichert und niemals automatisch hochgeladen. Die App verarbeitet Daten nur, wenn Sie ausdrücklich Aktionen wie Import, Webseitenanalyse, Teilen oder das Öffnen externer Links starten. Die vollständige Datenschutzrichtlinie ist online verfügbar.",
+  "privacyPolicyIntro": "Sked ist ein lokal ausgerichtetes Stundenplan-Werkzeug. Stundenpläne, Stundenzeiten-Sets und Schulwebsite-Konfigurationen werden nur auf Ihrem Gerät oder in Ihrem Browser gespeichert und niemals automatisch hochgeladen. Die App verarbeitet Daten nur, wenn Sie ausdrücklich Aktionen wie Import, Webseitenanalyse, Teilen oder das Öffnen externer Links starten. Die vollständige Datenschutzrichtlinie ist online verfügbar.",
   "@privacyPolicyIntro": {},
   "privacyPolicyLocalStorageTitle": "Lokaler Speicher",
   "@privacyPolicyLocalStorageTitle": {},
-  "privacyPolicyLocalStorageBody": "Stundenplandaten und zugehörige Einstellungen werden in einer lokalen Datei namens KeSchedule_data.json im Dokumentenverzeichnis der App gespeichert. Bearbeitbare Schulwebsite-Konfigurationen werden separat in KeSchedule_school_sites.json gespeichert. Benutzerdefinierte Einstellungen des Stundenplan-Parsers, einschließlich einer benutzerdefinierten Base URL, API key und des ausgewählten Modells, werden ebenfalls lokal in denselben App-Daten gespeichert und sind nicht durch einen System-Anmeldedatenspeicher geschützt. Im Browser werden dieselben Datentypen im Browserspeicher abgelegt. Die App lädt diese lokalen Daten nicht automatisch auf einen vom Entwickler kontrollierten Server hoch.",
+  "privacyPolicyLocalStorageBody": "Stundenplandaten und zugehörige Einstellungen werden in einer lokalen Datei namens Sked_data.json im Dokumentenverzeichnis der App gespeichert. Bearbeitbare Schulwebsite-Konfigurationen werden separat in Sked_school_sites.json gespeichert. Benutzerdefinierte Einstellungen des Stundenplan-Parsers, einschließlich einer benutzerdefinierten Base URL, API key und des ausgewählten Modells, werden ebenfalls lokal in denselben App-Daten gespeichert und sind nicht durch einen System-Anmeldedatenspeicher geschützt. Im Browser werden dieselben Datentypen im Browserspeicher abgelegt. Die App lädt diese lokalen Daten nicht automatisch auf einen vom Entwickler kontrollierten Server hoch.",
   "@privacyPolicyLocalStorageBody": {},
   "privacyPolicyImportExportTitle": "Import und Export",
   "@privacyPolicyImportExportTitle": {},
@@ -526,7 +526,7 @@
   "@privacyPolicyExternalLinksBody": {},
   "privacyPolicyNoCollectionTitle": "Was die App nicht sammelt",
   "@privacyPolicyNoCollectionTitle": {},
-  "privacyPolicyNoCollectionBody": "Die App benötigt kein KeSchedule-Konto und aktiviert weder Analysen noch Werbe-IDs oder Cloud-Backups. Außerdem gibt es kein spezielles Feld zum Erfassen von Schulzugangspasswörtern. Wenn Sie sich innerhalb der App auf einer Schulwebsite anmelden, findet diese Interaktion auf der von Ihnen geöffneten Schulseite statt.",
+  "privacyPolicyNoCollectionBody": "Die App benötigt kein Sked-Konto und aktiviert weder Analysen noch Werbe-IDs oder Cloud-Backups. Außerdem gibt es kein spezielles Feld zum Erfassen von Schulzugangspasswörtern. Wenn Sie sich innerhalb der App auf einer Schulwebsite anmelden, findet diese Interaktion auf der von Ihnen geöffneten Schulseite statt.",
   "@privacyPolicyNoCollectionBody": {},
   "privacyPolicyFutureFeatureTitle": "Webseitenanalyse",
   "@privacyPolicyFutureFeatureTitle": {},
@@ -588,7 +588,7 @@
   },
   "schoolSitesFormInvalid": "Füllen Sie zuerst den Schulnamen und die Login-URL aus.",
   "@schoolSitesFormInvalid": {},
-  "schoolSitesJsonFileName": "KeSchedule_school_sites.json",
+  "schoolSitesJsonFileName": "Sked_school_sites.json",
   "@schoolSitesJsonFileName": {},
   "schoolHtmlImportEntry": "Import durch Einfügen des Stundenplan-Seiteninhalts",
   "@schoolHtmlImportEntry": {},

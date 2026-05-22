@@ -10,7 +10,7 @@ TimetableStorage createTimetableStorage() => _IoTimetableStorage();
 
 /// IO 平台继续落真实文件，用户自己备份或者排查数据时都更直观。
 class _IoTimetableStorage implements TimetableStorage {
-  static const _fileName = 'KeSchedule_data.json';
+  static const _fileName = 'Sked_data.json';
 
   @override
   Future<AppData?> load() async {

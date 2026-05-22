@@ -703,14 +703,14 @@ class AppLocalizationsEt extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule on lokaalselt töötav tunniplaani tööriist. Tunniplaanid, perioodide komplektid ja kooli saidi konfiguratsioon salvestatakse ainult teie seadmes või brauseris ning neid ei laadita kunagi automaatselt üles. Rakendus töötleb andmeid ainult siis, kui käivitate selgesõnaliselt selliseid toiminguid nagu importimine, veebilehe analüüs, jagamine või väliste linkide avamine. Täielik privaatsuspoliitika on saadaval veebis.';
+      'Sked on lokaalselt töötav tunniplaani tööriist. Tunniplaanid, perioodide komplektid ja kooli saidi konfiguratsioon salvestatakse ainult teie seadmes või brauseris ning neid ei laadita kunagi automaatselt üles. Rakendus töötleb andmeid ainult siis, kui käivitate selgesõnaliselt selliseid toiminguid nagu importimine, veebilehe analüüs, jagamine või väliste linkide avamine. Täielik privaatsuspoliitika on saadaval veebis.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Kohalik ladustamine';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      'Ajaplaani andmed ja nendega seotud seaded salvestatakse kohalikusse faili nimega KeSchedule_data.json rakenduse dokumentide kataloogis. Kooli saidi redigeeritav konfiguratsioon salvestatakse eraldi KeSchedule_school_sites.jsonis. Kohandatud ajakava parseri seaded, sealhulgas mis tahes kohandatud baas-URL, API-võti ja valitud mudel, salvestatakse samuti kohalikult samades rakendusandmetes ja neid ei kaitse süsteemi usaldusväärsuste turv. Kui seda kasutatakse brauseris, salvestatakse brauseri salvestusse sama tüüpi andmeid. Rakendus ei laadi neid kohalikke andmeid automaatselt üles arendaja kontrollitud serverisse.';
+      'Ajaplaani andmed ja nendega seotud seaded salvestatakse kohalikusse faili nimega Sked_data.json rakenduse dokumentide kataloogis. Kooli saidi redigeeritav konfiguratsioon salvestatakse eraldi Sked_school_sites.jsonis. Kohandatud ajakava parseri seaded, sealhulgas mis tahes kohandatud baas-URL, API-võti ja valitud mudel, salvestatakse samuti kohalikult samades rakendusandmetes ja neid ei kaitse süsteemi usaldusväärsuste turv. Kui seda kasutatakse brauseris, salvestatakse brauseri salvestusse sama tüüpi andmeid. Rakendus ei laadi neid kohalikke andmeid automaatselt üles arendaja kontrollitud serverisse.';
 
   @override
   String get privacyPolicyImportExportTitle => 'Import ja eksport';
@@ -738,7 +738,7 @@ class AppLocalizationsEt extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'Rakendus ei vaja KeSchedule\'i kontot ja ei võimalda analüüsi, reklaamide identifitseerijaid ega pilvevarukoopiat. Samuti ei paku see spetsiaalset väljad koolikonto paroolide kogumiseks. Kui sisse logite rakenduse sees kooli veebisaidile, toimub see suhtlemine kooli lehel, mille avasite.';
+      'Rakendus ei vaja Sked\'i kontot ja ei võimalda analüüsi, reklaamide identifitseerijaid ega pilvevarukoopiat. Samuti ei paku see spetsiaalset väljad koolikonto paroolide kogumiseks. Kui sisse logite rakenduse sees kooli veebisaidile, toimub see suhtlemine kooli lehel, mille avasite.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Veebilehe analüüs';
@@ -831,7 +831,7 @@ class AppLocalizationsEt extends AppLocalizations {
       'Täitke esimesena kooli nimi ja sisselogimise URL.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry => 'Import ajakava lehekülje sisu kleepides';

@@ -712,14 +712,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get privacyPolicyIntro =>
-      'KeSchedule este un instrument de orar care prioritizează stocarea locală. Orarele, seturile de perioade și configurația site-ului școlii sunt stocate numai pe dispozitivul dvs. sau în browser și nu sunt niciodată încărcate automat. Aplicația procesează datele numai atunci când declanșați explicit acțiuni precum importul, analizarea paginilor web, partajarea sau deschiderea linkurilor externe. Politica de confidențialitate completă este disponibilă online.';
+      'Sked este un instrument de orar care prioritizează stocarea locală. Orarele, seturile de perioade și configurația site-ului școlii sunt stocate numai pe dispozitivul dvs. sau în browser și nu sunt niciodată încărcate automat. Aplicația procesează datele numai atunci când declanșați explicit acțiuni precum importul, analizarea paginilor web, partajarea sau deschiderea linkurilor externe. Politica de confidențialitate completă este disponibilă online.';
 
   @override
   String get privacyPolicyLocalStorageTitle => 'Depozitare locală';
 
   @override
   String get privacyPolicyLocalStorageBody =>
-      'Datele de orar și setările conexe sunt stocate într-un fișier local numit KeSchedule_data.json în directorul documentelor aplicației. Configurația editabilă a site-ului școlii este stocată separat în KeSchedule_school_sites.json. Setările parserului de orar personalizate, inclusiv orice URL de bază personalizat, cheia API și modelul selectat, sunt, de asemenea, stocate local în aceleași date ale aplicației și nu sunt protejate de un seif de acreditare a sistemului. Când sunt utilizate într-un browser, aceleași tipuri de date sunt stocate în stocarea browserului. Aplicația nu încărcă automat aceste date locale pe un server controlat de dezvoltator.';
+      'Datele de orar și setările conexe sunt stocate într-un fișier local numit Sked_data.json în directorul documentelor aplicației. Configurația editabilă a site-ului școlii este stocată separat în Sked_school_sites.json. Setările parserului de orar personalizate, inclusiv orice URL de bază personalizat, cheia API și modelul selectat, sunt, de asemenea, stocate local în aceleași date ale aplicației și nu sunt protejate de un seif de acreditare a sistemului. Când sunt utilizate într-un browser, aceleași tipuri de date sunt stocate în stocarea browserului. Aplicația nu încărcă automat aceste date locale pe un server controlat de dezvoltator.';
 
   @override
   String get privacyPolicyImportExportTitle => 'Import și export';
@@ -747,7 +747,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get privacyPolicyNoCollectionBody =>
-      'Aplicația nu necesită un cont KeSchedule și nu permite analize, identificatori publicitari sau backup în cloud. De asemenea, nu oferă un câmp dedicat colectării parolelor contului școlii. Dacă vă conectați la un site web al școlii în interiorul aplicației, această interacțiune are loc pe pagina școlii pe care ați deschis-o.';
+      'Aplicația nu necesită un cont Sked și nu permite analize, identificatori publicitari sau backup în cloud. De asemenea, nu oferă un câmp dedicat colectării parolelor contului școlii. Dacă vă conectați la un site web al școlii în interiorul aplicației, această interacțiune are loc pe pagina școlii pe care ați deschis-o.';
 
   @override
   String get privacyPolicyFutureFeatureTitle => 'Analizarea paginilor web';
@@ -841,7 +841,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Completați mai întâi numele școlii și URL-ul de autentificare.';
 
   @override
-  String get schoolSitesJsonFileName => 'KeSchedule_school_sites.json';
+  String get schoolSitesJsonFileName => 'Sked_school_sites.json';
 
   @override
   String get schoolHtmlImportEntry =>
