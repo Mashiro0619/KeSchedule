@@ -47,3 +47,4 @@ app.*.map.json
 # Sensitive config and privacy page (served separately)
 lib/config/app_config.dart
 web/privacy.html
+.claude/
