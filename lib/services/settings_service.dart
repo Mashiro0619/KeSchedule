@@ -5,28 +5,28 @@ class SettingsService {
   const SettingsService();
 
   AppData updateCloseCoursePopupOnOutsideTap(AppData data, bool value) {
-    if (data.closeCoursePopupOnOutsideTap == value) return data;
-    return data.copyWith(closeCoursePopupOnOutsideTap: value);
+    if (data.studentMode.closeCoursePopupOnOutsideTap == value) return data;
+    return data.copyWith(studentMode: data.studentMode.copyWith(closeCoursePopupOnOutsideTap: value));
   }
 
   AppData updatePreserveTimetableGaps(AppData data, bool value) {
-    if (data.preserveTimetableGaps == value) return data;
-    return data.copyWith(preserveTimetableGaps: value);
+    if (data.studentMode.preserveTimetableGaps == value) return data;
+    return data.copyWith(studentMode: data.studentMode.copyWith(preserveTimetableGaps: value));
   }
 
   AppData updateShowPastEndedCourses(AppData data, bool value) {
-    if (data.showPastEndedCourses == value) return data;
-    return data.copyWith(showPastEndedCourses: value);
+    if (data.studentMode.showPastEndedCourses == value) return data;
+    return data.copyWith(studentMode: data.studentMode.copyWith(showPastEndedCourses: value));
   }
 
   AppData updateShowFutureCourses(AppData data, bool value) {
-    if (data.showFutureCourses == value) return data;
-    return data.copyWith(showFutureCourses: value);
+    if (data.studentMode.showFutureCourses == value) return data;
+    return data.copyWith(studentMode: data.studentMode.copyWith(showFutureCourses: value));
   }
 
   AppData updateShowTimetableGridLines(AppData data, bool value) {
-    if (data.showTimetableGridLines == value) return data;
-    return data.copyWith(showTimetableGridLines: value);
+    if (data.studentMode.showTimetableGridLines == value) return data;
+    return data.copyWith(studentMode: data.studentMode.copyWith(showTimetableGridLines: value));
   }
 
   AppData updateLocaleCode(AppData data, String localeCode) {
@@ -62,82 +62,92 @@ class SettingsService {
 
   AppData updateColorfulCourseTextColorMode(AppData data, String mode) {
     final normalized = normalizeColorfulCourseTextColorMode(mode);
-    if (data.colorfulCourseTextColorMode == normalized) return data;
-    return data.copyWith(colorfulCourseTextColorMode: normalized);
+    if (data.studentMode.colorfulCourseTextColorMode == normalized) return data;
+    return data.copyWith(studentMode: data.studentMode.copyWith(colorfulCourseTextColorMode: normalized));
   }
 
   AppData updateCourseNameColorValue(AppData data, String courseName, int colorValue) {
     final normalizedCourseName = normalizeCourseColorName(courseName);
     if (normalizedCourseName.isEmpty) return data;
-    if (data.courseNameColorValues[normalizedCourseName] == colorValue) return data;
-    final updated = Map<String, int>.from(data.courseNameColorValues)
+    if (data.studentMode.courseNameColorValues[normalizedCourseName] == colorValue) return data;
+    final updated = Map<String, int>.from(data.studentMode.courseNameColorValues)
       ..[normalizedCourseName] = colorValue;
-    return data.copyWith(courseNameColorValues: updated);
+    return data.copyWith(studentMode: data.studentMode.copyWith(courseNameColorValues: updated));
   }
 
   AppData updateSchoolImportParserSource(AppData data, String source) {
     final normalized = normalizeSchoolImportParserSource(source);
-    if (data.schoolImportParserSettings.source == normalized) return data;
+    if (data.studentMode.schoolImportParserSettings.source == normalized) return data;
     return data.copyWith(
-      schoolImportParserSettings: data.schoolImportParserSettings.copyWith(
-        source: normalized,
+      studentMode: data.studentMode.copyWith(
+        schoolImportParserSettings: data.studentMode.schoolImportParserSettings.copyWith(
+          source: normalized,
+        ),
       ),
     );
   }
 
   AppData updateCustomSchoolImportBaseUrl(AppData data, String value) {
     final normalized = value.trim();
-    if (data.schoolImportParserSettings.customBaseUrl == normalized) return data;
+    if (data.studentMode.schoolImportParserSettings.customBaseUrl == normalized) return data;
     return data.copyWith(
-      schoolImportParserSettings: data.schoolImportParserSettings.copyWith(
-        customBaseUrl: normalized,
+      studentMode: data.studentMode.copyWith(
+        schoolImportParserSettings: data.studentMode.schoolImportParserSettings.copyWith(
+          customBaseUrl: normalized,
+        ),
       ),
     );
   }
 
   AppData updateCustomSchoolImportApiKey(AppData data, String value) {
     final normalized = value.trim();
-    if (data.schoolImportParserSettings.customApiKey == normalized) return data;
+    if (data.studentMode.schoolImportParserSettings.customApiKey == normalized) return data;
     return data.copyWith(
-      schoolImportParserSettings: data.schoolImportParserSettings.copyWith(
-        customApiKey: normalized,
+      studentMode: data.studentMode.copyWith(
+        schoolImportParserSettings: data.studentMode.schoolImportParserSettings.copyWith(
+          customApiKey: normalized,
+        ),
       ),
     );
   }
 
   AppData updateCustomSchoolImportModel(AppData data, String value) {
     final normalized = value.trim();
-    if (data.schoolImportParserSettings.customModel == normalized) return data;
+    if (data.studentMode.schoolImportParserSettings.customModel == normalized) return data;
     return data.copyWith(
-      schoolImportParserSettings: data.schoolImportParserSettings.copyWith(
-        customModel: normalized,
+      studentMode: data.studentMode.copyWith(
+        schoolImportParserSettings: data.studentMode.schoolImportParserSettings.copyWith(
+          customModel: normalized,
+        ),
       ),
     );
   }
 
   AppData updateCustomSchoolImportPrompt(AppData data, String value) {
     final normalized = value.trim();
-    if (data.schoolImportParserSettings.customPrompt == normalized) return data;
+    if (data.studentMode.schoolImportParserSettings.customPrompt == normalized) return data;
     return data.copyWith(
-      schoolImportParserSettings: data.schoolImportParserSettings.copyWith(
-        customPrompt: normalized,
+      studentMode: data.studentMode.copyWith(
+        schoolImportParserSettings: data.studentMode.schoolImportParserSettings.copyWith(
+          customPrompt: normalized,
+        ),
       ),
     );
   }
 
   AppData updateLiveCourseOutlineColorValue(AppData data, int colorValue) {
-    if (data.liveCourseOutlineColorValue == colorValue) return data;
-    return data.copyWith(liveCourseOutlineColorValue: colorValue);
+    if (data.studentMode.liveCourseOutlineColorValue == colorValue) return data;
+    return data.copyWith(studentMode: data.studentMode.copyWith(liveCourseOutlineColorValue: colorValue));
   }
 
   AppData updateLiveCourseOutlineEnabled(AppData data, bool value) {
-    if (data.liveCourseOutlineEnabled == value) return data;
-    return data.copyWith(liveCourseOutlineEnabled: value);
+    if (data.studentMode.liveCourseOutlineEnabled == value) return data;
+    return data.copyWith(studentMode: data.studentMode.copyWith(liveCourseOutlineEnabled: value));
   }
 
   AppData updateLiveCourseOutlineFollowTheme(AppData data, bool value) {
-    if (data.liveCourseOutlineFollowTheme == value) return data;
-    return data.copyWith(liveCourseOutlineFollowTheme: value);
+    if (data.studentMode.liveCourseOutlineFollowTheme == value) return data;
+    return data.copyWith(studentMode: data.studentMode.copyWith(liveCourseOutlineFollowTheme: value));
   }
 
   AppData updateLiveCourseOutlineSettings(
@@ -152,12 +162,14 @@ class SettingsService {
     final normalizedWidth = normalizeLiveCourseOutlineWidth(width);
     final normalizedMode = normalizeLiveCourseOutlineMode(mode);
     return data.copyWith(
-      liveCourseOutlineEnabled: enabled,
-      liveCourseOutlineFollowTheme: followTheme,
-      liveCourseOutlineColorValue: colorValue,
-      liveCourseOutlineCustomColorInitialized: customColorInitialized,
-      liveCourseOutlineMode: normalizedMode,
-      liveCourseOutlineWidth: normalizedWidth,
+      studentMode: data.studentMode.copyWith(
+        liveCourseOutlineEnabled: enabled,
+        liveCourseOutlineFollowTheme: followTheme,
+        liveCourseOutlineColorValue: colorValue,
+        liveCourseOutlineCustomColorInitialized: customColorInitialized,
+        liveCourseOutlineMode: normalizedMode,
+        liveCourseOutlineWidth: normalizedWidth,
+      ),
     );
   }
 

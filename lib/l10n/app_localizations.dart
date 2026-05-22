@@ -2270,6 +2270,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Weeks {value}'**
   String semesterWeeksList(Object value);
+
+  /// No description provided for @generalSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'General schedule'**
+  String get generalSchedule;
+
+  /// No description provided for @studentTimetable.
+  ///
+  /// In en, this message translates to:
+  /// **'Student timetable'**
+  String get studentTimetable;
+
+  /// No description provided for @switchMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch mode'**
+  String get switchMode;
+
+  /// No description provided for @generalScheduleComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'General schedule coming soon'**
+  String get generalScheduleComingSoon;
+
+  /// No description provided for @switchToStudentTimetable.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Student timetable'**
+  String get switchToStudentTimetable;
+
+  /// No description provided for @mySchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'My schedule'**
+  String get mySchedule;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
 }
 
 class _AppLocalizationsDelegate

@@ -34,8 +34,7 @@ enum _UpdateAction { github, website, googlePlay, quark, ignore, cancel }
 
 class AppUpdateCoordinator {
   static const _updateService = UpdateService();
-  static const _googlePlayDeepLink =
-      'market://details?id=com.mashiro.sked';
+  static const _googlePlayDeepLink = 'market://details?id=com.mashiro.sked';
   static const _googlePlayUrl =
       'https://play.google.com/store/apps/details?id=com.mashiro.sked';
   static const _quarkPanUrl = 'https://pan.quark.cn/s/420966ed21ec';
@@ -285,7 +284,9 @@ class AppUpdateCoordinator {
   }
 
   static void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -301,7 +302,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   String? _editingTimetableId;
   String _currentVersion = '';
-  late String _selectedPeriodTimeSetId;
+  String? _selectedPeriodTimeSetId;
 
   @override
   void initState() {
@@ -335,52 +336,55 @@ class _SettingsPageState extends State<SettingsPage> {
           provider.localeCode,
         );
         final timetable = provider.activeTimetableOrNull;
-        if (timetable == null) {
+        final hasTimetable = timetable != null;
+        if (!hasTimetable && provider.isStudentMode) {
           return Scaffold(
             appBar: AppBar(title: Text(l10n.settingsTitle)),
             body: Center(child: Text(l10n.noTimetableSettings)),
           );
         }
-        final selectedSet =
-            provider.periodTimeSetForId(_selectedPeriodTimeSetId) ??
-            provider.activePeriodTimeSetOrNull;
+        final selectedSet = _selectedPeriodTimeSetId != null
+            ? provider.periodTimeSetForId(_selectedPeriodTimeSetId!)
+            : provider.activePeriodTimeSetOrNull;
         return Scaffold(
           appBar: AppBar(title: Text(l10n.settingsTitle)),
           body: ListView(
             padding: const EdgeInsets.symmetric(vertical: 16),
             children: [
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: const Icon(Icons.schedule_outlined),
-                title: Text(l10n.periodTimeSets),
-                subtitle: Text(
-                  selectedSet == null
-                      ? l10n.noPeriodTimeAvailable
-                      : l10n.periodTimeSetSummary(
-                          selectedSet.name,
-                          selectedSet.periodTimes.length,
-                        ),
+              if (provider.isStudentMode) ...[
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const Icon(Icons.schedule_outlined),
+                  title: Text(l10n.periodTimeSets),
+                  subtitle: Text(
+                    selectedSet == null
+                        ? l10n.noPeriodTimeAvailable
+                        : l10n.periodTimeSetSummary(
+                            selectedSet.name,
+                            selectedSet.periodTimes.length,
+                          ),
+                  ),
+                  trailing: const Icon(Icons.keyboard_arrow_down),
+                  onTap: () => _pickPeriodTimeSet(provider, timetable!.config),
                 ),
-                trailing: const Icon(Icons.keyboard_arrow_down),
-                onTap: () => _pickPeriodTimeSet(provider, timetable.config),
-              ),
-              Divider(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outlineVariant.withValues(alpha: 0.35),
-              ),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: const Icon(Icons.language_outlined),
-                title: Text(l10n.schoolWebImportEntry),
-                subtitle: Text(l10n.schoolWebImportEntryDesc),
-                onTap: () => _openSchoolSitesPage(provider),
-              ),
-              Divider(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outlineVariant.withValues(alpha: 0.35),
-              ),
+                Divider(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outlineVariant.withValues(alpha: 0.35),
+                ),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const Icon(Icons.language_outlined),
+                  title: Text(l10n.schoolWebImportEntry),
+                  subtitle: Text(l10n.schoolWebImportEntryDesc),
+                  onTap: () => _openSchoolSitesPage(provider),
+                ),
+                Divider(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outlineVariant.withValues(alpha: 0.35),
+                ),
+              ],
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 leading: const Icon(Icons.palette_outlined),
@@ -400,19 +404,21 @@ class _SettingsPageState extends State<SettingsPage> {
                   context,
                 ).colorScheme.outlineVariant.withValues(alpha: 0.35),
               ),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: const Icon(Icons.grid_view_outlined),
-                title: Text(l10n.timetableDisplaySettings),
-                subtitle: Text(l10n.timetableDisplaySettingsDesc),
-                trailing: const Icon(Icons.keyboard_arrow_right),
-                onTap: () => _openTimetableDisplaySettingsPage(provider),
-              ),
-              Divider(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outlineVariant.withValues(alpha: 0.35),
-              ),
+              if (provider.isStudentMode) ...[
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const Icon(Icons.grid_view_outlined),
+                  title: Text(l10n.timetableDisplaySettings),
+                  subtitle: Text(l10n.timetableDisplaySettingsDesc),
+                  trailing: const Icon(Icons.keyboard_arrow_right),
+                  onTap: () => _openTimetableDisplaySettingsPage(provider),
+                ),
+                Divider(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outlineVariant.withValues(alpha: 0.35),
+                ),
+              ],
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 leading: const Icon(Icons.import_export),
@@ -519,7 +525,10 @@ class _SettingsPageState extends State<SettingsPage> {
         return option.label;
       }
     }
-    return languageLabelForLocaleCode(normalizedCode, l10n: AppLocalizations.of(context));
+    return languageLabelForLocaleCode(
+      normalizedCode,
+      l10n: AppLocalizations.of(context),
+    );
   }
 
   Future<void> _pickPeriodTimeSet(
@@ -529,7 +538,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final result = await showPeriodTimeSetPickerDialog(
       context,
       provider: provider,
-      selectedPeriodTimeSetId: _selectedPeriodTimeSetId,
+      selectedPeriodTimeSetId: _selectedPeriodTimeSetId!,
     );
     if (result == null || result == _selectedPeriodTimeSetId) {
       return;
@@ -597,15 +606,15 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   int _compareVersions(String a, String b) {
-    final aParts = _normalizeVersion(a)
-        .split('.')
-        .map((item) => int.tryParse(item) ?? 0)
-        .toList();
-    final bParts = _normalizeVersion(b)
-        .split('.')
-        .map((item) => int.tryParse(item) ?? 0)
-        .toList();
-    final maxLength = aParts.length > bParts.length ? aParts.length : bParts.length;
+    final aParts = _normalizeVersion(
+      a,
+    ).split('.').map((item) => int.tryParse(item) ?? 0).toList();
+    final bParts = _normalizeVersion(
+      b,
+    ).split('.').map((item) => int.tryParse(item) ?? 0).toList();
+    final maxLength = aParts.length > bParts.length
+        ? aParts.length
+        : bParts.length;
     for (var index = 0; index < maxLength; index++) {
       final left = index < aParts.length ? aParts[index] : 0;
       final right = index < bParts.length ? bParts[index] : 0;
@@ -828,7 +837,6 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     }
   }
-
 
   Future<List<String>?> _pickTimetableIds({
     required List<TimetableData> timetables,

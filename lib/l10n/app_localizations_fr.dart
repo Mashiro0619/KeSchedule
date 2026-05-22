@@ -1228,4 +1228,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String semesterWeeksList(Object value) {
     return 'Semaines $value';
   }
+
+  @override
+  String get generalSchedule => 'General schedule';
+
+  @override
+  String get studentTimetable => 'Student timetable';
+
+  @override
+  String get switchMode => 'Switch mode';
+
+  @override
+  String get generalScheduleComingSoon => 'General schedule coming soon';
+
+  @override
+  String get switchToStudentTimetable => 'Switch to Student timetable';
+
+  @override
+  String get mySchedule => 'My schedule';
+
+  @override
+  String get today => 'Today';
 }

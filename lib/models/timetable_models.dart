@@ -1,6 +1,12 @@
 export 'course_item.dart';
 export 'timetable_data.dart';
 export 'app_data.dart';
+export 'student_mode_data.dart';
+export 'app_mode.dart';
+export 'general_event.dart';
+export 'general_schedule.dart';
+export 'general_schedule_data.dart';
+export 'general_event_occurrence.dart';
 export '../utils/constants.dart';
 export '../utils/localized_names.dart';
 export '../utils/time_utils.dart';

@@ -22,6 +22,7 @@ import 'package:sked/widgets/course_details_sheet.dart';
 import 'package:sked/widgets/course_editor_sheet.dart';
 import 'package:sked/widgets/period_time_set_picker_dialog.dart';
 import 'package:sked/widgets/school_web_import_result_sheet.dart';
+import 'package:sked/widgets/timetable_entry.dart';
 import 'package:sked/widgets/timetable_grid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -111,7 +112,8 @@ class FakeSchoolImportApi extends SchoolImportApi {
   final Future<SchoolImportApiResult> Function(
     SchoolImportPagePayload payload,
     SchoolImportParserSettings? parserSettings,
-  ) onImport;
+  )
+  onImport;
 
   int callCount = 0;
   SchoolImportPagePayload? lastPayload;
@@ -176,6 +178,15 @@ Future<BuildContext> _pumpUpdateHarness(
   return context;
 }
 
+AppData _withSchoolImportSettings(SchoolImportParserSettings settings) {
+  final data = _buildTestAppData();
+  return data.copyWith(
+    studentMode: data.studentMode.copyWith(
+      schoolImportParserSettings: settings,
+    ),
+  );
+}
+
 AppData _buildTestAppData() {
   final periodTimes = buildDefaultPeriodTimes();
   final defaultSet = PeriodTimeSet(
@@ -228,9 +239,13 @@ AppData _buildTestAppData() {
     courses: const [],
   );
   return AppData(
-    activeTimetableId: primaryTimetable.id,
-    timetables: [primaryTimetable, backupTimetable],
-    periodTimeSets: [defaultSet, shortSet],
+    activeMode: AppMode.student,
+    studentMode: StudentModeData(
+      activeTimetableId: primaryTimetable.id,
+      timetables: [primaryTimetable, backupTimetable],
+      periodTimeSets: [defaultSet, shortSet],
+    ),
+    generalMode: GeneralScheduleData.fromJson(const {}),
     privacyPolicyAcceptedVersion: '2026-04-20',
   );
 }
@@ -258,7 +273,8 @@ Map<String, dynamic> _buildSchoolImportSuccessJson({
       'periodTimeSet': {
         'name': periodTimeSetName,
         'periodTimes':
-            periodTimes ?? [
+            periodTimes ??
+            [
               {'index': 1, 'startMinutes': 480, 'endMinutes': 525},
             ],
       },
@@ -308,9 +324,15 @@ void main() {
       final encoded = data.encode();
       final decoded = AppData.decode(encoded);
 
-      expect(decoded.activeTimetableId, data.activeTimetableId);
-      expect(decoded.timetables.length, data.timetables.length);
-      expect(decoded.timetables.first.config.name, '测试课表A');
+      expect(
+        decoded.studentMode.activeTimetableId,
+        data.studentMode.activeTimetableId,
+      );
+      expect(
+        decoded.studentMode.timetables.length,
+        data.studentMode.timetables.length,
+      );
+      expect(decoded.studentMode.timetables.first.config.name, '测试课表A');
     });
 
     test('旧 weekday 字段会兼容成 dayOfWeek，且周次默认为全学期语义', () {
@@ -390,34 +412,75 @@ void main() {
     });
 
     test('首次启动语言检测会优先命中受支持语言', () {
-      expect(app_locale.resolveFirstLaunchLocaleCode(const Locale('zh', 'TW')), 'zh-Hant');
-      expect(app_locale.resolveFirstLaunchLocaleCode(const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant')), 'zh-Hant');
-      expect(app_locale.resolveFirstLaunchLocaleCode(const Locale('zh', 'HK')), 'zh-Hant');
-      expect(app_locale.resolveFirstLaunchLocaleCode(const Locale('zh', 'CN')), 'zh');
+      expect(
+        app_locale.resolveFirstLaunchLocaleCode(const Locale('zh', 'TW')),
+        'zh-Hant',
+      );
+      expect(
+        app_locale.resolveFirstLaunchLocaleCode(
+          const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+        ),
+        'zh-Hant',
+      );
+      expect(
+        app_locale.resolveFirstLaunchLocaleCode(const Locale('zh', 'HK')),
+        'zh-Hant',
+      );
+      expect(
+        app_locale.resolveFirstLaunchLocaleCode(const Locale('zh', 'CN')),
+        'zh',
+      );
       expect(app_locale.resolveFirstLaunchLocaleCode(const Locale('zh')), 'zh');
       expect(app_locale.resolveFirstLaunchLocaleCode(const Locale('en')), 'en');
-      expect(app_locale.resolveFirstLaunchLocaleCode(const Locale('en', 'US')), 'en');
+      expect(
+        app_locale.resolveFirstLaunchLocaleCode(const Locale('en', 'US')),
+        'en',
+      );
     });
 
     test('首次启动语言检测对空值或不受支持语言回退英语或同语言匹配', () {
       expect(app_locale.resolveFirstLaunchLocaleCode(null), 'en');
       expect(app_locale.resolveFirstLaunchLocaleCode(const Locale('ja')), 'ja');
-      expect(app_locale.resolveFirstLaunchLocaleCode(const Locale('fr', 'CA')), 'fr');
+      expect(
+        app_locale.resolveFirstLaunchLocaleCode(const Locale('fr', 'CA')),
+        'fr',
+      );
       expect(app_locale.resolveFirstLaunchLocaleCode(const Locale('ru')), 'ru');
-      expect(app_locale.resolveFirstLaunchLocaleCode(const Locale('tlh')), 'en');
+      expect(
+        app_locale.resolveFirstLaunchLocaleCode(const Locale('tlh')),
+        'en',
+      );
     });
 
     test('中文系语言默认使用配置的更新接口', () {
-      expect(prefersConfiguredUpdateSourceForLocale(const Locale('zh')), isTrue);
-      expect(prefersConfiguredUpdateSourceForLocale(const Locale('zh', 'CN')), isTrue);
-      expect(prefersConfiguredUpdateSourceForLocale(const Locale('zh', 'TW')), isTrue);
+      expect(
+        prefersConfiguredUpdateSourceForLocale(const Locale('zh')),
+        isTrue,
+      );
+      expect(
+        prefersConfiguredUpdateSourceForLocale(const Locale('zh', 'CN')),
+        isTrue,
+      );
+      expect(
+        prefersConfiguredUpdateSourceForLocale(const Locale('zh', 'TW')),
+        isTrue,
+      );
     });
 
     test('非中文系语言默认使用 GitHub 更新源', () {
       expect(prefersConfiguredUpdateSourceForLocale(null), isFalse);
-      expect(prefersConfiguredUpdateSourceForLocale(const Locale('en')), isFalse);
-      expect(prefersConfiguredUpdateSourceForLocale(const Locale('ja')), isFalse);
-      expect(prefersConfiguredUpdateSourceForLocale(const Locale('fr')), isFalse);
+      expect(
+        prefersConfiguredUpdateSourceForLocale(const Locale('en')),
+        isFalse,
+      );
+      expect(
+        prefersConfiguredUpdateSourceForLocale(const Locale('ja')),
+        isFalse,
+      );
+      expect(
+        prefersConfiguredUpdateSourceForLocale(const Locale('fr')),
+        isFalse,
+      );
     });
 
     test('中文系主源格式错误时会回退到 GitHub', () async {
@@ -437,7 +500,8 @@ void main() {
             return http.Response(
               jsonEncode({
                 'tag_name': 'v1.2.0',
-                'html_url': 'https://github.com/Mashiro0619/KeSchedule/releases/tag/v1.2.0',
+                'html_url':
+                    'https://github.com/Mashiro0619/KeSchedule/releases/tag/v1.2.0',
                 'body': 'notes',
               }),
               200,
@@ -491,8 +555,14 @@ void main() {
       final encoded = encodeAppDataEnvelope(data);
       final decoded = decodeAppDataEnvelope(encoded);
 
-      expect(decoded.timetables.length, data.timetables.length);
-      expect(decoded.activeTimetableId, data.activeTimetableId);
+      expect(
+        decoded.studentMode.timetables.length,
+        data.studentMode.timetables.length,
+      );
+      expect(
+        decoded.studentMode.activeTimetableId,
+        data.studentMode.activeTimetableId,
+      );
     });
 
     test('provider 支持导入单课表和节次模板', () async {
@@ -520,6 +590,199 @@ void main() {
       expect(importedPeriodTimes.first.index, 1);
     });
 
+    test('provider 切换模式不会清空学生课表或通用日程', () async {
+      final provider = TimetableProvider(
+        storage: MemoryTimetableStorage(initialData: _buildTestAppData()),
+      );
+      await provider.load();
+
+      final event = GeneralEvent(
+        id: 'evt_general',
+        title: '通用会议',
+        startDateTimeIso: '2026-05-22T09:00:00.000',
+        endDateTimeIso: '2026-05-22T10:00:00.000',
+      );
+
+      await provider.switchMode(AppMode.general);
+      await provider.saveGeneralEvent(event);
+      await provider.switchMode(AppMode.student);
+
+      expect(provider.isStudentMode, isTrue);
+      expect(provider.activeTimetable.config.name, '测试课表A');
+      expect(provider.activeGeneralSchedule.events.single.title, '通用会议');
+
+      await provider.switchMode(AppMode.general);
+
+      expect(provider.isGeneralMode, isTrue);
+      expect(provider.activeTimetable.config.name, '测试课表A');
+      expect(provider.activeGeneralSchedule.events.single.id, 'evt_general');
+    });
+
+    test('provider 支持通用日程事件增删和每周重复展开', () async {
+      final provider = TimetableProvider(
+        storage: MemoryTimetableStorage(initialData: _buildTestAppData()),
+      );
+      await provider.load();
+
+      final oneTimeEvent = GeneralEvent(
+        id: 'evt_one_time',
+        title: '一次性事件',
+        startDateTimeIso: '2026-05-22T09:00:00.000',
+        endDateTimeIso: '2026-05-22T10:00:00.000',
+      );
+      final weeklyEvent = GeneralEvent(
+        id: 'evt_weekly',
+        title: '每周例会',
+        startDateTimeIso: '2026-05-18T14:00:00.000',
+        endDateTimeIso: '2026-05-18T15:00:00.000',
+        recurrence: GeneralEventRecurrence.weekly,
+        recurrenceEndDateIso: '2026-06-01',
+      );
+
+      await provider.saveGeneralEvent(oneTimeEvent);
+      await provider.saveGeneralEvent(weeklyEvent);
+
+      final firstWeek = provider.generalOccurrencesForRange(
+        startInclusive: DateTime(2026, 5, 18),
+        endExclusive: DateTime(2026, 5, 25),
+      );
+      expect(
+        firstWeek.map((item) => item.event.id),
+        containsAll(['evt_one_time', 'evt_weekly']),
+      );
+
+      final secondWeek = provider.generalOccurrencesForRange(
+        startInclusive: DateTime(2026, 5, 25),
+        endExclusive: DateTime(2026, 6, 1),
+      );
+      expect(secondWeek.map((item) => item.event.id), contains('evt_weekly'));
+      expect(
+        secondWeek.map((item) => item.event.id),
+        isNot(contains('evt_one_time')),
+      );
+
+      await provider.deleteGeneralEvent('evt_one_time');
+
+      expect(
+        provider.activeGeneralSchedule.events.map((event) => event.id),
+        isNot(contains('evt_one_time')),
+      );
+      expect(
+        provider.activeGeneralSchedule.events.map((event) => event.id),
+        contains('evt_weekly'),
+      );
+    });
+
+    test('重命名通用日程不会删除已有事件', () async {
+      final provider = TimetableProvider(
+        storage: MemoryTimetableStorage(initialData: _buildTestAppData()),
+      );
+      await provider.load();
+
+      final scheduleId = provider.activeGeneralSchedule.id;
+      await provider.saveGeneralEvent(
+        GeneralEvent(
+          id: 'evt_keep',
+          title: '保留事件',
+          startDateTimeIso: '2026-05-22T09:00:00.000',
+          endDateTimeIso: '2026-05-22T10:00:00.000',
+        ),
+      );
+      await provider.renameGeneralSchedule(scheduleId, '重命名日程');
+
+      expect(provider.activeGeneralSchedule.name, '重命名日程');
+      expect(provider.activeGeneralSchedule.events.single.id, 'evt_keep');
+    });
+
+    test('weekly 事件不会在 recurrence end date 之后再生成 occurrence', () async {
+      final provider = TimetableProvider(
+        storage: MemoryTimetableStorage(initialData: _buildTestAppData()),
+      );
+      await provider.load();
+
+      await provider.saveGeneralEvent(
+        GeneralEvent(
+          id: 'evt_end_test',
+          title: '截止测试',
+          startDateTimeIso: '2026-05-18T14:00:00.000',
+          endDateTimeIso: '2026-05-18T15:00:00.000',
+          recurrence: GeneralEventRecurrence.weekly,
+          recurrenceEndDateIso: '2026-06-01',
+        ),
+      );
+
+      // Recurrence ends on June 1; week containing June 8 should have no occurrence.
+      final beyondEnd = provider.generalOccurrencesForRange(
+        startInclusive: DateTime(2026, 6, 8),
+        endExclusive: DateTime(2026, 6, 15),
+      );
+      expect(
+        beyondEnd.map((item) => item.event.id),
+        isNot(contains('evt_end_test')),
+      );
+
+      // Week containing the end date itself should include it.
+      final onEnd = provider.generalOccurrencesForRange(
+        startInclusive: DateTime(2026, 6, 1),
+        endExclusive: DateTime(2026, 6, 8),
+      );
+      expect(onEnd.map((item) => item.event.id), contains('evt_end_test'));
+    });
+
+    test('weekly occurrence 保留原事件 duration', () async {
+      final provider = TimetableProvider(
+        storage: MemoryTimetableStorage(initialData: _buildTestAppData()),
+      );
+      await provider.load();
+
+      await provider.saveGeneralEvent(
+        GeneralEvent(
+          id: 'evt_90min',
+          title: '90分钟课程',
+          startDateTimeIso: '2026-05-18T09:15:00.000',
+          endDateTimeIso: '2026-05-18T10:45:00.000',
+          recurrence: GeneralEventRecurrence.weekly,
+        ),
+      );
+
+      final occurrences = provider.generalOccurrencesForRange(
+        startInclusive: DateTime(2026, 5, 25),
+        endExclusive: DateTime(2026, 6, 1),
+      );
+      expect(occurrences.length, 1);
+
+      final duration = occurrences.first.end.difference(
+        occurrences.first.start,
+      );
+      expect(duration.inMinutes, 90);
+    });
+
+    test('跨午夜 occurrence duration 正确', () async {
+      final provider = TimetableProvider(
+        storage: MemoryTimetableStorage(initialData: _buildTestAppData()),
+      );
+      await provider.load();
+
+      final event = GeneralEvent(
+        id: 'evt_overnight',
+        title: '夜间事件',
+        startDateTimeIso: '2026-05-22T23:00:00.000',
+        endDateTimeIso: '2026-05-23T01:00:00.000',
+      );
+
+      await provider.saveGeneralEvent(event);
+
+      final occurrences = provider.generalOccurrencesForRange(
+        startInclusive: DateTime(2026, 5, 22),
+        endExclusive: DateTime(2026, 5, 23),
+      );
+      expect(occurrences.length, 1);
+      expect(
+        occurrences.first.end.difference(occurrences.first.start).inMinutes,
+        120,
+      );
+    });
+
     test('旧数据会迁移出独立节次时间集', () {
       final legacy = AppData.decode(
         jsonEncode({
@@ -543,9 +806,13 @@ void main() {
         }),
       );
 
-      expect(legacy.periodTimeSets.length, 1);
-      expect(legacy.timetables.first.config.periodTimeSetId, isNotEmpty);
-      expect(legacy.periodTimeSets.first.periodTimes.length, 4);
+      expect(legacy.studentMode.periodTimeSets.length, 1);
+      expect(
+        legacy.studentMode.timetables.first.config.periodTimeSetId,
+        isNotEmpty,
+      );
+      expect(legacy.studentMode.periodTimeSets.first.periodTimes.length, 4);
+      expect(legacy.activeMode, AppMode.student);
     });
 
     test('共享节次时间集编辑会直接全局生效', () async {
@@ -593,26 +860,30 @@ void main() {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(
           initialData: AppData(
-            activeTimetableId: 'only',
-            timetables: [
-              TimetableData(
-                id: 'only',
-                config: TimetableConfig(
-                  name: '唯一课表',
-                  startDate: DateTime(2026, 2, 23),
-                  totalWeeks: 18,
-                  periodTimeSetId: 'set1',
+            activeMode: AppMode.student,
+            studentMode: StudentModeData(
+              activeTimetableId: 'only',
+              timetables: [
+                TimetableData(
+                  id: 'only',
+                  config: TimetableConfig(
+                    name: '唯一课表',
+                    startDate: DateTime(2026, 2, 23),
+                    totalWeeks: 18,
+                    periodTimeSetId: 'set1',
+                  ),
+                  courses: const [],
                 ),
-                courses: const [],
-              ),
-            ],
-            periodTimeSets: [
-              PeriodTimeSet(
-                id: 'set1',
-                name: '默认节次',
-                periodTimes: buildPeriodTimesForCount(10),
-              ),
-            ],
+              ],
+              periodTimeSets: [
+                PeriodTimeSet(
+                  id: 'set1',
+                  name: '默认节次',
+                  periodTimes: buildPeriodTimesForCount(10),
+                ),
+              ],
+            ),
+            generalMode: GeneralScheduleData.fromJson(const {}),
           ),
         ),
       );
@@ -755,25 +1026,25 @@ void main() {
     });
 
     test('五彩缤纷主题字段可以正确编码解码并兼容旧数据默认值', () {
-      final customized = _buildTestAppData().copyWith(
+      final themed = _buildTestAppData();
+      final customized = themed.copyWith(
         themeColorMode: themeColorModeColorful,
-        colorfulCourseTextColorMode: colorfulCourseTextColorModeCustom,
+        studentMode: themed.studentMode.copyWith(
+          colorfulCourseTextColorMode: colorfulCourseTextColorModeCustom,
+          courseNameColorValues: const {'高等数学': 0xFF445566, '线性代数': 0xFF556677},
+        ),
         colorfulUiColorValues: const {
           colorfulUiPrimaryKey: 0xFF112233,
           colorfulUiSecondaryKey: 0xFF223344,
           colorfulUiTertiaryKey: 0xFF334455,
           colorfulCourseTextColorKey: 0xFF556677,
         },
-        courseNameColorValues: const {
-          '高等数学': 0xFF445566,
-          '线性代数': 0xFF556677,
-        },
       );
       final decodedCustomized = AppData.decode(customized.encode());
 
       expect(decodedCustomized.themeColorMode, themeColorModeColorful);
       expect(
-        decodedCustomized.colorfulCourseTextColorMode,
+        decodedCustomized.studentMode.colorfulCourseTextColorMode,
         colorfulCourseTextColorModeCustom,
       );
       expect(
@@ -793,11 +1064,11 @@ void main() {
         0xFF556677,
       );
       expect(
-        decodedCustomized.courseNameColorValues['高等数学'],
+        decodedCustomized.studentMode.courseNameColorValues['高等数学'],
         0xFF445566,
       );
       expect(
-        decodedCustomized.courseNameColorValues['线性代数'],
+        decodedCustomized.studentMode.courseNameColorValues['线性代数'],
         0xFF556677,
       );
 
@@ -810,11 +1081,7 @@ void main() {
               'id': 'set1',
               'name': '默认节次',
               'periodTimes': [
-                {
-                  'index': 1,
-                  'startMinutes': 480,
-                  'endMinutes': 525,
-                },
+                {'index': 1, 'startMinutes': 480, 'endMinutes': 525},
               ],
             },
           ],
@@ -823,33 +1090,46 @@ void main() {
 
       expect(legacy.themeColorMode, themeColorModeSingle);
       expect(
-        legacy.colorfulCourseTextColorMode,
+        legacy.studentMode.colorfulCourseTextColorMode,
         colorfulCourseTextColorModeAuto,
       );
       expect(legacy.colorfulUiColorValues, isEmpty);
-      expect(legacy.courseNameColorValues, isEmpty);
+      expect(legacy.studentMode.courseNameColorValues, isEmpty);
+      expect(legacy.activeMode, AppMode.general);
     });
 
     test('描边设置字段可以正确编码解码并兼容旧数据默认值', () {
-      final customized = _buildTestAppData().copyWith(
-        liveCourseOutlineEnabled: false,
-        liveCourseOutlineFollowTheme: false,
-        liveCourseOutlineCustomColorInitialized: true,
-        liveCourseOutlineColorValue: 0xFF123456,
-        liveCourseOutlineMode: liveCourseOutlineModeAllDisplayed,
-        liveCourseOutlineWidth: 3.5,
+      final themed = _buildTestAppData();
+      final customized = themed.copyWith(
+        studentMode: themed.studentMode.copyWith(
+          liveCourseOutlineEnabled: false,
+          liveCourseOutlineFollowTheme: false,
+          liveCourseOutlineCustomColorInitialized: true,
+          liveCourseOutlineColorValue: 0xFF123456,
+          liveCourseOutlineMode: liveCourseOutlineModeAllDisplayed,
+          liveCourseOutlineWidth: 3.5,
+        ),
       );
       final decodedCustomized = AppData.decode(customized.encode());
 
-      expect(decodedCustomized.liveCourseOutlineEnabled, isFalse);
-      expect(decodedCustomized.liveCourseOutlineFollowTheme, isFalse);
-      expect(decodedCustomized.liveCourseOutlineCustomColorInitialized, isTrue);
-      expect(decodedCustomized.liveCourseOutlineColorValue, 0xFF123456);
+      expect(decodedCustomized.studentMode.liveCourseOutlineEnabled, isFalse);
       expect(
-        decodedCustomized.liveCourseOutlineMode,
+        decodedCustomized.studentMode.liveCourseOutlineFollowTheme,
+        isFalse,
+      );
+      expect(
+        decodedCustomized.studentMode.liveCourseOutlineCustomColorInitialized,
+        isTrue,
+      );
+      expect(
+        decodedCustomized.studentMode.liveCourseOutlineColorValue,
+        0xFF123456,
+      );
+      expect(
+        decodedCustomized.studentMode.liveCourseOutlineMode,
         liveCourseOutlineModeAllDisplayed,
       );
-      expect(decodedCustomized.liveCourseOutlineWidth, 3.5);
+      expect(decodedCustomized.studentMode.liveCourseOutlineWidth, 3.5);
 
       final legacy = AppData.decode(
         jsonEncode({
@@ -860,25 +1140,28 @@ void main() {
               'id': 'set1',
               'name': '默认节次',
               'periodTimes': [
-                {
-                  'index': 1,
-                  'startMinutes': 480,
-                  'endMinutes': 525,
-                },
+                {'index': 1, 'startMinutes': 480, 'endMinutes': 525},
               ],
             },
           ],
         }),
       );
 
-      expect(legacy.liveCourseOutlineEnabled, isTrue);
-      expect(legacy.liveCourseOutlineFollowTheme, isTrue);
-      expect(legacy.liveCourseOutlineCustomColorInitialized, isFalse);
+      expect(legacy.studentMode.liveCourseOutlineEnabled, isTrue);
+      expect(legacy.studentMode.liveCourseOutlineFollowTheme, isTrue);
       expect(
-        legacy.liveCourseOutlineMode,
+        legacy.studentMode.liveCourseOutlineCustomColorInitialized,
+        isFalse,
+      );
+      expect(
+        legacy.studentMode.liveCourseOutlineMode,
         liveCourseOutlineModeCurrentOrNext,
       );
-      expect(legacy.liveCourseOutlineWidth, defaultLiveCourseOutlineWidth);
+      expect(
+        legacy.studentMode.liveCourseOutlineWidth,
+        defaultLiveCourseOutlineWidth,
+      );
+      expect(legacy.activeMode, AppMode.general);
     });
 
     test('provider 更新描边模式后会持久化', () async {
@@ -890,7 +1173,8 @@ void main() {
         enabled: provider.liveCourseOutlineEnabled,
         followTheme: provider.liveCourseOutlineFollowTheme,
         colorValue: provider.liveCourseOutlineColorValue,
-        customColorInitialized: provider.liveCourseOutlineCustomColorInitialized,
+        customColorInitialized:
+            provider.liveCourseOutlineCustomColorInitialized,
         mode: liveCourseOutlineModeAllDisplayed,
         width: provider.liveCourseOutlineWidth,
       );
@@ -923,7 +1207,10 @@ void main() {
       expect(enStrings.defaultPeriodTimeSetName, 'Default periods');
       expect(zhStrings.importedPeriodTimeSetName('测试课表'), '测试课表 节次');
       expect(zhHantStrings.importedPeriodTimeSetName('測試課表'), '測試課表 節次');
-      expect(enStrings.importedPeriodTimeSetName('Test Timetable'), 'Test Timetable periods');
+      expect(
+        enStrings.importedPeriodTimeSetName('Test Timetable'),
+        'Test Timetable periods',
+      );
       expect(zhStrings.formatDayOfWeekLabel(1), '星期一');
       expect(zhHantStrings.formatDayOfWeekLabel(1), '星期一');
       expect(enStrings.formatDayOfWeekLabel(1), 'Monday');
@@ -931,11 +1218,23 @@ void main() {
       expect(enStrings.formatWeekdayShortLabel(7), 'Sun');
       expect(zhStrings.formatMonthLabel(3), '3月');
       expect(enStrings.formatMonthLabel(3), 'Mar');
-      expect(zhStrings.formatSemesterWeeksLabel(const [], totalWeeks: 18), '第 1-18 周');
-      expect(enStrings.formatSemesterWeeksLabel(const [], totalWeeks: 18), 'Weeks 1-18');
+      expect(
+        zhStrings.formatSemesterWeeksLabel(const [], totalWeeks: 18),
+        '第 1-18 周',
+      );
+      expect(
+        enStrings.formatSemesterWeeksLabel(const [], totalWeeks: 18),
+        'Weeks 1-18',
+      );
       expect(zhStrings.formatSemesterWeeksLabel(const [1, 2, 4]), '第 1-2、4 周');
-      expect(enStrings.formatSemesterWeeksLabel(const [1, 2, 4]), 'Weeks 1-2, 4');
-      expect(zhStrings.periodTimeSetInUseMessage(2), '该节次时间仍被 2 个课表使用，请先改关联再删除');
+      expect(
+        enStrings.formatSemesterWeeksLabel(const [1, 2, 4]),
+        'Weeks 1-2, 4',
+      );
+      expect(
+        zhStrings.periodTimeSetInUseMessage(2),
+        '该节次时间仍被 2 个课表使用，请先改关联再删除',
+      );
       expect(
         enStrings.periodTimeSetInUseMessage(2),
         'This period time set is still used by 2 timetable(s). Reassign them before deleting.',
@@ -1058,8 +1357,11 @@ void main() {
     });
 
     test('再次导入时不会覆盖已有课程颜色但会为新课程补色', () async {
-      final initialData = _buildTestAppData().copyWith(
-        courseNameColorValues: const {'高等数学': 0xFF123456},
+      final base = _buildTestAppData();
+      final initialData = base.copyWith(
+        studentMode: base.studentMode.copyWith(
+          courseNameColorValues: const {'高等数学': 0xFF123456},
+        ),
       );
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(initialData: initialData),
@@ -1131,54 +1433,57 @@ void main() {
     });
 
     test('加载旧数据时会自动拆开重复的默认课程配色', () async {
-      final duplicatedDefaultColor = _buildTestAppData().copyWith(
-        timetables: [
-          TimetableData(
-            id: 'default',
-            config: TimetableConfig(
-              name: '测试课表A',
-              startDate: DateTime(2026, 2, 23),
-              totalWeeks: 18,
-              periodTimeSetId: 'set1',
+      final base = _buildTestAppData();
+      final duplicatedDefaultColor = base.copyWith(
+        studentMode: base.studentMode.copyWith(
+          timetables: [
+            TimetableData(
+              id: 'default',
+              config: TimetableConfig(
+                name: '测试课表A',
+                startDate: DateTime(2026, 2, 23),
+                totalWeeks: 18,
+                periodTimeSetId: 'set1',
+              ),
+              courses: [
+                CourseItem(
+                  id: 'course1',
+                  name: '大学英语B1',
+                  teacher: '',
+                  location: '',
+                  dayOfWeek: 1,
+                  semesterWeeks: const [1],
+                  periods: const [1],
+                  startMinutes: 480,
+                  endMinutes: 525,
+                  timeRange: '08:00 - 08:45',
+                  credit: 0,
+                  remarks: '',
+                  customFields: const {},
+                ),
+                CourseItem(
+                  id: 'course2',
+                  name: '大学语文',
+                  teacher: '',
+                  location: '',
+                  dayOfWeek: 2,
+                  semesterWeeks: const [1],
+                  periods: const [1],
+                  startMinutes: 480,
+                  endMinutes: 525,
+                  timeRange: '08:00 - 08:45',
+                  credit: 0,
+                  remarks: '',
+                  customFields: const {},
+                ),
+              ],
             ),
-            courses: [
-              CourseItem(
-                id: 'course1',
-                name: '大学英语B1',
-                teacher: '',
-                location: '',
-                dayOfWeek: 1,
-                semesterWeeks: const [1],
-                periods: const [1],
-                startMinutes: 480,
-                endMinutes: 525,
-                timeRange: '08:00 - 08:45',
-                credit: 0,
-                remarks: '',
-                customFields: const {},
-              ),
-              CourseItem(
-                id: 'course2',
-                name: '大学语文',
-                teacher: '',
-                location: '',
-                dayOfWeek: 2,
-                semesterWeeks: const [1],
-                periods: const [1],
-                startMinutes: 480,
-                endMinutes: 525,
-                timeRange: '08:00 - 08:45',
-                credit: 0,
-                remarks: '',
-                customFields: const {},
-              ),
-            ],
-          ),
-        ],
-        courseNameColorValues: const {
-          '大学英语B1': 0xFFE57373,
-          '大学语文': 0xFFE57373,
-        },
+          ],
+          courseNameColorValues: const {
+            '大学英语B1': 0xFFE57373,
+            '大学语文': 0xFFE57373,
+          },
+        ),
       );
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(initialData: duplicatedDefaultColor),
@@ -1216,32 +1521,38 @@ void main() {
 
   group('课表解析设置', () {
     test('课表解析设置字段可以正确编码解码并兼容旧数据默认值', () {
-      final customized = _buildTestAppData().copyWith(
-        schoolImportParserSettings: const SchoolImportParserSettings(
-          source: schoolImportParserSourceCustomOpenAi,
-          customBaseUrl: 'https://api.example.com/v1',
-          customApiKey: 'sk-test',
-          customModel: 'gpt-4.1-mini',
-          customPrompt: 'Keep teacher names when available.',
+      final themed = _buildTestAppData();
+      final customized = themed.copyWith(
+        studentMode: themed.studentMode.copyWith(
+          schoolImportParserSettings: const SchoolImportParserSettings(
+            source: schoolImportParserSourceCustomOpenAi,
+            customBaseUrl: 'https://api.example.com/v1',
+            customApiKey: 'sk-test',
+            customModel: 'gpt-4.1-mini',
+            customPrompt: 'Keep teacher names when available.',
+          ),
         ),
       );
       final decodedCustomized = AppData.decode(customized.encode());
 
       expect(
-        decodedCustomized.schoolImportParserSettings.source,
+        decodedCustomized.studentMode.schoolImportParserSettings.source,
         schoolImportParserSourceCustomOpenAi,
       );
       expect(
-        decodedCustomized.schoolImportParserSettings.customBaseUrl,
+        decodedCustomized.studentMode.schoolImportParserSettings.customBaseUrl,
         'https://api.example.com/v1',
       );
-      expect(decodedCustomized.schoolImportParserSettings.customApiKey, 'sk-test');
       expect(
-        decodedCustomized.schoolImportParserSettings.customModel,
+        decodedCustomized.studentMode.schoolImportParserSettings.customApiKey,
+        'sk-test',
+      );
+      expect(
+        decodedCustomized.studentMode.schoolImportParserSettings.customModel,
         'gpt-4.1-mini',
       );
       expect(
-        decodedCustomized.schoolImportParserSettings.customPrompt,
+        decodedCustomized.studentMode.schoolImportParserSettings.customPrompt,
         'Keep teacher names when available.',
       );
 
@@ -1254,11 +1565,7 @@ void main() {
               'id': 'set1',
               'name': '默认节次',
               'periodTimes': [
-                {
-                  'index': 1,
-                  'startMinutes': 480,
-                  'endMinutes': 525,
-                },
+                {'index': 1, 'startMinutes': 480, 'endMinutes': 525},
               ],
             },
           ],
@@ -1266,13 +1573,26 @@ void main() {
       );
 
       expect(
-        legacy.schoolImportParserSettings.source,
+        legacy.studentMode.schoolImportParserSettings.source,
         schoolImportParserSourceOfficial,
       );
-      expect(legacy.schoolImportParserSettings.customBaseUrl, isEmpty);
-      expect(legacy.schoolImportParserSettings.customApiKey, isEmpty);
-      expect(legacy.schoolImportParserSettings.customModel, isEmpty);
-      expect(legacy.schoolImportParserSettings.customPrompt, isEmpty);
+      expect(
+        legacy.studentMode.schoolImportParserSettings.customBaseUrl,
+        isEmpty,
+      );
+      expect(
+        legacy.studentMode.schoolImportParserSettings.customApiKey,
+        isEmpty,
+      );
+      expect(
+        legacy.studentMode.schoolImportParserSettings.customModel,
+        isEmpty,
+      );
+      expect(
+        legacy.studentMode.schoolImportParserSettings.customPrompt,
+        isEmpty,
+      );
+      expect(legacy.activeMode, AppMode.general);
     });
 
     test('provider 更新课表解析设置后会持久化且切回官方不清空自定义配置', () async {
@@ -1283,7 +1603,9 @@ void main() {
       await provider.updateSchoolImportParserSource(
         schoolImportParserSourceCustomOpenAi,
       );
-      await provider.updateCustomSchoolImportBaseUrl('https://api.example.com/v1');
+      await provider.updateCustomSchoolImportBaseUrl(
+        'https://api.example.com/v1',
+      );
       await provider.updateCustomSchoolImportApiKey('sk-test');
       await provider.updateCustomSchoolImportModel('gpt-4.1-mini');
       await provider.updateCustomSchoolImportPrompt(
@@ -1293,7 +1615,10 @@ void main() {
         schoolImportParserSourceOfficial,
       );
 
-      expect(provider.schoolImportParserSource, schoolImportParserSourceOfficial);
+      expect(
+        provider.schoolImportParserSource,
+        schoolImportParserSourceOfficial,
+      );
       expect(provider.customSchoolImportBaseUrl, 'https://api.example.com/v1');
       expect(provider.customSchoolImportApiKey, 'sk-test');
       expect(provider.customSchoolImportModel, 'gpt-4.1-mini');
@@ -1304,7 +1629,10 @@ void main() {
 
       final reloaded = TimetableProvider(storage: storage);
       await reloaded.load();
-      expect(reloaded.schoolImportParserSource, schoolImportParserSourceOfficial);
+      expect(
+        reloaded.schoolImportParserSource,
+        schoolImportParserSourceOfficial,
+      );
       expect(reloaded.customSchoolImportBaseUrl, 'https://api.example.com/v1');
       expect(reloaded.customSchoolImportApiKey, 'sk-test');
       expect(reloaded.customSchoolImportModel, 'gpt-4.1-mini');
@@ -1321,7 +1649,10 @@ void main() {
         client: MockClient((request) async {
           capturedUri = request.url;
           capturedBody = jsonDecode(request.body) as Map<String, dynamic>;
-          return http.Response(jsonEncode(_buildSchoolImportSuccessJson()), 200);
+          return http.Response(
+            jsonEncode(_buildSchoolImportSuccessJson()),
+            200,
+          );
         }),
       );
 
@@ -1340,7 +1671,10 @@ void main() {
       expect(capturedBody['sourceHint'], 'official');
       expect(capturedBody.containsKey('customPrompt'), isFalse);
       expect(result.response.meta.parser, 'official');
-      expect(result.response.timetable.courses.first.customFields['qqGroup'], '123456');
+      expect(
+        result.response.timetable.courses.first.customFields['qqGroup'],
+        '123456',
+      );
     });
 
     test('SchoolImportApi 自定义分支会解析聊天响应并补全 parser 元信息', () async {
@@ -1391,13 +1725,14 @@ void main() {
       expect(capturedBody['model'], 'gpt-4.1-mini');
       expect(capturedBody['response_format']['type'], 'json_object');
       final messages = capturedBody['messages'] as List<dynamic>;
-      final systemPrompt = (messages.first as Map<String, dynamic>)['content'] as String;
+      final systemPrompt =
+          (messages.first as Map<String, dynamic>)['content'] as String;
       expect(systemPrompt, 'You are a custom parser. Return JSON only.');
+      expect(result.response.meta.parser, 'custom-openai:gpt-4.1-mini');
       expect(
-        result.response.meta.parser,
-        'custom-openai:gpt-4.1-mini',
+        result.response.timetable.courses.first.customFields['qqGroup'],
+        '123456',
       );
-      expect(result.response.timetable.courses.first.customFields['qqGroup'], '123456');
     });
 
     test('SchoolImportApi 可获取并排序去重模型列表', () async {
@@ -1426,13 +1761,11 @@ void main() {
       expect(models, ['a-model', 'z-model']);
     });
 
-    testWidgets('课表解析设置页在自定义模式显示 Base URL API 密钥 模型和获取模型列表按钮', (
-      tester,
-    ) async {
+    testWidgets('课表解析设置页在自定义模式显示 Base URL API 密钥 模型和获取模型列表按钮', (tester) async {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            schoolImportParserSettings: const SchoolImportParserSettings(
+          initialData: _withSchoolImportSettings(
+            const SchoolImportParserSettings(
               source: schoolImportParserSourceCustomOpenAi,
               customBaseUrl: 'https://api.example.com/v1',
               customApiKey: 'sk-test',
@@ -1518,7 +1851,8 @@ void main() {
       );
 
       final messages = capturedBody['messages'] as List<dynamic>;
-      final systemPrompt = (messages.first as Map<String, dynamic>)['content'] as String;
+      final systemPrompt =
+          (messages.first as Map<String, dynamic>)['content'] as String;
       expect(systemPrompt, SchoolImportApi.defaultCustomOpenAiSystemPrompt);
     });
 
@@ -1552,8 +1886,8 @@ void main() {
     testWidgets('自定义提示词可重置为默认提示词', (tester) async {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            schoolImportParserSettings: const SchoolImportParserSettings(
+          initialData: _withSchoolImportSettings(
+            const SchoolImportParserSettings(
               source: schoolImportParserSourceCustomOpenAi,
               customBaseUrl: 'https://api.example.com/v1',
               customApiKey: 'sk-test',
@@ -1589,7 +1923,10 @@ void main() {
       await tester.tap(customPromptTitle);
       await tester.pumpAndSettle();
 
-      expect(provider.customSchoolImportPrompt, 'Only keep course name and weekday.');
+      expect(
+        provider.customSchoolImportPrompt,
+        'Only keep course name and weekday.',
+      );
       final resetPromptButton = find.text('重置默认提示词');
       expect(resetPromptButton, findsOneWidget);
       await tester.ensureVisible(resetPromptButton);
@@ -1608,8 +1945,8 @@ void main() {
     testWidgets('解析页可跳转到课表解析设置页且标题显示为解析', (tester) async {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            schoolImportParserSettings: const SchoolImportParserSettings(
+          initialData: _withSchoolImportSettings(
+            const SchoolImportParserSettings(
               source: schoolImportParserSourceCustomOpenAi,
               customBaseUrl: 'https://api.example.com/v1',
               customApiKey: 'sk-test',
@@ -1706,8 +2043,8 @@ void main() {
     testWidgets('设置-导入导出数据中可进入解析课表页面', (tester) async {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            schoolImportParserSettings: const SchoolImportParserSettings(
+          initialData: _withSchoolImportSettings(
+            const SchoolImportParserSettings(
               source: schoolImportParserSourceCustomOpenAi,
               customBaseUrl: 'https://api.example.com/v1',
               customApiKey: 'sk-test',
@@ -1756,8 +2093,8 @@ void main() {
     testWidgets('HTML 导入页在自定义解析配置不完整时显示跳转配置页按钮', (tester) async {
       final incompleteProvider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            schoolImportParserSettings: const SchoolImportParserSettings(
+          initialData: _withSchoolImportSettings(
+            const SchoolImportParserSettings(
               source: schoolImportParserSourceCustomOpenAi,
               customBaseUrl: '',
               customApiKey: '',
@@ -1799,8 +2136,8 @@ void main() {
     testWidgets('HTML 导入页会区分自定义配置缺失与完整状态', (tester) async {
       final incompleteProvider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            schoolImportParserSettings: const SchoolImportParserSettings(
+          initialData: _withSchoolImportSettings(
+            const SchoolImportParserSettings(
               source: schoolImportParserSourceCustomOpenAi,
               customBaseUrl: '',
               customApiKey: '',
@@ -1833,8 +2170,8 @@ void main() {
 
       final completeProvider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            schoolImportParserSettings: const SchoolImportParserSettings(
+          initialData: _withSchoolImportSettings(
+            const SchoolImportParserSettings(
               source: schoolImportParserSourceCustomOpenAi,
               customBaseUrl: 'https://api.example.com/v1',
               customApiKey: 'sk-test',
@@ -1894,7 +2231,10 @@ void main() {
       expect(provider.periodTimeSets.length, beforeSetCount + 1);
       expect(provider.activeTimetable.config.name, 'Imported timetable');
       expect(provider.activeTimetable.config.startDate, DateTime(2026, 2, 23));
-      expect(provider.activeTimetable.courses.first.customFields['课程群'], '654321');
+      expect(
+        provider.activeTimetable.courses.first.customFields['课程群'],
+        '654321',
+      );
       expect(provider.activePeriodTimeSet.periodTimes.length, 2);
       expect(provider.activePeriodTimeSet.name, 'Imported periods');
     });
@@ -1905,7 +2245,9 @@ void main() {
       );
       await provider.load();
 
-      final beforeSetIds = provider.periodTimeSets.map((item) => item.id).toList();
+      final beforeSetIds = provider.periodTimeSets
+          .map((item) => item.id)
+          .toList();
       await provider.applySchoolImportRequest(
         SchoolImportApplyRequest(
           response: _buildSchoolImportResponse(),
@@ -1915,7 +2257,10 @@ void main() {
         ),
       );
 
-      expect(provider.periodTimeSets.map((item) => item.id).toList(), beforeSetIds);
+      expect(
+        provider.periodTimeSets.map((item) => item.id).toList(),
+        beforeSetIds,
+      );
       expect(provider.activeTimetable.config.periodTimeSetId, 'set2');
     });
 
@@ -1973,18 +2318,20 @@ void main() {
               body: Center(
                 child: FilledButton(
                   onPressed: () async {
-                    sheetResult = await showModalBottomSheet<SchoolImportApplyRequest>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => SchoolWebImportResultSheet(
-                        response: response,
-                        canReplaceCurrent: true,
-                        periodTimeSets: provider.periodTimeSets,
-                        initialPeriodTimeSetId: provider.activePeriodTimeSet.id,
-                        provider: provider,
-                      ),
-                    );
+                    sheetResult =
+                        await showModalBottomSheet<SchoolImportApplyRequest>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => SchoolWebImportResultSheet(
+                            response: response,
+                            canReplaceCurrent: true,
+                            periodTimeSets: provider.periodTimeSets,
+                            initialPeriodTimeSetId:
+                                provider.activePeriodTimeSet.id,
+                            provider: provider,
+                          ),
+                        );
                   },
                   child: const Text('open'),
                 ),
@@ -2016,7 +2363,10 @@ void main() {
 
       expect(sheetResult, isNotNull);
       expect(sheetResult!.importBundledPeriodTimeSet, isFalse);
-      expect(sheetResult!.targetPeriodTimeSetId, provider.activePeriodTimeSet.id);
+      expect(
+        sheetResult!.targetPeriodTimeSetId,
+        provider.activePeriodTimeSet.id,
+      );
     });
 
     testWidgets('网页解析导入结果页在没有现有节次时间集时禁用丢弃内含节次', (tester) async {
@@ -2060,8 +2410,8 @@ void main() {
     testWidgets('HTML 导入页在请求进行中会禁用重复提交并只请求一次', (tester) async {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            schoolImportParserSettings: const SchoolImportParserSettings(
+          initialData: _withSchoolImportSettings(
+            const SchoolImportParserSettings(
               source: schoolImportParserSourceCustomOpenAi,
               customBaseUrl: 'https://api.example.com/v1',
               customApiKey: 'sk-test',
@@ -2072,9 +2422,7 @@ void main() {
       );
       await provider.load();
       final completer = Completer<SchoolImportApiResult>();
-      final fakeApi = FakeSchoolImportApi(
-        onImport: (_, _) => completer.future,
-      );
+      final fakeApi = FakeSchoolImportApi(onImport: (_, _) => completer.future);
 
       await tester.pumpWidget(
         ChangeNotifierProvider<TimetableProvider>.value(
@@ -2137,8 +2485,8 @@ void main() {
     testWidgets('HTML 导入页成功后会把导入结果写入 provider', (tester) async {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            schoolImportParserSettings: const SchoolImportParserSettings(
+          initialData: _withSchoolImportSettings(
+            const SchoolImportParserSettings(
               source: schoolImportParserSourceCustomOpenAi,
               customBaseUrl: 'https://api.example.com/v1',
               customApiKey: 'sk-test',
@@ -2180,10 +2528,11 @@ void main() {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
-                        value: provider,
-                        child: SchoolHtmlImportPage(api: fakeApi),
-                      ),
+                      builder: (_) =>
+                          ChangeNotifierProvider<TimetableProvider>.value(
+                            value: provider,
+                            child: SchoolHtmlImportPage(api: fakeApi),
+                          ),
                     ),
                   );
                 },
@@ -2225,7 +2574,10 @@ void main() {
 
       expect(fakeApi.callCount, 1);
       expect(provider.activeTimetable.config.name, 'Widget imported timetable');
-      expect(provider.activeTimetable.courses.first.customFields['来源'], 'widget-test');
+      expect(
+        provider.activeTimetable.courses.first.customFields['来源'],
+        'widget-test',
+      );
       expect(provider.periodTimeSets.length, 3);
       expect(provider.activePeriodTimeSet.name, 'Imported periods');
     });
@@ -2258,7 +2610,8 @@ void main() {
                       showPeriodTimeSetPickerDialog(
                         context,
                         provider: provider,
-                        selectedPeriodTimeSetId: provider.activePeriodTimeSet.id,
+                        selectedPeriodTimeSetId:
+                            provider.activePeriodTimeSet.id,
                       );
                     },
                     child: const Text('open'),
@@ -2304,19 +2657,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.text('课程描边'),
-        200,
-      );
+      await tester.scrollUntilVisible(find.text('课程描边'), 200);
       await tester.tap(find.text('课程描边'));
       await tester.pumpAndSettle();
 
       expect(provider.liveCourseOutlineFollowTheme, isTrue);
       expect(provider.liveCourseOutlineCustomColorInitialized, isFalse);
 
-      await tester.tap(
-        find.widgetWithText(SwitchListTile, '跟随主题色'),
-      );
+      await tester.tap(find.widgetWithText(SwitchListTile, '跟随主题色'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('应用设置'));
       await tester.pumpAndSettle();
@@ -2355,15 +2703,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.text('课程描边'),
-        200,
-      );
+      await tester.scrollUntilVisible(find.text('课程描边'), 200);
       await tester.tap(find.text('课程描边'));
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.widgetWithText(SwitchListTile, '开启课程描边'),
-      );
+      await tester.tap(find.widgetWithText(SwitchListTile, '开启课程描边'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('应用设置'));
       await tester.pumpAndSettle();
@@ -2395,10 +2738,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.text('课程描边'),
-        200,
-      );
+      await tester.scrollUntilVisible(find.text('课程描边'), 200);
       expect(find.text('2.5 px'), findsOneWidget);
 
       await tester.tap(find.text('课程描边'));
@@ -2410,13 +2750,16 @@ void main() {
     testWidgets('五彩缤纷模式会显示 UI 配色和课程颜色列表', (tester) async {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            themeColorMode: themeColorModeColorful,
-            colorfulUiColorValues: const {
-              colorfulUiPrimaryKey: 0xFF112233,
-            },
-            courseNameColorValues: const {'高等数学': 0xFF445566},
-          ),
+          initialData: () {
+            final themed = _buildTestAppData();
+            return themed.copyWith(
+              themeColorMode: themeColorModeColorful,
+              colorfulUiColorValues: const {colorfulUiPrimaryKey: 0xFF112233},
+              studentMode: themed.studentMode.copyWith(
+                courseNameColorValues: const {'高等数学': 0xFF445566},
+              ),
+            );
+          }(),
         ),
       );
       await provider.load();
@@ -2454,10 +2797,15 @@ void main() {
     testWidgets('单调主题色模式会隐藏五彩缤纷列表并显示原主题色入口', (tester) async {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(
-          initialData: _buildTestAppData().copyWith(
-            themeColorMode: themeColorModeSingle,
-            courseNameColorValues: const {'高等数学': 0xFF445566},
-          ),
+          initialData: () {
+            final themed = _buildTestAppData();
+            return themed.copyWith(
+              themeColorMode: themeColorModeSingle,
+              studentMode: themed.studentMode.copyWith(
+                courseNameColorValues: const {'高等数学': 0xFF445566},
+              ),
+            );
+          }(),
         ),
       );
       await provider.load();
@@ -2509,10 +2857,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.text('课程描边'),
-        200,
-      );
+      await tester.scrollUntilVisible(find.text('课程描边'), 200);
       await tester.tap(find.text('课程描边'));
       await tester.pumpAndSettle();
 
@@ -2523,7 +2868,10 @@ void main() {
       await tester.tap(find.text('应用设置'));
       await tester.pumpAndSettle();
 
-      expect(provider.liveCourseOutlineWidth, greaterThan(defaultLiveCourseOutlineWidth));
+      expect(
+        provider.liveCourseOutlineWidth,
+        greaterThan(defaultLiveCourseOutlineWidth),
+      );
     });
 
     testWidgets('切换描边目标后 provider 会保存模式', (tester) async {
@@ -2604,7 +2952,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(ColorPickerInput), findsOneWidget);
 
-      final colorInput = tester.widget<ColorPickerInput>(find.byType(ColorPickerInput));
+      final colorInput = tester.widget<ColorPickerInput>(
+        find.byType(ColorPickerInput),
+      );
       colorInput.onColorChanged(const Color(0xFF123456));
       await tester.pumpAndSettle();
       await tester.tap(find.text('应用设置'));
@@ -2649,33 +2999,12 @@ void main() {
     });
 
     testWidgets('首次未同意隐私政策时显示弹窗而不是整页', (tester) async {
-      final initialData = _buildTestAppData();
+      final initialData = _buildTestAppData().copyWith(
+        privacyPolicyAcceptedVersion: null,
+        privacyPolicyAcceptedAtIso: null,
+      );
       final provider = TimetableProvider(
-        storage: MemoryTimetableStorage(
-          initialData: AppData(
-            activeTimetableId: initialData.activeTimetableId,
-            timetables: initialData.timetables,
-            periodTimeSets: initialData.periodTimeSets,
-            conflictDisplayCourseIds: initialData.conflictDisplayCourseIds,
-            closeCoursePopupOnOutsideTap:
-                initialData.closeCoursePopupOnOutsideTap,
-            preserveTimetableGaps: initialData.preserveTimetableGaps,
-            showPastEndedCourses: initialData.showPastEndedCourses,
-            showFutureCourses: initialData.showFutureCourses,
-            showTimetableGridLines: initialData.showTimetableGridLines,
-            localeCode: initialData.localeCode,
-            themeMode: initialData.themeMode,
-            themeSeedColorValue: initialData.themeSeedColorValue,
-            liveCourseOutlineColorValue: initialData.liveCourseOutlineColorValue,
-            liveCourseOutlineEnabled: initialData.liveCourseOutlineEnabled,
-            liveCourseOutlineFollowTheme:
-                initialData.liveCourseOutlineFollowTheme,
-            liveCourseOutlineCustomColorInitialized:
-                initialData.liveCourseOutlineCustomColorInitialized,
-            liveCourseOutlineMode: initialData.liveCourseOutlineMode,
-            liveCourseOutlineWidth: initialData.liveCourseOutlineWidth,
-          ),
-        ),
+        storage: MemoryTimetableStorage(initialData: initialData),
       );
       await provider.load();
       provider.injectRemotePrivacyPolicyVersion('2026-04-20');
@@ -2769,7 +3098,7 @@ void main() {
 
     testWidgets('课程详情优先展示地点和时间卡片', (tester) async {
       final appData = _buildTestAppData();
-      final course = appData.timetables.first.courses.first;
+      final course = appData.studentMode.timetables.first.courses.first;
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(initialData: appData),
       );
@@ -2811,7 +3140,8 @@ void main() {
           UpdateCheckResult(
             localVersion: '1.0.0',
             remoteVersion: '1.1.0',
-            releaseUrl: 'https://github.com/Mashiro0619/KeSchedule/releases/latest',
+            releaseUrl:
+                'https://github.com/Mashiro0619/KeSchedule/releases/latest',
             officialWebsiteUrl: 'https://mashiro.tech/KeSchedule',
             updateContent: '更新说明',
             hasUpdate: true,
@@ -2892,21 +3222,25 @@ void main() {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(
           initialData: AppData(
-            activeTimetableId: '',
-            timetables: const [],
-            periodTimeSets: [
-              PeriodTimeSet(
-                id: 'set1',
-                name: '默认节次',
-                periodTimes: [
-                  CoursePeriodTime(
-                    index: 1,
-                    startMinutes: 480,
-                    endMinutes: 525,
-                  ),
-                ],
-              ),
-            ],
+            activeMode: AppMode.student,
+            studentMode: StudentModeData(
+              activeTimetableId: '',
+              timetables: const [],
+              periodTimeSets: [
+                PeriodTimeSet(
+                  id: 'set1',
+                  name: '默认节次',
+                  periodTimes: [
+                    CoursePeriodTime(
+                      index: 1,
+                      startMinutes: 480,
+                      endMinutes: 525,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            generalMode: GeneralScheduleData.fromJson(const {}),
             privacyPolicyAcceptedVersion: '2026-04-20',
           ),
         ),
@@ -3157,7 +3491,8 @@ void main() {
                   liveCourseOutlineMode: liveCourseOutlineModeCurrentOrNext,
                   onCourseTap: (_) {},
                   onEmptySlotTap: (_) {},
-                  liveCourseOutlineColorValue: defaultLiveCourseOutlineColorValue,
+                  liveCourseOutlineColorValue:
+                      defaultLiveCourseOutlineColorValue,
                   liveCourseOutlineWidth: defaultLiveCourseOutlineWidth,
                 ),
               ),
@@ -3259,7 +3594,8 @@ void main() {
                   liveCourseOutlineMode: mode,
                   onCourseTap: (_) {},
                   onEmptySlotTap: (_) {},
-                  liveCourseOutlineColorValue: defaultLiveCourseOutlineColorValue,
+                  liveCourseOutlineColorValue:
+                      defaultLiveCourseOutlineColorValue,
                   liveCourseOutlineWidth: defaultLiveCourseOutlineWidth,
                 ),
               ),
@@ -3272,9 +3608,10 @@ void main() {
             .byType(Card)
             .evaluate()
             .map(
-              (element) => (tester.widget<Card>(find.byWidget(element.widget)).shape
-                      as RoundedRectangleBorder)
-                  .side,
+              (element) =>
+                  (tester.widget<Card>(find.byWidget(element.widget)).shape
+                          as RoundedRectangleBorder)
+                      .side,
             )
             .where((side) => side.width >= 0)
             .toList();
@@ -3325,7 +3662,8 @@ void main() {
           .where((side) => side != BorderSide.none)
           .toList();
       expect(highlightedSides.length, 2);
-      final widths = highlightedSides.map((side) => side.width).toList()..sort();
+      final widths = highlightedSides.map((side) => side.width).toList()
+        ..sort();
       expect(widths.last, greaterThan(widths.first));
       expect(widths.last, greaterThan(currentOrNextWidth));
       expect(find.byIcon(Icons.notifications_active_outlined), findsNothing);
@@ -3476,20 +3814,38 @@ void main() {
     // ── matchesSemesterWeek ──
     test('matchesSemesterWeek 空周列表匹配任意周', () {
       final course = CourseItem(
-        id: '1', name: '', teacher: '', location: '',
-        dayOfWeek: 1, semesterWeeks: [], periods: [],
-        startMinutes: 0, endMinutes: 0, timeRange: '',
-        credit: 0, remarks: '', customFields: {},
+        id: '1',
+        name: '',
+        teacher: '',
+        location: '',
+        dayOfWeek: 1,
+        semesterWeeks: [],
+        periods: [],
+        startMinutes: 0,
+        endMinutes: 0,
+        timeRange: '',
+        credit: 0,
+        remarks: '',
+        customFields: {},
       );
       expect(matchesSemesterWeek(course, 5), isTrue);
     });
 
     test('matchesSemesterWeek 精确匹配指定周', () {
       final course = CourseItem(
-        id: '1', name: '', teacher: '', location: '',
-        dayOfWeek: 1, semesterWeeks: [1, 3, 5], periods: [],
-        startMinutes: 0, endMinutes: 0, timeRange: '',
-        credit: 0, remarks: '', customFields: {},
+        id: '1',
+        name: '',
+        teacher: '',
+        location: '',
+        dayOfWeek: 1,
+        semesterWeeks: [1, 3, 5],
+        periods: [],
+        startMinutes: 0,
+        endMinutes: 0,
+        timeRange: '',
+        credit: 0,
+        remarks: '',
+        customFields: {},
       );
       expect(matchesSemesterWeek(course, 3), isTrue);
       expect(matchesSemesterWeek(course, 2), isFalse);
@@ -3530,12 +3886,36 @@ void main() {
 
     test('buildOverlapGroups 不重叠课程各自成组', () {
       final courses = [
-        CourseItem(id: '1', name: '', teacher: '', location: '', dayOfWeek: 1,
-          semesterWeeks: [], periods: [], startMinutes: 480, endMinutes: 525,
-          timeRange: '', credit: 0, remarks: '', customFields: {}),
-        CourseItem(id: '2', name: '', teacher: '', location: '', dayOfWeek: 1,
-          semesterWeeks: [], periods: [], startMinutes: 600, endMinutes: 645,
-          timeRange: '', credit: 0, remarks: '', customFields: {}),
+        CourseItem(
+          id: '1',
+          name: '',
+          teacher: '',
+          location: '',
+          dayOfWeek: 1,
+          semesterWeeks: [],
+          periods: [],
+          startMinutes: 480,
+          endMinutes: 525,
+          timeRange: '',
+          credit: 0,
+          remarks: '',
+          customFields: {},
+        ),
+        CourseItem(
+          id: '2',
+          name: '',
+          teacher: '',
+          location: '',
+          dayOfWeek: 1,
+          semesterWeeks: [],
+          periods: [],
+          startMinutes: 600,
+          endMinutes: 645,
+          timeRange: '',
+          credit: 0,
+          remarks: '',
+          customFields: {},
+        ),
       ];
       final groups = buildOverlapGroups(courses);
       expect(groups.length, 2);
@@ -3547,12 +3927,36 @@ void main() {
 
     test('buildOverlapGroups 时间重叠课程合并成一组', () {
       final courses = [
-        CourseItem(id: '1', name: '', teacher: '', location: '', dayOfWeek: 1,
-          semesterWeeks: [], periods: [], startMinutes: 480, endMinutes: 570,
-          timeRange: '', credit: 0, remarks: '', customFields: {}),
-        CourseItem(id: '2', name: '', teacher: '', location: '', dayOfWeek: 1,
-          semesterWeeks: [], periods: [], startMinutes: 540, endMinutes: 630,
-          timeRange: '', credit: 0, remarks: '', customFields: {}),
+        CourseItem(
+          id: '1',
+          name: '',
+          teacher: '',
+          location: '',
+          dayOfWeek: 1,
+          semesterWeeks: [],
+          periods: [],
+          startMinutes: 480,
+          endMinutes: 570,
+          timeRange: '',
+          credit: 0,
+          remarks: '',
+          customFields: {},
+        ),
+        CourseItem(
+          id: '2',
+          name: '',
+          teacher: '',
+          location: '',
+          dayOfWeek: 1,
+          semesterWeeks: [],
+          periods: [],
+          startMinutes: 540,
+          endMinutes: 630,
+          timeRange: '',
+          credit: 0,
+          remarks: '',
+          customFields: {},
+        ),
       ];
       final groups = buildOverlapGroups(courses);
       expect(groups.length, 1);
@@ -3562,33 +3966,93 @@ void main() {
     // ── isFullConflictGroup ──
     test('isFullConflictGroup 单个课程不是完全冲突', () {
       final courses = [
-        CourseItem(id: '1', name: '', teacher: '', location: '', dayOfWeek: 1,
-          semesterWeeks: [], periods: [], startMinutes: 480, endMinutes: 570,
-          timeRange: '', credit: 0, remarks: '', customFields: {}),
+        CourseItem(
+          id: '1',
+          name: '',
+          teacher: '',
+          location: '',
+          dayOfWeek: 1,
+          semesterWeeks: [],
+          periods: [],
+          startMinutes: 480,
+          endMinutes: 570,
+          timeRange: '',
+          credit: 0,
+          remarks: '',
+          customFields: {},
+        ),
       ];
       expect(isFullConflictGroup(courses), isFalse);
     });
 
     test('isFullConflictGroup 完全相同时间范围的课程是完全冲突', () {
       final courses = [
-        CourseItem(id: '1', name: '', teacher: '', location: '', dayOfWeek: 1,
-          semesterWeeks: [], periods: [], startMinutes: 480, endMinutes: 570,
-          timeRange: '', credit: 0, remarks: '', customFields: {}),
-        CourseItem(id: '2', name: '', teacher: '', location: '', dayOfWeek: 1,
-          semesterWeeks: [], periods: [], startMinutes: 480, endMinutes: 570,
-          timeRange: '', credit: 0, remarks: '', customFields: {}),
+        CourseItem(
+          id: '1',
+          name: '',
+          teacher: '',
+          location: '',
+          dayOfWeek: 1,
+          semesterWeeks: [],
+          periods: [],
+          startMinutes: 480,
+          endMinutes: 570,
+          timeRange: '',
+          credit: 0,
+          remarks: '',
+          customFields: {},
+        ),
+        CourseItem(
+          id: '2',
+          name: '',
+          teacher: '',
+          location: '',
+          dayOfWeek: 1,
+          semesterWeeks: [],
+          periods: [],
+          startMinutes: 480,
+          endMinutes: 570,
+          timeRange: '',
+          credit: 0,
+          remarks: '',
+          customFields: {},
+        ),
       ];
       expect(isFullConflictGroup(courses), isTrue);
     });
 
     test('isFullConflictGroup 一个包含另一个时也是完全冲突', () {
       final courses = [
-        CourseItem(id: '1', name: '', teacher: '', location: '', dayOfWeek: 1,
-          semesterWeeks: [], periods: [], startMinutes: 480, endMinutes: 600,
-          timeRange: '', credit: 0, remarks: '', customFields: {}),
-        CourseItem(id: '2', name: '', teacher: '', location: '', dayOfWeek: 1,
-          semesterWeeks: [], periods: [], startMinutes: 500, endMinutes: 550,
-          timeRange: '', credit: 0, remarks: '', customFields: {}),
+        CourseItem(
+          id: '1',
+          name: '',
+          teacher: '',
+          location: '',
+          dayOfWeek: 1,
+          semesterWeeks: [],
+          periods: [],
+          startMinutes: 480,
+          endMinutes: 600,
+          timeRange: '',
+          credit: 0,
+          remarks: '',
+          customFields: {},
+        ),
+        CourseItem(
+          id: '2',
+          name: '',
+          teacher: '',
+          location: '',
+          dayOfWeek: 1,
+          semesterWeeks: [],
+          periods: [],
+          startMinutes: 500,
+          endMinutes: 550,
+          timeRange: '',
+          credit: 0,
+          remarks: '',
+          customFields: {},
+        ),
       ];
       expect(isFullConflictGroup(courses), isTrue);
     });
@@ -3596,9 +4060,9 @@ void main() {
     // ── AppData.fromJson edge cases ──
     test('AppData.fromJson 空 Map 仍返回有效 AppData', () {
       final data = AppData.fromJson({});
-      expect(data.timetables, isEmpty);
-      expect(data.periodTimeSets, isEmpty);
-      expect(data.activeTimetableId, '');
+      expect(data.studentMode.timetables, isEmpty);
+      expect(data.studentMode.periodTimeSets, isEmpty);
+      expect(data.studentMode.activeTimetableId, '');
     });
 
     test('AppData.fromJson 缺失字段不崩溃', () {
@@ -3608,11 +4072,11 @@ void main() {
             'id': 't1',
             'config': {'name': 'Test', 'totalWeeks': 20},
             'courses': [],
-          }
+          },
         ],
       });
-      expect(data.timetables, hasLength(1));
-      expect(data.timetables.first.config.name, 'Test');
+      expect(data.studentMode.timetables, hasLength(1));
+      expect(data.studentMode.timetables.first.config.name, 'Test');
     });
 
     test('AppData.fromJson 忽略无效的 activeTimetableId', () {
@@ -3623,10 +4087,10 @@ void main() {
             'id': 't1',
             'config': {'name': 'T1', 'totalWeeks': 10},
             'courses': [],
-          }
+          },
         ],
       });
-      expect(data.activeTimetableId, 't1');
+      expect(data.studentMode.activeTimetableId, 't1');
     });
 
     // ── ImportExportEnvelope roundtrip ──
@@ -3669,6 +4133,65 @@ void main() {
         () => decodePeriodTimesEnvelope(source),
         throwsA(isA<FormatException>()),
       );
+    });
+
+    test('TimetableEntry course adapter 保留标题地点开始结束时间', () {
+      final periods = buildDefaultPeriodTimes();
+      final course = CourseItem(
+        id: 'c1',
+        name: '高等数学',
+        teacher: '陈老师',
+        location: 'A-201',
+        dayOfWeek: 3,
+        semesterWeeks: buildAllSemesterWeeks(18),
+        periods: const [1, 2],
+        startMinutes: periods[0].startMinutes,
+        endMinutes: periods[1].endMinutes,
+        timeRange: buildTimeRange(
+          periods[0].startMinutes,
+          periods[1].endMinutes,
+        ),
+        credit: 4,
+        remarks: '',
+        customFields: const {},
+      );
+      final entry = courseToEntry(course);
+      expect(entry.id, 'c1');
+      expect(entry.title, '高等数学');
+      expect(entry.location, 'A-201');
+      expect(entry.teacher, '陈老师');
+      expect(entry.dayOfWeek, 3);
+      expect(entry.startMinutes, periods[0].startMinutes);
+      expect(entry.endMinutes, periods[1].endMinutes);
+      expect(entry.kind, TimetableEntryKind.course);
+      expect(entry.source, same(course));
+    });
+
+    test('TimetableEntry occurrence adapter 保留标题地点开始结束时间和持续时间', () {
+      final event = GeneralEvent(
+        id: 'evt1',
+        title: '会议',
+        location: 'Room B',
+        startDateTimeIso: '2026-05-20T14:00:00.000',
+        endDateTimeIso: '2026-05-20T15:30:00.000',
+        colorValue: 0xFF123456,
+      );
+      final occurrence = GeneralEventOccurrence(
+        event: event,
+        start: DateTime(2026, 5, 20, 14, 0),
+        end: DateTime(2026, 5, 20, 15, 30),
+      );
+      final entry = occurrenceToEntry(occurrence);
+      expect(entry.id, 'evt1');
+      expect(entry.title, '会议');
+      expect(entry.location, 'Room B');
+      expect(entry.teacher, '');
+      expect(entry.dayOfWeek, DateTime.wednesday);
+      expect(entry.startMinutes, 840);
+      expect(entry.endMinutes, 930);
+      expect(entry.colorValue, 0xFF123456);
+      expect(entry.kind, TimetableEntryKind.generalEvent);
+      expect(entry.source, same(occurrence));
     });
   });
 }

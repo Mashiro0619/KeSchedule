@@ -847,5 +847,19 @@
     "placeholders": {
       "value": {}
     }
-  }
+  },
+  "generalSchedule": "General schedule",
+  "@generalSchedule": {},
+  "studentTimetable": "Student timetable",
+  "@studentTimetable": {},
+  "switchMode": "Switch mode",
+  "@switchMode": {},
+  "generalScheduleComingSoon": "General schedule coming soon",
+  "@generalScheduleComingSoon": {},
+  "switchToStudentTimetable": "Switch to Student timetable",
+  "@switchToStudentTimetable": {},
+  "mySchedule": "My schedule",
+  "@mySchedule": {},
+  "today": "Today",
+  "@today": {}
 }

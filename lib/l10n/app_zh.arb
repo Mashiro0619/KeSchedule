@@ -847,5 +847,19 @@
     "placeholders": {
       "value": {}
     }
-  }
+  },
+  "generalSchedule": "通用日程",
+  "@generalSchedule": {},
+  "studentTimetable": "学生课表",
+  "@studentTimetable": {},
+  "switchMode": "切换模式",
+  "@switchMode": {},
+  "generalScheduleComingSoon": "通用日程即将上线",
+  "@generalScheduleComingSoon": {},
+  "switchToStudentTimetable": "切换到学生课表",
+  "@switchToStudentTimetable": {},
+  "mySchedule": "我的日程",
+  "@mySchedule": {},
+  "today": "今天",
+  "@today": {}
 }

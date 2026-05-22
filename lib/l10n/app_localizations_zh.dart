@@ -1141,6 +1141,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String semesterWeeksList(Object value) {
     return '第 $value 周';
   }
+
+  @override
+  String get generalSchedule => '通用日程';
+
+  @override
+  String get studentTimetable => '学生课表';
+
+  @override
+  String get switchMode => '切换模式';
+
+  @override
+  String get generalScheduleComingSoon => '通用日程即将上线';
+
+  @override
+  String get switchToStudentTimetable => '切换到学生课表';
+
+  @override
+  String get mySchedule => '我的日程';
+
+  @override
+  String get today => '今天';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

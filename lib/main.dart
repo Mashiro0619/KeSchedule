@@ -9,7 +9,7 @@ import 'l10n/app_locale.dart';
 import 'l10n/app_localizations.dart';
 import 'models/timetable_models.dart';
 import 'providers/timetable_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/app_home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,7 +108,7 @@ class MyApp extends StatelessWidget {
               themeColorMode: timetableProvider.themeColorMode,
               colorfulUiColorValues: timetableProvider.colorfulUiColorValues,
             ),
-            home: const HomeScreen(),
+            home: const AppHomeScreen(),
           );
         },
       ),

@@ -66,47 +66,241 @@ class TimetableProvider extends ChangeNotifier {
   String? _storagePath;
 
   bool get isLoaded => _isLoaded;
-  bool get hasTimetables => _appData.timetables.isNotEmpty;
-  bool get hasPeriodTimeSets => _appData.periodTimeSets.isNotEmpty;
-  List<TimetableData> get timetables => _appData.timetables;
-  List<PeriodTimeSet> get periodTimeSets => _appData.periodTimeSets;
+  bool get hasTimetables => _appData.studentMode.timetables.isNotEmpty;
+  bool get hasPeriodTimeSets => _appData.studentMode.periodTimeSets.isNotEmpty;
+  List<TimetableData> get timetables => _appData.studentMode.timetables;
+  List<PeriodTimeSet> get periodTimeSets => _appData.studentMode.periodTimeSets;
   int get selectedWeek => _selectedWeek;
   String? get storagePath => _storagePath;
   bool get closeCoursePopupOnOutsideTap =>
-      _appData.closeCoursePopupOnOutsideTap;
-  bool get preserveTimetableGaps => _appData.preserveTimetableGaps;
-  bool get showPastEndedCourses => _appData.showPastEndedCourses;
-  bool get showFutureCourses => _appData.showFutureCourses;
-  bool get showTimetableGridLines => _appData.showTimetableGridLines;
+      _appData.studentMode.closeCoursePopupOnOutsideTap;
+  bool get preserveTimetableGaps => _appData.studentMode.preserveTimetableGaps;
+  bool get showPastEndedCourses => _appData.studentMode.showPastEndedCourses;
+  bool get showFutureCourses => _appData.studentMode.showFutureCourses;
+  bool get showTimetableGridLines =>
+      _appData.studentMode.showTimetableGridLines;
   String get localeCode => _appData.localeCode;
   String get themeMode => _appData.themeMode;
   String get themeColorMode => _appData.themeColorMode;
   int get themeSeedColorValue => _appData.themeSeedColorValue;
   String get colorfulCourseTextColorMode =>
-      _appData.colorfulCourseTextColorMode;
+      _appData.studentMode.colorfulCourseTextColorMode;
   Map<String, int> get colorfulUiColorValues => _appData.colorfulUiColorValues;
-  Map<String, int> get courseNameColorValues => _appData.courseNameColorValues;
+  Map<String, int> get courseNameColorValues =>
+      _appData.studentMode.courseNameColorValues;
   SchoolImportParserSettings get schoolImportParserSettings =>
-      _appData.schoolImportParserSettings;
+      _appData.studentMode.schoolImportParserSettings;
   String get schoolImportParserSource =>
-      _appData.schoolImportParserSettings.source;
+      _appData.studentMode.schoolImportParserSettings.source;
   String get customSchoolImportBaseUrl =>
-      _appData.schoolImportParserSettings.customBaseUrl;
+      _appData.studentMode.schoolImportParserSettings.customBaseUrl;
   String get customSchoolImportApiKey =>
-      _appData.schoolImportParserSettings.customApiKey;
+      _appData.studentMode.schoolImportParserSettings.customApiKey;
   String get customSchoolImportModel =>
-      _appData.schoolImportParserSettings.customModel;
+      _appData.studentMode.schoolImportParserSettings.customModel;
   String get customSchoolImportPrompt =>
-      _appData.schoolImportParserSettings.customPrompt;
-  int get liveCourseOutlineColorValue => _appData.liveCourseOutlineColorValue;
-  bool get liveCourseOutlineEnabled => _appData.liveCourseOutlineEnabled;
-  bool get liveCourseOutlineFollowTheme => _appData.liveCourseOutlineFollowTheme;
+      _appData.studentMode.schoolImportParserSettings.customPrompt;
+  int get liveCourseOutlineColorValue =>
+      _appData.studentMode.liveCourseOutlineColorValue;
+  bool get liveCourseOutlineEnabled =>
+      _appData.studentMode.liveCourseOutlineEnabled;
+  bool get liveCourseOutlineFollowTheme =>
+      _appData.studentMode.liveCourseOutlineFollowTheme;
   bool get liveCourseOutlineCustomColorInitialized =>
-      _appData.liveCourseOutlineCustomColorInitialized;
-  String get liveCourseOutlineMode => _appData.liveCourseOutlineMode;
-  double get liveCourseOutlineWidth => _appData.liveCourseOutlineWidth;
+      _appData.studentMode.liveCourseOutlineCustomColorInitialized;
+  String get liveCourseOutlineMode =>
+      _appData.studentMode.liveCourseOutlineMode;
+  double get liveCourseOutlineWidth =>
+      _appData.studentMode.liveCourseOutlineWidth;
   String? get ignoredUpdateVersion => _appData.ignoredUpdateVersion;
   String? get availableUpdateVersion => _appData.availableUpdateVersion;
+
+  // ── App mode ──
+
+  AppMode get activeMode => _appData.activeMode;
+  bool get isGeneralMode => _appData.activeMode == AppMode.general;
+  bool get isStudentMode => _appData.activeMode == AppMode.student;
+  StudentModeData get studentMode => _appData.studentMode;
+  GeneralScheduleData get generalMode => _appData.generalMode;
+
+  Future<void> switchMode(AppMode mode) async {
+    if (_appData.activeMode == mode) return;
+    _appData = _appData.copyWith(activeMode: mode);
+    await _saveAndNotify();
+  }
+
+  // ── General schedule ──
+
+  List<GeneralSchedule> get generalSchedules => _appData.generalMode.schedules;
+
+  GeneralSchedule? get activeGeneralScheduleOrNull =>
+      _appData.generalMode.activeScheduleOrNull;
+
+  GeneralSchedule get activeGeneralSchedule =>
+      _appData.generalMode.activeSchedule;
+
+  DateTime get selectedGeneralDate {
+    final iso = _appData.generalMode.selectedDateIso;
+    if (iso != null) {
+      final parsed = DateTime.tryParse(iso);
+      if (parsed != null) return parsed;
+    }
+    return DateTime.now();
+  }
+
+  Future<void> switchGeneralSchedule(String scheduleId) async {
+    final mode = _appData.generalMode;
+    if (mode.activeScheduleId == scheduleId) return;
+    if (!mode.schedules.any((s) => s.id == scheduleId)) return;
+    _appData = _appData.copyWith(
+      generalMode: mode.copyWith(activeScheduleId: scheduleId),
+    );
+    await _saveAndNotify();
+  }
+
+  Future<void> addGeneralSchedule({String? name}) async {
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final schedule = GeneralSchedule(
+      id: 'schedule_$stamp',
+      name: (name != null && name.trim().isNotEmpty)
+          ? name.trim()
+          : 'My schedule',
+      events: const [],
+    );
+    final mode = _appData.generalMode;
+    _appData = _appData.copyWith(
+      generalMode: mode.copyWith(
+        activeScheduleId: schedule.id,
+        schedules: [...mode.schedules, schedule],
+      ),
+    );
+    await _saveAndNotify();
+  }
+
+  Future<void> renameGeneralSchedule(String scheduleId, String name) async {
+    final mode = _appData.generalMode;
+    final existing = mode.schedules.firstWhere(
+      (s) => s.id == scheduleId,
+      orElse: () => mode.activeSchedule,
+    );
+    final updated = mode.withSchedule(existing.copyWith(name: name));
+    _appData = _appData.copyWith(generalMode: updated);
+    await _saveAndNotify();
+  }
+
+  Future<void> deleteGeneralSchedule(String scheduleId) async {
+    final mode = _appData.generalMode;
+    final remaining = mode.schedules.where((s) => s.id != scheduleId).toList();
+    final nextActiveId = remaining.isNotEmpty
+        ? (remaining.any((s) => s.id == mode.activeScheduleId)
+              ? mode.activeScheduleId
+              : remaining.first.id)
+        : '';
+    _appData = _appData.copyWith(
+      generalMode: mode.copyWith(
+        activeScheduleId: nextActiveId,
+        schedules: remaining,
+      ),
+    );
+    await _saveAndNotify();
+  }
+
+  Future<void> setSelectedGeneralDate(DateTime date) async {
+    _appData = _appData.copyWith(
+      generalMode: _appData.generalMode.copyWith(
+        selectedDateIso: date.toIso8601String().split('T').first,
+      ),
+    );
+    await _saveAndNotify();
+  }
+
+  Future<void> saveGeneralEvent(GeneralEvent event) async {
+    final mode = _appData.generalMode;
+    final schedule = mode.activeSchedule;
+    final events = [...schedule.events];
+    final index = events.indexWhere((e) => e.id == event.id);
+    if (index >= 0) {
+      events[index] = event;
+    } else {
+      events.add(event);
+    }
+    final updatedSchedule = schedule.copyWith(events: events);
+    _appData = _appData.copyWith(
+      generalMode: mode.withSchedule(updatedSchedule),
+    );
+    await _saveAndNotify();
+  }
+
+  Future<void> deleteGeneralEvent(String eventId) async {
+    final mode = _appData.generalMode;
+    final schedule = mode.activeSchedule;
+    final events = schedule.events.where((e) => e.id != eventId).toList();
+    final updatedSchedule = schedule.copyWith(events: events);
+    _appData = _appData.copyWith(
+      generalMode: mode.withSchedule(updatedSchedule),
+    );
+    await _saveAndNotify();
+  }
+
+  List<GeneralEventOccurrence> generalOccurrencesForRange({
+    required DateTime startInclusive,
+    required DateTime endExclusive,
+  }) {
+    final schedule = _appData.generalMode.activeSchedule;
+    final results = <GeneralEventOccurrence>[];
+    for (final event in schedule.events) {
+      final eventStart = DateTime.tryParse(event.startDateTimeIso);
+      final eventEnd = DateTime.tryParse(event.endDateTimeIso);
+      if (eventStart == null || eventEnd == null) continue;
+
+      if (event.recurrence == GeneralEventRecurrence.weekly) {
+        final recurrenceEnd = event.recurrenceEndDateIso != null
+            ? DateTime.tryParse(event.recurrenceEndDateIso!)
+            : null;
+        final duration = eventEnd.difference(eventStart);
+        var occurrenceStart = eventStart;
+        while (occurrenceStart.isBefore(endExclusive)) {
+          if (recurrenceEnd != null) {
+            final occurrenceDate = DateTime(
+              occurrenceStart.year,
+              occurrenceStart.month,
+              occurrenceStart.day,
+            );
+            final recurrenceEndDate = DateTime(
+              recurrenceEnd.year,
+              recurrenceEnd.month,
+              recurrenceEnd.day,
+            );
+            if (occurrenceDate.isAfter(recurrenceEndDate)) break;
+          }
+          final occurrenceEnd = occurrenceStart.add(duration);
+          if (!occurrenceEnd.isBefore(startInclusive) &&
+              occurrenceStart.isBefore(endExclusive)) {
+            results.add(
+              GeneralEventOccurrence(
+                event: event,
+                start: occurrenceStart,
+                end: occurrenceEnd,
+              ),
+            );
+          }
+          occurrenceStart = occurrenceStart.add(const Duration(days: 7));
+        }
+      } else {
+        if (!eventEnd.isBefore(startInclusive) &&
+            eventStart.isBefore(endExclusive)) {
+          results.add(
+            GeneralEventOccurrence(
+              event: event,
+              start: eventStart,
+              end: eventEnd,
+            ),
+          );
+        }
+      }
+    }
+    return results;
+  }
 
   // ── Privacy policy (remote-version driven) ──
 
@@ -117,7 +311,8 @@ class TimetableProvider extends ChangeNotifier {
   /// never blocked by a network failure.
   String? get activePrivacyPolicyVersion => _remotePrivacyPolicyVersion;
 
-  String? get acceptedPrivacyPolicyVersion => _appData.privacyPolicyAcceptedVersion;
+  String? get acceptedPrivacyPolicyVersion =>
+      _appData.privacyPolicyAcceptedVersion;
 
   DateTime? get privacyPolicyAcceptedAt {
     final value = _appData.privacyPolicyAcceptedAtIso;
@@ -150,15 +345,15 @@ class TimetableProvider extends ChangeNotifier {
   }
 
   TimetableData? get activeTimetableOrNull {
-    if (_appData.timetables.isEmpty) {
+    if (_appData.studentMode.timetables.isEmpty) {
       return null;
     }
-    for (final item in _appData.timetables) {
-      if (item.id == _appData.activeTimetableId) {
+    for (final item in _appData.studentMode.timetables) {
+      if (item.id == _appData.studentMode.activeTimetableId) {
         return item;
       }
     }
-    return _appData.timetables.first;
+    return _appData.studentMode.timetables.first;
   }
 
   TimetableData get activeTimetable =>
@@ -167,9 +362,9 @@ class TimetableProvider extends ChangeNotifier {
   PeriodTimeSet? get activePeriodTimeSetOrNull {
     final timetable = activeTimetableOrNull;
     if (timetable == null) {
-      return _appData.periodTimeSets.isEmpty
+      return _appData.studentMode.periodTimeSets.isEmpty
           ? null
-          : _appData.periodTimeSets.first;
+          : _appData.studentMode.periodTimeSets.first;
     }
     return periodTimeSetForId(timetable.config.periodTimeSetId);
   }
@@ -215,7 +410,7 @@ class TimetableProvider extends ChangeNotifier {
   }
 
   PeriodTimeSet? periodTimeSetForId(String id) {
-    for (final item in _appData.periodTimeSets) {
+    for (final item in _appData.studentMode.periodTimeSets) {
       if (item.id == id) {
         return item;
       }
@@ -224,7 +419,7 @@ class TimetableProvider extends ChangeNotifier {
   }
 
   List<TimetableData> timetablesUsingPeriodTimeSet(String periodTimeSetId) {
-    return _appData.timetables
+    return _appData.studentMode.timetables
         .where((item) => item.config.periodTimeSetId == periodTimeSetId)
         .toList();
   }
@@ -242,13 +437,19 @@ class TimetableProvider extends ChangeNotifier {
   }
 
   Future<void> switchTimetable(String timetableId) async {
-    if (_appData.activeTimetableId == timetableId) {
+    if (_appData.studentMode.activeTimetableId == timetableId) {
       return;
     }
-    if (!_appData.timetables.any((item) => item.id == timetableId)) {
+    if (!_appData.studentMode.timetables.any(
+      (item) => item.id == timetableId,
+    )) {
       return;
     }
-    _appData = _appData.copyWith(activeTimetableId: timetableId);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(
+        activeTimetableId: timetableId,
+      ),
+    );
     _selectedWeek = currentWeekFor(activeTimetable.config);
     await _saveAndNotify();
   }
@@ -283,7 +484,7 @@ class TimetableProvider extends ChangeNotifier {
     TimetableConfig config,
   ) async {
     TimetableData? timetable;
-    for (final item in _appData.timetables) {
+    for (final item in _appData.studentMode.timetables) {
       if (item.id == timetableId) {
         timetable = item;
         break;
@@ -302,7 +503,7 @@ class TimetableProvider extends ChangeNotifier {
     final periodTimeSetId =
         periodTimeSetForId(normalizedConfig.periodTimeSetId)?.id ??
         fallbackPeriodTimeSetId;
-    final updated = _appData.timetables
+    final updated = _appData.studentMode.timetables
         .map(
           (item) => item.id == targetTimetable.id
               ? item.copyWith(
@@ -313,8 +514,10 @@ class TimetableProvider extends ChangeNotifier {
               : item,
         )
         .toList();
-    _appData = _appData.copyWith(timetables: updated);
-    if (_appData.activeTimetableId == targetTimetable.id) {
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(timetables: updated),
+    );
+    if (_appData.studentMode.activeTimetableId == targetTimetable.id) {
       _selectedWeek = _selectedWeek.clamp(1, normalizedConfig.totalWeeks);
     }
     await _saveAndNotify();
@@ -344,15 +547,19 @@ class TimetableProvider extends ChangeNotifier {
         .where((item) => item.id != courseId)
         .toList();
     final filteredPrefs = Map<String, String>.from(
-      _appData.conflictDisplayCourseIds,
+      _appData.studentMode.conflictDisplayCourseIds,
     )..removeWhere((_, value) => value == courseId);
     _appData = _appData.copyWith(
-      timetables: _appData.timetables
-          .map(
-            (item) => item.id == timetable.id ? item.copyWith(courses: courses) : item,
-          )
-          .toList(),
-      conflictDisplayCourseIds: filteredPrefs,
+      studentMode: _appData.studentMode.copyWith(
+        timetables: _appData.studentMode.timetables
+            .map(
+              (item) => item.id == timetable.id
+                  ? item.copyWith(courses: courses)
+                  : item,
+            )
+            .toList(),
+        conflictDisplayCourseIds: filteredPrefs,
+      ),
     );
     await _saveAndNotify();
   }
@@ -374,23 +581,29 @@ class TimetableProvider extends ChangeNotifier {
     );
 
     _appData = _appData.copyWith(
-      activeTimetableId: timetable.id,
-      timetables: [..._appData.timetables, timetable],
+      studentMode: _appData.studentMode.copyWith(
+        activeTimetableId: timetable.id,
+        timetables: [..._appData.studentMode.timetables, timetable],
+      ),
     );
     _selectedWeek = 1;
     await _saveAndNotify();
   }
 
   Future<void> deleteTimetable(String timetableId) async {
-    if (!_appData.timetables.any((item) => item.id == timetableId)) {
+    if (!_appData.studentMode.timetables.any(
+      (item) => item.id == timetableId,
+    )) {
       return;
     }
-    final remaining = _appData.timetables
+    final remaining = _appData.studentMode.timetables
         .where((item) => item.id != timetableId)
         .toList();
     final nextActiveId =
-        remaining.any((item) => item.id == _appData.activeTimetableId)
-        ? _appData.activeTimetableId
+        remaining.any(
+          (item) => item.id == _appData.studentMode.activeTimetableId,
+        )
+        ? _appData.studentMode.activeTimetableId
         : remaining.isEmpty
         ? ''
         : remaining.first.id;
@@ -399,12 +612,14 @@ class TimetableProvider extends ChangeNotifier {
         .map((item) => item.id)
         .toSet();
     final filteredPrefs = Map<String, String>.from(
-      _appData.conflictDisplayCourseIds,
+      _appData.studentMode.conflictDisplayCourseIds,
     )..removeWhere((_, value) => !remainingCourseIds.contains(value));
     _appData = _appData.copyWith(
-      activeTimetableId: nextActiveId,
-      timetables: remaining,
-      conflictDisplayCourseIds: filteredPrefs,
+      studentMode: _appData.studentMode.copyWith(
+        activeTimetableId: nextActiveId,
+        timetables: remaining,
+        conflictDisplayCourseIds: filteredPrefs,
+      ),
     );
     _selectedWeek = _currentWeekForActiveTimetable();
     await _saveAndNotify();
@@ -414,7 +629,9 @@ class TimetableProvider extends ChangeNotifier {
     String? name,
     List<CoursePeriodTime>? periodTimes,
   }) async {
-    final existingIds = _appData.periodTimeSets.map((item) => item.id).toSet();
+    final existingIds = _appData.studentMode.periodTimeSets
+        .map((item) => item.id)
+        .toSet();
     final nextId = _nextPeriodTimeSetId(existingIds);
     final defaultPeriodTimes = await _loadDefaultPeriodTimes();
     final normalizedTimes = buildPeriodTimesForCount(
@@ -433,7 +650,9 @@ class TimetableProvider extends ChangeNotifier {
       periodTimes: normalizedTimes,
     );
     _appData = _appData.copyWith(
-      periodTimeSets: [..._appData.periodTimeSets, nextSet],
+      studentMode: _appData.studentMode.copyWith(
+        periodTimeSets: [..._appData.studentMode.periodTimeSets, nextSet],
+      ),
     );
     await _saveAndNotify();
     return nextSet;
@@ -441,15 +660,17 @@ class TimetableProvider extends ChangeNotifier {
 
   Future<void> updatePeriodTimeSet(PeriodTimeSet periodTimeSet) async {
     final normalized = _normalizePeriodTimeSet(periodTimeSet);
-    final index = _appData.periodTimeSets.indexWhere(
+    final index = _appData.studentMode.periodTimeSets.indexWhere(
       (item) => item.id == normalized.id,
     );
     if (index < 0) {
       return;
     }
-    final updated = [..._appData.periodTimeSets];
+    final updated = [..._appData.studentMode.periodTimeSets];
     updated[index] = normalized;
-    _appData = _appData.copyWith(periodTimeSets: updated);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(periodTimeSets: updated),
+    );
     await _saveAndNotify();
   }
 
@@ -463,10 +684,12 @@ class TimetableProvider extends ChangeNotifier {
         ),
       );
     }
-    final remaining = _appData.periodTimeSets
+    final remaining = _appData.studentMode.periodTimeSets
         .where((item) => item.id != periodTimeSetId)
         .toList();
-    _appData = _appData.copyWith(periodTimeSets: remaining);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(periodTimeSets: remaining),
+    );
     await _saveAndNotify();
   }
 
@@ -477,7 +700,7 @@ class TimetableProvider extends ChangeNotifier {
     if (periodTimeSetForId(periodTimeSetId) == null) {
       return;
     }
-    final updated = _appData.timetables
+    final updated = _appData.studentMode.timetables
         .map(
           (item) => item.id == timetableId
               ? item.copyWith(
@@ -488,20 +711,27 @@ class TimetableProvider extends ChangeNotifier {
               : item,
         )
         .toList();
-    _appData = _appData.copyWith(timetables: updated);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(timetables: updated),
+    );
     await _saveAndNotify();
   }
 
   String? displayedCourseIdForConflict(String conflictKey) =>
-      _appData.conflictDisplayCourseIds[conflictKey];
+      _appData.studentMode.conflictDisplayCourseIds[conflictKey];
 
   Future<void> setDisplayedCourseForConflict(
     String conflictKey,
     String courseId,
   ) async {
-    final updated = Map<String, String>.from(_appData.conflictDisplayCourseIds)
-      ..[conflictKey] = courseId;
-    _appData = _appData.copyWith(conflictDisplayCourseIds: updated);
+    final updated = Map<String, String>.from(
+      _appData.studentMode.conflictDisplayCourseIds,
+    )..[conflictKey] = courseId;
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(
+        conflictDisplayCourseIds: updated,
+      ),
+    );
     await _saveAndNotify();
   }
 
@@ -509,7 +739,7 @@ class TimetableProvider extends ChangeNotifier {
 
   String exportSelectedTimetablesJson(List<String> timetableIds) {
     final selectedIdSet = timetableIds.toSet();
-    final selectedTimetables = _appData.timetables
+    final selectedTimetables = _appData.studentMode.timetables
         .where((item) => selectedIdSet.contains(item.id))
         .toList();
     if (selectedTimetables.isEmpty) {
@@ -520,7 +750,7 @@ class TimetableProvider extends ChangeNotifier {
     final periodTimeSetIds = selectedTimetables
         .map((item) => item.config.periodTimeSetId)
         .toSet();
-    final linkedSets = _appData.periodTimeSets
+    final linkedSets = _appData.studentMode.periodTimeSets
         .where((item) => periodTimeSetIds.contains(item.id))
         .toList();
     return encodeTimetableDataEnvelope(
@@ -590,7 +820,7 @@ class TimetableProvider extends ChangeNotifier {
         );
       }
       final selected = selectedTimetables.first;
-      final existingSetIds = _appData.periodTimeSets
+      final existingSetIds = _appData.studentMode.periodTimeSets
           .map((item) => item.id)
           .toSet();
       final shouldReuseExistingSet =
@@ -611,19 +841,21 @@ class TimetableProvider extends ChangeNotifier {
         id: current.id,
         config: selected.config.copyWith(periodTimeSetId: resolvedSetId),
       );
-      final updatedTimetables = _appData.timetables
+      final updatedTimetables = _appData.studentMode.timetables
           .map((item) => item.id == current.id ? replaced : item)
           .toList();
       final nextPeriodTimeSets = copiedSet == null
-          ? _appData.periodTimeSets
-          : [..._appData.periodTimeSets, copiedSet];
+          ? _appData.studentMode.periodTimeSets
+          : [..._appData.studentMode.periodTimeSets, copiedSet];
       _appData = _appData.copyWith(
-        activeTimetableId: current.id,
-        timetables: updatedTimetables,
-        periodTimeSets: nextPeriodTimeSets,
-        courseNameColorValues: _buildCourseNameColorValuesForTimetables(
-          updatedTimetables,
-          existing: _appData.courseNameColorValues,
+        studentMode: _appData.studentMode.copyWith(
+          activeTimetableId: current.id,
+          timetables: updatedTimetables,
+          periodTimeSets: nextPeriodTimeSets,
+          courseNameColorValues: _buildCourseNameColorValuesForTimetables(
+            updatedTimetables,
+            existing: _appData.studentMode.courseNameColorValues,
+          ),
         ),
       );
       _selectedWeek = currentWeekFor(replaced.config);
@@ -637,7 +869,7 @@ class TimetableProvider extends ChangeNotifier {
     final selectedSets = imported.periodTimeSets
         .where((item) => neededSetIds.contains(item.id))
         .toList();
-    final existingSetIds = _appData.periodTimeSets
+    final existingSetIds = _appData.studentMode.periodTimeSets
         .map((item) => item.id)
         .toSet();
     final importedSetIdMap = <String, String>{};
@@ -652,13 +884,13 @@ class TimetableProvider extends ChangeNotifier {
           }).toList()
         : <PeriodTimeSet>[];
 
-    final existingTimetableIds = _appData.timetables
+    final existingTimetableIds = _appData.studentMode.timetables
         .map((item) => item.id)
         .toSet();
     final appendedTimetables = selectedTimetables.map((item) {
       final mappedSetId = importBundledPeriodTimeSets
           ? (importedSetIdMap[item.config.periodTimeSetId] ??
-              item.config.periodTimeSetId)
+                item.config.periodTimeSetId)
           : manualTargetSetId;
       return _copyImportedTimetableWithUniqueId(
         item.copyWith(
@@ -668,16 +900,24 @@ class TimetableProvider extends ChangeNotifier {
       );
     }).toList();
 
-    final nextTimetables = [..._appData.timetables, ...appendedTimetables];
+    final nextTimetables = [
+      ..._appData.studentMode.timetables,
+      ...appendedTimetables,
+    ];
     _appData = _appData.copyWith(
-      activeTimetableId: appendedTimetables.isEmpty
-          ? _appData.activeTimetableId
-          : appendedTimetables.last.id,
-      timetables: nextTimetables,
-      periodTimeSets: [..._appData.periodTimeSets, ...appendedSets],
-      courseNameColorValues: _buildCourseNameColorValuesForTimetables(
-        nextTimetables,
-        existing: _appData.courseNameColorValues,
+      studentMode: _appData.studentMode.copyWith(
+        activeTimetableId: appendedTimetables.isEmpty
+            ? _appData.studentMode.activeTimetableId
+            : appendedTimetables.last.id,
+        timetables: nextTimetables,
+        periodTimeSets: [
+          ..._appData.studentMode.periodTimeSets,
+          ...appendedSets,
+        ],
+        courseNameColorValues: _buildCourseNameColorValuesForTimetables(
+          nextTimetables,
+          existing: _appData.studentMode.courseNameColorValues,
+        ),
       ),
     );
     _selectedWeek = appendedTimetables.isEmpty
@@ -696,12 +936,14 @@ class TimetableProvider extends ChangeNotifier {
       _appData = imported;
       _selectedWeek = _currentWeekForActiveTimetable();
       await _saveAndNotify();
-      return imported.timetables.length;
+      return imported.studentMode.timetables.length;
     }
 
     return importSelectedTimetablesJson(
       source,
-      timetableIds: imported.timetables.map((item) => item.id).toList(),
+      timetableIds: imported.studentMode.timetables
+          .map((item) => item.id)
+          .toList(),
       mode: TimetableImportMode.addAsNew,
     );
   }
@@ -729,14 +971,17 @@ class TimetableProvider extends ChangeNotifier {
   ) async {
     final manualTargetSetId = request.targetPeriodTimeSetId?.trim() ?? '';
     if (!request.importBundledPeriodTimeSet) {
-      if (manualTargetSetId.isEmpty || periodTimeSetForId(manualTargetSetId) == null) {
+      if (manualTargetSetId.isEmpty ||
+          periodTimeSetForId(manualTargetSetId) == null) {
         throw FormatException(
           noPeriodTimeAvailableMessage(localeCode: _appData.localeCode),
         );
       }
     }
 
-    final existingSetIds = _appData.periodTimeSets.map((item) => item.id).toSet();
+    final existingSetIds = _appData.studentMode.periodTimeSets
+        .map((item) => item.id)
+        .toSet();
     final bundledPeriodTimeSet = request.importBundledPeriodTimeSet
         ? _copyImportedPeriodTimeSetWithUniqueId(
             _buildImportedSchoolPeriodTimeSet(request.response),
@@ -763,19 +1008,21 @@ class TimetableProvider extends ChangeNotifier {
         );
       }
       final replaced = timetable.copyWith(id: current.id);
-      final updatedTimetables = _appData.timetables
+      final updatedTimetables = _appData.studentMode.timetables
           .map((item) => item.id == current.id ? replaced : item)
           .toList();
       final nextPeriodTimeSets = bundledPeriodTimeSet == null
-          ? _appData.periodTimeSets
-          : [..._appData.periodTimeSets, bundledPeriodTimeSet];
+          ? _appData.studentMode.periodTimeSets
+          : [..._appData.studentMode.periodTimeSets, bundledPeriodTimeSet];
       _appData = _appData.copyWith(
-        activeTimetableId: current.id,
-        timetables: updatedTimetables,
-        periodTimeSets: nextPeriodTimeSets,
-        courseNameColorValues: _buildCourseNameColorValuesForTimetables(
-          updatedTimetables,
-          existing: _appData.courseNameColorValues,
+        studentMode: _appData.studentMode.copyWith(
+          activeTimetableId: current.id,
+          timetables: updatedTimetables,
+          periodTimeSets: nextPeriodTimeSets,
+          courseNameColorValues: _buildCourseNameColorValuesForTimetables(
+            updatedTimetables,
+            existing: _appData.studentMode.courseNameColorValues,
+          ),
         ),
       );
       _selectedWeek = currentWeekFor(replaced.config);
@@ -783,17 +1030,19 @@ class TimetableProvider extends ChangeNotifier {
       return;
     }
 
-    final nextTimetables = [..._appData.timetables, timetable];
+    final nextTimetables = [..._appData.studentMode.timetables, timetable];
     final nextPeriodTimeSets = bundledPeriodTimeSet == null
-        ? _appData.periodTimeSets
-        : [..._appData.periodTimeSets, bundledPeriodTimeSet];
+        ? _appData.studentMode.periodTimeSets
+        : [..._appData.studentMode.periodTimeSets, bundledPeriodTimeSet];
     _appData = _appData.copyWith(
-      activeTimetableId: timetable.id,
-      timetables: nextTimetables,
-      periodTimeSets: nextPeriodTimeSets,
-      courseNameColorValues: _buildCourseNameColorValuesForTimetables(
-        nextTimetables,
-        existing: _appData.courseNameColorValues,
+      studentMode: _appData.studentMode.copyWith(
+        activeTimetableId: timetable.id,
+        timetables: nextTimetables,
+        periodTimeSets: nextPeriodTimeSets,
+        courseNameColorValues: _buildCourseNameColorValuesForTimetables(
+          nextTimetables,
+          existing: _appData.studentMode.courseNameColorValues,
+        ),
       ),
     );
     _selectedWeek = currentWeekFor(timetable.config);
@@ -813,10 +1062,9 @@ class TimetableProvider extends ChangeNotifier {
       return (startMinutes, endMinutes);
     }
 
-    final matchedSlots = periodTimes
-        .where((slot) => periods.contains(slot.index))
-        .toList()
-      ..sort((a, b) => a.index.compareTo(b.index));
+    final matchedSlots =
+        periodTimes.where((slot) => periods.contains(slot.index)).toList()
+          ..sort((a, b) => a.index.compareTo(b.index));
     if (matchedSlots.isEmpty) {
       return (startMinutes, endMinutes);
     }
@@ -935,10 +1183,7 @@ class TimetableProvider extends ChangeNotifier {
   Future<AppData> _buildDefaultAppData() async {
     final periodTimes = await _loadDefaultPeriodTimes();
     return _normalizeImportedAppData(
-      buildInitialAppData(
-        periodTimes,
-        localeCode: _systemLocaleCodeResolver(),
-      ),
+      buildInitialAppData(periodTimes, localeCode: _systemLocaleCodeResolver()),
     );
   }
 
@@ -948,34 +1193,42 @@ class TimetableProvider extends ChangeNotifier {
   }
 
   Future<void> updatePreserveTimetableGaps(bool value) async {
-    if (_appData.preserveTimetableGaps == value) {
+    if (_appData.studentMode.preserveTimetableGaps == value) {
       return;
     }
-    _appData = _appData.copyWith(preserveTimetableGaps: value);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(preserveTimetableGaps: value),
+    );
     await _saveAndNotify();
   }
 
   Future<void> updateShowPastEndedCourses(bool value) async {
-    if (_appData.showPastEndedCourses == value) {
+    if (_appData.studentMode.showPastEndedCourses == value) {
       return;
     }
-    _appData = _appData.copyWith(showPastEndedCourses: value);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(showPastEndedCourses: value),
+    );
     await _saveAndNotify();
   }
 
   Future<void> updateShowFutureCourses(bool value) async {
-    if (_appData.showFutureCourses == value) {
+    if (_appData.studentMode.showFutureCourses == value) {
       return;
     }
-    _appData = _appData.copyWith(showFutureCourses: value);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(showFutureCourses: value),
+    );
     await _saveAndNotify();
   }
 
   Future<void> updateShowTimetableGridLines(bool value) async {
-    if (_appData.showTimetableGridLines == value) {
+    if (_appData.studentMode.showTimetableGridLines == value) {
       return;
     }
-    _appData = _appData.copyWith(showTimetableGridLines: value);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(showTimetableGridLines: value),
+    );
     await _saveAndNotify();
   }
 
@@ -1015,35 +1268,51 @@ class TimetableProvider extends ChangeNotifier {
 
   Future<void> updateColorfulCourseTextColorMode(String mode) async {
     final normalized = normalizeColorfulCourseTextColorMode(mode);
-    if (_appData.colorfulCourseTextColorMode == normalized) {
+    if (_appData.studentMode.colorfulCourseTextColorMode == normalized) {
       return;
     }
-    _appData = _appData.copyWith(colorfulCourseTextColorMode: normalized);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(
+        colorfulCourseTextColorMode: normalized,
+      ),
+    );
     await _saveAndNotify();
   }
 
-  Future<void> updateCourseNameColorValue(String courseName, int colorValue) async {
+  Future<void> updateCourseNameColorValue(
+    String courseName,
+    int colorValue,
+  ) async {
     final normalizedCourseName = normalizeCourseColorName(courseName);
     if (normalizedCourseName.isEmpty) {
       return;
     }
-    if (_appData.courseNameColorValues[normalizedCourseName] == colorValue) {
+    if (_appData.studentMode.courseNameColorValues[normalizedCourseName] ==
+        colorValue) {
       return;
     }
-    final updated = Map<String, int>.from(_appData.courseNameColorValues)
-      ..[normalizedCourseName] = colorValue;
-    _appData = _appData.copyWith(courseNameColorValues: updated);
+    final updated = Map<String, int>.from(
+      _appData.studentMode.courseNameColorValues,
+    )..[normalizedCourseName] = colorValue;
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(
+        courseNameColorValues: updated,
+      ),
+    );
     await _saveAndNotify();
   }
 
   Future<void> updateSchoolImportParserSource(String source) async {
     final normalized = normalizeSchoolImportParserSource(source);
-    if (_appData.schoolImportParserSettings.source == normalized) {
+    if (_appData.studentMode.schoolImportParserSettings.source == normalized) {
       return;
     }
     _appData = _appData.copyWith(
-      schoolImportParserSettings: _appData.schoolImportParserSettings.copyWith(
-        source: normalized,
+      studentMode: _appData.studentMode.copyWith(
+        schoolImportParserSettings: _appData
+            .studentMode
+            .schoolImportParserSettings
+            .copyWith(source: normalized),
       ),
     );
     await _saveAndNotify();
@@ -1051,12 +1320,16 @@ class TimetableProvider extends ChangeNotifier {
 
   Future<void> updateCustomSchoolImportBaseUrl(String value) async {
     final normalized = value.trim();
-    if (_appData.schoolImportParserSettings.customBaseUrl == normalized) {
+    if (_appData.studentMode.schoolImportParserSettings.customBaseUrl ==
+        normalized) {
       return;
     }
     _appData = _appData.copyWith(
-      schoolImportParserSettings: _appData.schoolImportParserSettings.copyWith(
-        customBaseUrl: normalized,
+      studentMode: _appData.studentMode.copyWith(
+        schoolImportParserSettings: _appData
+            .studentMode
+            .schoolImportParserSettings
+            .copyWith(customBaseUrl: normalized),
       ),
     );
     await _saveAndNotify();
@@ -1064,12 +1337,16 @@ class TimetableProvider extends ChangeNotifier {
 
   Future<void> updateCustomSchoolImportApiKey(String value) async {
     final normalized = value.trim();
-    if (_appData.schoolImportParserSettings.customApiKey == normalized) {
+    if (_appData.studentMode.schoolImportParserSettings.customApiKey ==
+        normalized) {
       return;
     }
     _appData = _appData.copyWith(
-      schoolImportParserSettings: _appData.schoolImportParserSettings.copyWith(
-        customApiKey: normalized,
+      studentMode: _appData.studentMode.copyWith(
+        schoolImportParserSettings: _appData
+            .studentMode
+            .schoolImportParserSettings
+            .copyWith(customApiKey: normalized),
       ),
     );
     await _saveAndNotify();
@@ -1077,12 +1354,16 @@ class TimetableProvider extends ChangeNotifier {
 
   Future<void> updateCustomSchoolImportModel(String value) async {
     final normalized = value.trim();
-    if (_appData.schoolImportParserSettings.customModel == normalized) {
+    if (_appData.studentMode.schoolImportParserSettings.customModel ==
+        normalized) {
       return;
     }
     _appData = _appData.copyWith(
-      schoolImportParserSettings: _appData.schoolImportParserSettings.copyWith(
-        customModel: normalized,
+      studentMode: _appData.studentMode.copyWith(
+        schoolImportParserSettings: _appData
+            .studentMode
+            .schoolImportParserSettings
+            .copyWith(customModel: normalized),
       ),
     );
     await _saveAndNotify();
@@ -1090,12 +1371,16 @@ class TimetableProvider extends ChangeNotifier {
 
   Future<void> updateCustomSchoolImportPrompt(String value) async {
     final normalized = value.trim();
-    if (_appData.schoolImportParserSettings.customPrompt == normalized) {
+    if (_appData.studentMode.schoolImportParserSettings.customPrompt ==
+        normalized) {
       return;
     }
     _appData = _appData.copyWith(
-      schoolImportParserSettings: _appData.schoolImportParserSettings.copyWith(
-        customPrompt: normalized,
+      studentMode: _appData.studentMode.copyWith(
+        schoolImportParserSettings: _appData
+            .studentMode
+            .schoolImportParserSettings
+            .copyWith(customPrompt: normalized),
       ),
     );
     await _saveAndNotify();
@@ -1105,7 +1390,7 @@ class TimetableProvider extends ChangeNotifier {
     SchoolImportParserSettings settings,
   ) async {
     final normalized = settings.copyWith();
-    final current = _appData.schoolImportParserSettings;
+    final current = _appData.studentMode.schoolImportParserSettings;
     if (current.source == normalized.source &&
         current.customBaseUrl == normalized.customBaseUrl &&
         current.customApiKey == normalized.customApiKey &&
@@ -1113,31 +1398,47 @@ class TimetableProvider extends ChangeNotifier {
         current.customPrompt == normalized.customPrompt) {
       return;
     }
-    _appData = _appData.copyWith(schoolImportParserSettings: normalized);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(
+        schoolImportParserSettings: normalized,
+      ),
+    );
     await _saveAndNotify();
   }
 
   Future<void> updateLiveCourseOutlineColorValue(int colorValue) async {
-    if (_appData.liveCourseOutlineColorValue == colorValue) {
+    if (_appData.studentMode.liveCourseOutlineColorValue == colorValue) {
       return;
     }
-    _appData = _appData.copyWith(liveCourseOutlineColorValue: colorValue);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(
+        liveCourseOutlineColorValue: colorValue,
+      ),
+    );
     await _saveAndNotify();
   }
 
   Future<void> updateLiveCourseOutlineEnabled(bool value) async {
-    if (_appData.liveCourseOutlineEnabled == value) {
+    if (_appData.studentMode.liveCourseOutlineEnabled == value) {
       return;
     }
-    _appData = _appData.copyWith(liveCourseOutlineEnabled: value);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(
+        liveCourseOutlineEnabled: value,
+      ),
+    );
     await _saveAndNotify();
   }
 
   Future<void> updateLiveCourseOutlineFollowTheme(bool value) async {
-    if (_appData.liveCourseOutlineFollowTheme == value) {
+    if (_appData.studentMode.liveCourseOutlineFollowTheme == value) {
       return;
     }
-    _appData = _appData.copyWith(liveCourseOutlineFollowTheme: value);
+    _appData = _appData.copyWith(
+      studentMode: _appData.studentMode.copyWith(
+        liveCourseOutlineFollowTheme: value,
+      ),
+    );
     await _saveAndNotify();
   }
 
@@ -1152,22 +1453,27 @@ class TimetableProvider extends ChangeNotifier {
     final normalizedWidth = normalizeLiveCourseOutlineWidth(width);
     final normalizedMode = normalizeLiveCourseOutlineMode(mode);
     final nextData = _appData.copyWith(
-      liveCourseOutlineEnabled: enabled,
-      liveCourseOutlineFollowTheme: followTheme,
-      liveCourseOutlineColorValue: colorValue,
-      liveCourseOutlineCustomColorInitialized: customColorInitialized,
-      liveCourseOutlineMode: normalizedMode,
-      liveCourseOutlineWidth: normalizedWidth,
+      studentMode: _appData.studentMode.copyWith(
+        liveCourseOutlineEnabled: enabled,
+        liveCourseOutlineFollowTheme: followTheme,
+        liveCourseOutlineColorValue: colorValue,
+        liveCourseOutlineCustomColorInitialized: customColorInitialized,
+        liveCourseOutlineMode: normalizedMode,
+        liveCourseOutlineWidth: normalizedWidth,
+      ),
     );
-    if (nextData.liveCourseOutlineEnabled == _appData.liveCourseOutlineEnabled &&
-        nextData.liveCourseOutlineFollowTheme ==
-            _appData.liveCourseOutlineFollowTheme &&
-        nextData.liveCourseOutlineColorValue ==
-            _appData.liveCourseOutlineColorValue &&
-        nextData.liveCourseOutlineCustomColorInitialized ==
-            _appData.liveCourseOutlineCustomColorInitialized &&
-        nextData.liveCourseOutlineMode == _appData.liveCourseOutlineMode &&
-        nextData.liveCourseOutlineWidth == _appData.liveCourseOutlineWidth) {
+    if (nextData.studentMode.liveCourseOutlineEnabled ==
+            _appData.studentMode.liveCourseOutlineEnabled &&
+        nextData.studentMode.liveCourseOutlineFollowTheme ==
+            _appData.studentMode.liveCourseOutlineFollowTheme &&
+        nextData.studentMode.liveCourseOutlineColorValue ==
+            _appData.studentMode.liveCourseOutlineColorValue &&
+        nextData.studentMode.liveCourseOutlineCustomColorInitialized ==
+            _appData.studentMode.liveCourseOutlineCustomColorInitialized &&
+        nextData.studentMode.liveCourseOutlineMode ==
+            _appData.studentMode.liveCourseOutlineMode &&
+        nextData.studentMode.liveCourseOutlineWidth ==
+            _appData.studentMode.liveCourseOutlineWidth) {
       return;
     }
     _appData = nextData;
@@ -1196,7 +1502,9 @@ class TimetableProvider extends ChangeNotifier {
 
   Future<void> updateAvailableUpdateVersion(String? version) async {
     final normalized = version?.trim();
-    final nextValue = normalized == null || normalized.isEmpty ? null : normalized;
+    final nextValue = normalized == null || normalized.isEmpty
+        ? null
+        : normalized;
     if (_appData.availableUpdateVersion == nextValue) {
       return;
     }
@@ -1205,14 +1513,16 @@ class TimetableProvider extends ChangeNotifier {
   }
 
   Future<void> _replaceActiveTimetable(TimetableData timetable) async {
-    final updated = _appData.timetables
+    final updated = _appData.studentMode.timetables
         .map((item) => item.id == timetable.id ? timetable : item)
         .toList();
     _appData = _appData.copyWith(
-      timetables: updated,
-      courseNameColorValues: _buildCourseNameColorValuesForTimetables(
-        updated,
-        existing: _appData.courseNameColorValues,
+      studentMode: _appData.studentMode.copyWith(
+        timetables: updated,
+        courseNameColorValues: _buildCourseNameColorValuesForTimetables(
+          updated,
+          existing: _appData.studentMode.courseNameColorValues,
+        ),
       ),
     );
     await _saveAndNotify();
@@ -1265,13 +1575,14 @@ class TimetableProvider extends ChangeNotifier {
         return colorValue;
       }
     }
-    return _colorfulCoursePalette[usedColors.length % _colorfulCoursePalette.length];
+    return _colorfulCoursePalette[usedColors.length %
+        _colorfulCoursePalette.length];
   }
 
   AppData _normalizeImportedAppData(AppData data) {
     final normalizedSets = <PeriodTimeSet>[];
     final normalizedSetIds = <String>{};
-    for (final item in data.periodTimeSets) {
+    for (final item in data.studentMode.periodTimeSets) {
       final normalized = _normalizePeriodTimeSet(item);
       final nextId =
           normalized.id.trim().isEmpty ||
@@ -1283,7 +1594,7 @@ class TimetableProvider extends ChangeNotifier {
     }
 
     final normalizedTimetables = <TimetableData>[];
-    for (final item in data.timetables) {
+    for (final item in data.studentMode.timetables) {
       var periodTimeSetId = item.config.periodTimeSetId.trim();
       if (periodTimeSetId.isEmpty ||
           !normalizedSetIds.contains(periodTimeSetId)) {
@@ -1306,8 +1617,10 @@ class TimetableProvider extends ChangeNotifier {
     }
 
     final activeId =
-        normalizedTimetables.any((item) => item.id == data.activeTimetableId)
-        ? data.activeTimetableId
+        normalizedTimetables.any(
+          (item) => item.id == data.studentMode.activeTimetableId,
+        )
+        ? data.studentMode.activeTimetableId
         : normalizedTimetables.isEmpty
         ? ''
         : normalizedTimetables.first.id;
@@ -1316,19 +1629,20 @@ class TimetableProvider extends ChangeNotifier {
         .map((item) => item.id)
         .toSet();
     final filteredPrefs = Map<String, String>.from(
-      data.conflictDisplayCourseIds,
+      data.studentMode.conflictDisplayCourseIds,
     )..removeWhere((_, value) => !remainingCourseIds.contains(value));
     return data.copyWith(
-      activeTimetableId: activeId,
-      timetables: normalizedTimetables,
-      periodTimeSets: normalizedSets,
-      conflictDisplayCourseIds: filteredPrefs,
-      localeCode: app_locale.normalizeLocaleCode(data.localeCode),
-      themeColorMode: normalizeThemeColorMode(data.themeColorMode),
-      courseNameColorValues: _buildCourseNameColorValuesForTimetables(
-        normalizedTimetables,
-        existing: data.courseNameColorValues,
+      studentMode: data.studentMode.copyWith(
+        activeTimetableId: activeId,
+        timetables: normalizedTimetables,
+        periodTimeSets: normalizedSets,
+        conflictDisplayCourseIds: filteredPrefs,
+        courseNameColorValues: _buildCourseNameColorValuesForTimetables(
+          normalizedTimetables,
+          existing: data.studentMode.courseNameColorValues,
+        ),
       ),
+      localeCode: app_locale.normalizeLocaleCode(data.localeCode),
     );
   }
 
@@ -1355,8 +1669,8 @@ class TimetableProvider extends ChangeNotifier {
           }),
         );
         return TimetableExportData(
-          timetables: appData.timetables,
-          periodTimeSets: appData.periodTimeSets,
+          timetables: appData.studentMode.timetables,
+          periodTimeSets: appData.studentMode.periodTimeSets,
         );
       default:
         throw FormatException(

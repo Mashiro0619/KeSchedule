@@ -27,7 +27,7 @@ const minLiveCourseOutlineWidth = 1.0;
 const maxLiveCourseOutlineWidth = 4.0;
 const maxTimetableWeeks = 100;
 
-const importExportVersion = 2;
+const importExportVersion = 3;
 const appDataSchema = 'Sked-app-data';
 const timetableDataSchema = 'Sked-timetable-data';
 const periodTimesSchema = 'Sked-period-times';
