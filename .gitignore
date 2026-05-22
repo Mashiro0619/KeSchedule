@@ -9,7 +9,6 @@
 .buildlog/
 .history
 .svn/
-.vscode/
 .swiftpm/
 migrate_working_dir/
 
@@ -33,7 +32,6 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
-/lib/config/app_config.dart
 
 # Symbolication related
 app.*.symbols
@@ -46,4 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Sensitive config and privacy page (served separately)
+lib/config/app_config.dart
 web/privacy.html
