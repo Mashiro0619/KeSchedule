@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/timetable_models.dart';
 
 class GeneralEventEditorResult {
@@ -46,7 +47,8 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
         ? DateTime.tryParse(event.startDateTimeIso) ?? DateTime.now()
         : widget.initialDate ?? DateTime.now();
     final endDt = event != null
-        ? DateTime.tryParse(event.endDateTimeIso) ?? startDt.add(const Duration(hours: 1))
+        ? DateTime.tryParse(event.endDateTimeIso) ??
+            startDt.add(const Duration(hours: 1))
         : startDt.add(const Duration(hours: 1));
 
     _titleController = TextEditingController(text: event?.title ?? '');
@@ -72,15 +74,21 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
 
   DateTime _buildStartDateTime() {
     return DateTime(
-      _date.year, _date.month, _date.day,
-      _startTime.hour, _startTime.minute,
+      _date.year,
+      _date.month,
+      _date.day,
+      _startTime.hour,
+      _startTime.minute,
     );
   }
 
   DateTime _buildEndDateTime() {
     final raw = DateTime(
-      _date.year, _date.month, _date.day,
-      _endTime.hour, _endTime.minute,
+      _date.year,
+      _date.month,
+      _date.day,
+      _endTime.hour,
+      _endTime.minute,
     );
     if (!raw.isAfter(_buildStartDateTime())) {
       return _buildStartDateTime().add(const Duration(hours: 1));
@@ -118,208 +126,225 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
   }
 
   static const _colorOptions = <int>[
-    0xFFE57373, 0xFFF06292, 0xFFBA68C8, 0xFF9575CD,
-    0xFF7986CB, 0xFF64B5F6, 0xFF4FC3F7, 0xFF4DD0E1,
-    0xFF4DB6AC, 0xFF81C784, 0xFFAED581, 0xFFFFD54F,
-    0xFFFFB74D, 0xFFFF8A65, 0xFFA1887F, 0xFF90A4AE,
+    0xFFE57373,
+    0xFFF06292,
+    0xFFBA68C8,
+    0xFF9575CD,
+    0xFF7986CB,
+    0xFF64B5F6,
+    0xFF4FC3F7,
+    0xFF4DD0E1,
+    0xFF4DB6AC,
+    0xFF81C784,
+    0xFFAED581,
+    0xFFFFD54F,
+    0xFFFFB74D,
+    0xFFFF8A65,
+    0xFFA1887F,
+    0xFF90A4AE,
   ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+
     return Form(
       key: _formKey,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Title is required';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Date
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.calendar_today),
-              title: Text(
-                '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}',
-              ),
-              trailing: const Icon(Icons.edit),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _date,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) setState(() => _date = picked);
-              },
-            ),
-
-            // Start time
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.access_time),
-              title: const Text('Start time'),
-              trailing: Text(_startTime.format(context)),
-              onTap: () async {
-                final picked = await showTimePicker(
-                  context: context,
-                  initialTime: _startTime,
-                );
-                if (picked != null) setState(() => _startTime = picked);
-              },
-            ),
-
-            // End time
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.access_time),
-              title: const Text('End time'),
-              trailing: Text(_endTime.format(context)),
-              onTap: () async {
-                final picked = await showTimePicker(
-                  context: context,
-                  initialTime: _endTime,
-                );
-                if (picked != null) setState(() => _endTime = picked);
-              },
-            ),
-
-            // Recurrence
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.repeat),
-              title: const Text('Repeat'),
-              trailing: DropdownButton<GeneralEventRecurrence>(
-                value: _recurrence,
-                items: const [
-                  DropdownMenuItem(
-                    value: GeneralEventRecurrence.none,
-                    child: Text('Does not repeat'),
-                  ),
-                  DropdownMenuItem(
-                    value: GeneralEventRecurrence.weekly,
-                    child: Text('Weekly'),
-                  ),
-                ],
-                onChanged: (value) {
-                  if (value != null) setState(() => _recurrence = value);
-                },
-              ),
-            ),
-
-            // Recurrence end date
-            if (_recurrence != GeneralEventRecurrence.none)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.event_repeat),
-                title: const Text('End date'),
-                subtitle: _recurrenceEndDate != null
-                    ? Text(
-                        '${_recurrenceEndDate!.year}-${_recurrenceEndDate!.month.toString().padLeft(2, '0')}-${_recurrenceEndDate!.day.toString().padLeft(2, '0')}',
-                      )
-                    : const Text('No end date'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_recurrenceEndDate != null)
-                      IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => setState(() => _recurrenceEndDate = null),
-                      ),
-                    TextButton(
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _recurrenceEndDate ?? _date.add(const Duration(days: 90)),
-                          firstDate: _date,
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) setState(() => _recurrenceEndDate = picked);
-                      },
-                      child: Text(_recurrenceEndDate == null ? 'Set' : 'Change'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      labelText: l10n.eventTitle,
+                      border: const OutlineInputBorder(),
                     ),
-                  ],
-                ),
-              ),
-
-            // Location
-            TextFormField(
-              controller: _locationController,
-              decoration: const InputDecoration(
-                labelText: 'Location',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.location_on),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Notes
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.notes),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-
-            // Color
-            Row(
-              children: [
-                const Text('Color: '),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _colorOptions.map((colorValue) {
-                        final isSelected = _colorValue == colorValue;
-                        return GestureDetector(
-                          onTap: () => setState(() {
-                            _colorValue = isSelected ? null : colorValue;
-                          }),
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: Color(colorValue),
-                              shape: BoxShape.circle,
-                              border: isSelected
-                                  ? Border.all(color: theme.colorScheme.primary, width: 3)
-                                  : null,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return l10n.eventTitleRequired;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.calendar_today),
+                    title: Text(l10n.eventDate),
+                    trailing: Text(
+                      '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}',
+                    ),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _date,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) setState(() => _date = picked);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.access_time),
+                    title: Text(l10n.eventStartTime),
+                    trailing: Text(_startTime.format(context)),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: _startTime,
+                      );
+                      if (picked != null) setState(() => _startTime = picked);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.access_time),
+                    title: Text(l10n.eventEndTime),
+                    trailing: Text(_endTime.format(context)),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: _endTime,
+                      );
+                      if (picked != null) setState(() => _endTime = picked);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.repeat),
+                    title: Text(l10n.eventRecurrence),
+                    trailing: DropdownButton<GeneralEventRecurrence>(
+                      value: _recurrence,
+                      items: [
+                        DropdownMenuItem(
+                          value: GeneralEventRecurrence.none,
+                          child: Text(l10n.recurrenceNone),
+                        ),
+                        DropdownMenuItem(
+                          value: GeneralEventRecurrence.weekly,
+                          child: Text(l10n.recurrenceWeekly),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => _recurrence = value);
+                      },
+                    ),
+                  ),
+                  if (_recurrence != GeneralEventRecurrence.none)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.event_repeat),
+                      title: Text(l10n.recurrenceEndDate),
+                      subtitle: _recurrenceEndDate != null
+                          ? Text(
+                              '${_recurrenceEndDate!.year}-${_recurrenceEndDate!.month.toString().padLeft(2, '0')}-${_recurrenceEndDate!.day.toString().padLeft(2, '0')}',
+                            )
+                          : Text(l10n.recurrenceNoEndDate),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_recurrenceEndDate != null)
+                            IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () =>
+                                  setState(() => _recurrenceEndDate = null),
+                            ),
+                          TextButton(
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: _recurrenceEndDate ??
+                                    _date.add(const Duration(days: 90)),
+                                firstDate: _date,
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null) {
+                                setState(() => _recurrenceEndDate = picked);
+                              }
+                            },
+                            child: Text(
+                              _recurrenceEndDate == null
+                                  ? l10n.recurrenceSetEndDate
+                                  : l10n.recurrenceChangeEndDate,
                             ),
                           ),
-                        );
-                      }).toList(),
+                        ],
+                      ),
+                    ),
+                  TextFormField(
+                    controller: _locationController,
+                    decoration: InputDecoration(
+                      labelText: l10n.location,
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.location_on),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _notesController,
+                    decoration: InputDecoration(
+                      labelText: l10n.eventNotes,
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.notes),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Text('${l10n.eventColor}: '),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: _colorOptions.map((colorValue) {
+                              final isSelected = _colorValue == colorValue;
+                              return GestureDetector(
+                                onTap: () => setState(() {
+                                  _colorValue =
+                                      isSelected ? null : colorValue;
+                                }),
+                                child: Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 3),
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: Color(colorValue),
+                                    shape: BoxShape.circle,
+                                    border: isSelected
+                                        ? Border.all(
+                                            color: theme.colorScheme.primary,
+                                            width: 3,
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-
-            // Actions
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, 8, 20, bottomPadding + 16),
+            child: Row(
               children: [
                 if (_isEditing)
                   OutlinedButton.icon(
@@ -327,7 +352,7 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                       const GeneralEventEditorResult(delete: true),
                     ),
                     icon: const Icon(Icons.delete),
-                    label: const Text('Delete'),
+                    label: Text(l10n.delete),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                     ),
@@ -335,17 +360,17 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                 const Spacer(),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.cancel),
                 ),
                 const SizedBox(width: 8),
                 FilledButton(
                   onPressed: _save,
-                  child: const Text('Save'),
+                  child: Text(l10n.save),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -83,3 +83,27 @@ String periodTimeSetInUseMessage(
 }) {
   return _stringsForLocale(localeCode).periodTimeSetInUseMessage(count);
 }
+
+String selectAtLeastOneScheduleMessage({String localeCode = defaultLocaleCode}) {
+  return _stringsForLocale(localeCode).selectAtLeastOneScheduleMessage;
+}
+
+String noExportableScheduleMessage({String localeCode = defaultLocaleCode}) {
+  return _stringsForLocale(localeCode).noExportableScheduleMessage;
+}
+
+String noSchedulesInImportMessage({String localeCode = defaultLocaleCode}) {
+  return _stringsForLocale(localeCode).noSchedulesInImportMessage;
+}
+
+String replaceActiveRequiresSingleScheduleMessage({
+  String localeCode = defaultLocaleCode,
+}) {
+  return _stringsForLocale(localeCode).replaceActiveRequiresSingleScheduleMessage;
+}
+
+String noActiveScheduleToReplaceMessage({
+  String localeCode = defaultLocaleCode,
+}) {
+  return _stringsForLocale(localeCode).noActiveScheduleToReplaceMessage;
+}

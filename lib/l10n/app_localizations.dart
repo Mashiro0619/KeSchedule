@@ -2312,6 +2312,264 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Today'**
   String get today;
+
+  /// No description provided for @addEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Add event'**
+  String get addEvent;
+
+  /// No description provided for @editEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit event'**
+  String get editEvent;
+
+  /// No description provided for @eventTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get eventTitle;
+
+  /// No description provided for @eventTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Title is required'**
+  String get eventTitleRequired;
+
+  /// No description provided for @eventStartTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get eventStartTime;
+
+  /// No description provided for @eventEndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get eventEndTime;
+
+  /// No description provided for @eventDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get eventDate;
+
+  /// No description provided for @eventTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get eventTime;
+
+  /// No description provided for @eventNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get eventNotes;
+
+  /// No description provided for @eventColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get eventColor;
+
+  /// No description provided for @eventRecurrence.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get eventRecurrence;
+
+  /// No description provided for @recurrenceNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Does not repeat'**
+  String get recurrenceNone;
+
+  /// No description provided for @recurrenceWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get recurrenceWeekly;
+
+  /// No description provided for @recurrenceEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get recurrenceEndDate;
+
+  /// No description provided for @recurrenceNoEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No end date'**
+  String get recurrenceNoEndDate;
+
+  /// No description provided for @recurrenceSetEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Set'**
+  String get recurrenceSetEndDate;
+
+  /// No description provided for @recurrenceChangeEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get recurrenceChangeEndDate;
+
+  /// No description provided for @repeatsWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats weekly'**
+  String get repeatsWeekly;
+
+  /// No description provided for @recurrenceUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Until {date}'**
+  String recurrenceUntil(Object date);
+
+  /// No description provided for @switchToGeneralSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to General schedule'**
+  String get switchToGeneralSchedule;
+
+  /// No description provided for @generalDisplaySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'General display settings'**
+  String get generalDisplaySettings;
+
+  /// No description provided for @generalDisplaySettingsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggles for the general schedule view'**
+  String get generalDisplaySettingsDesc;
+
+  /// No description provided for @closePopupOnOutsideTap.
+  ///
+  /// In en, this message translates to:
+  /// **'Close popup on tap outside'**
+  String get closePopupOnOutsideTap;
+
+  /// No description provided for @showGridLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Show grid lines'**
+  String get showGridLines;
+
+  /// No description provided for @generalScheduleImportExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule import & export'**
+  String get generalScheduleImportExport;
+
+  /// No description provided for @generalScheduleImportExportDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Import or share general schedules'**
+  String get generalScheduleImportExportDesc;
+
+  /// No description provided for @importGeneralSchedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Import schedules'**
+  String get importGeneralSchedules;
+
+  /// No description provided for @importGeneralSchedulesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Read schedules from a JSON file'**
+  String get importGeneralSchedulesDesc;
+
+  /// No description provided for @shareGeneralSchedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Share schedules'**
+  String get shareGeneralSchedules;
+
+  /// No description provided for @shareGeneralSchedulesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Share schedules as a JSON file'**
+  String get shareGeneralSchedulesDesc;
+
+  /// No description provided for @saveGeneralSchedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Save schedules'**
+  String get saveGeneralSchedules;
+
+  /// No description provided for @saveGeneralSchedulesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Save schedules as a JSON file'**
+  String get saveGeneralSchedulesDesc;
+
+  /// No description provided for @selectSchedulesToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Select schedules to export'**
+  String get selectSchedulesToExport;
+
+  /// No description provided for @selectSchedulesToImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Select schedules to import'**
+  String get selectSchedulesToImport;
+
+  /// No description provided for @generalScheduleEventCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Events: {count}'**
+  String generalScheduleEventCount(int count);
+
+  /// No description provided for @importedSchedulesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} schedules'**
+  String importedSchedulesCount(int count);
+
+  /// No description provided for @replaceActiveSchedulePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace current schedule with the imported one?'**
+  String get replaceActiveSchedulePrompt;
+
+  /// No description provided for @addAsNewSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Add as new'**
+  String get addAsNewSchedule;
+
+  /// No description provided for @selectAtLeastOneScheduleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least one schedule.'**
+  String get selectAtLeastOneScheduleMessage;
+
+  /// No description provided for @noExportableScheduleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedule available to export.'**
+  String get noExportableScheduleMessage;
+
+  /// No description provided for @noSchedulesInImportMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Import file contains no schedules.'**
+  String get noSchedulesInImportMessage;
+
+  /// No description provided for @replaceActiveRequiresSingleScheduleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose exactly one schedule to replace the current one.'**
+  String get replaceActiveRequiresSingleScheduleMessage;
+
+  /// No description provided for @noActiveScheduleToReplaceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No current schedule to replace.'**
+  String get noActiveScheduleToReplaceMessage;
 }
 
 class _AppLocalizationsDelegate

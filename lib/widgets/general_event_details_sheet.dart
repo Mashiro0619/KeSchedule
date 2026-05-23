@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/timetable_models.dart';
 
 class GeneralEventDetailsSheet extends StatelessWidget {
@@ -17,6 +18,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final event = occurrence.event;
 
     final startDt = DateTime.tryParse(event.startDateTimeIso);
@@ -28,16 +30,12 @@ class GeneralEventDetailsSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Title
-          Text(
-            event.title,
-            style: theme.textTheme.titleLarge,
-          ),
+          Text(event.title, style: theme.textTheme.titleLarge),
 
           if (event.recurrence == GeneralEventRecurrence.weekly) ...[
             const SizedBox(height: 4),
             Text(
-              'Repeats weekly',
+              l10n.repeatsWeekly,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.primary,
               ),
@@ -45,7 +43,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
             if (event.recurrenceEndDateIso != null) ...[
               const SizedBox(height: 2),
               Text(
-                'Until ${_fmtDate(event.recurrenceEndDateIso!)}',
+                l10n.recurrenceUntil(_fmtDate(event.recurrenceEndDateIso!)),
                 style: theme.textTheme.labelSmall,
               ),
             ],
@@ -53,35 +51,31 @@ class GeneralEventDetailsSheet extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Time
           if (startDt != null && endDt != null) ...[
             _InfoRow(
               icon: Icons.access_time,
-              label: 'Time',
+              label: l10n.eventTime,
               value: '${_fmtDateTime(startDt)} - ${_fmtTime(endDt)}',
             ),
           ],
 
-          // Date
           _InfoRow(
             icon: Icons.calendar_today,
-            label: 'Date',
+            label: l10n.eventDate,
             value: startDt != null ? _fmtDate(startDt.toIso8601String()) : '-',
           ),
 
-          // Location
           if (event.location.isNotEmpty)
             _InfoRow(
               icon: Icons.location_on,
-              label: 'Location',
+              label: l10n.location,
               value: event.location,
             ),
 
-          // Notes
           if (event.notes.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(
-              'Notes',
+              l10n.eventNotes,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withAlpha(180),
               ),
@@ -92,7 +86,6 @@ class GeneralEventDetailsSheet extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Actions
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -100,7 +93,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: onDelete,
                   icon: const Icon(Icons.delete),
-                  label: const Text('Delete'),
+                  label: Text(l10n.delete),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: theme.colorScheme.error,
                   ),
@@ -110,7 +103,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: onEdit,
                   icon: const Icon(Icons.edit),
-                  label: const Text('Edit'),
+                  label: Text(l10n.editEvent),
                 ),
               ],
             ],

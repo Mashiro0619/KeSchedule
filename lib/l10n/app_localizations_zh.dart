@@ -1162,6 +1162,141 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get today => '今天';
+
+  @override
+  String get addEvent => '添加日程';
+
+  @override
+  String get editEvent => '编辑日程';
+
+  @override
+  String get eventTitle => '日程标题';
+
+  @override
+  String get eventTitleRequired => '请输入日程标题';
+
+  @override
+  String get eventStartTime => '开始时间';
+
+  @override
+  String get eventEndTime => '结束时间';
+
+  @override
+  String get eventDate => '日期';
+
+  @override
+  String get eventTime => '时间';
+
+  @override
+  String get eventNotes => '备注';
+
+  @override
+  String get eventColor => '颜色';
+
+  @override
+  String get eventRecurrence => '重复';
+
+  @override
+  String get recurrenceNone => '不重复';
+
+  @override
+  String get recurrenceWeekly => '每周';
+
+  @override
+  String get recurrenceEndDate => '结束日期';
+
+  @override
+  String get recurrenceNoEndDate => '无结束日期';
+
+  @override
+  String get recurrenceSetEndDate => '设置';
+
+  @override
+  String get recurrenceChangeEndDate => '更改';
+
+  @override
+  String get repeatsWeekly => '每周重复';
+
+  @override
+  String recurrenceUntil(Object date) {
+    return '截止 $date';
+  }
+
+  @override
+  String get switchToGeneralSchedule => '切换到通用日程';
+
+  @override
+  String get generalDisplaySettings => '通用显示设置';
+
+  @override
+  String get generalDisplaySettingsDesc => '通用日程页面的显示开关';
+
+  @override
+  String get closePopupOnOutsideTap => '点击外部关闭弹窗';
+
+  @override
+  String get showGridLines => '显示网格线';
+
+  @override
+  String get generalScheduleImportExport => '日程导入导出';
+
+  @override
+  String get generalScheduleImportExportDesc => '导入或分享通用日程';
+
+  @override
+  String get importGeneralSchedules => '导入日程';
+
+  @override
+  String get importGeneralSchedulesDesc => '从 JSON 文件读取日程';
+
+  @override
+  String get shareGeneralSchedules => '分享日程';
+
+  @override
+  String get shareGeneralSchedulesDesc => '以 JSON 文件分享日程';
+
+  @override
+  String get saveGeneralSchedules => '保存日程';
+
+  @override
+  String get saveGeneralSchedulesDesc => '保存为 JSON 文件';
+
+  @override
+  String get selectSchedulesToExport => '选择要导出的日程';
+
+  @override
+  String get selectSchedulesToImport => '选择要导入的日程';
+
+  @override
+  String generalScheduleEventCount(int count) {
+    return '事件 $count';
+  }
+
+  @override
+  String importedSchedulesCount(int count) {
+    return '已导入 $count 个日程';
+  }
+
+  @override
+  String get replaceActiveSchedulePrompt => '用导入的日程替换当前日程？';
+
+  @override
+  String get addAsNewSchedule => '新增';
+
+  @override
+  String get selectAtLeastOneScheduleMessage => '请至少选择一个日程。';
+
+  @override
+  String get noExportableScheduleMessage => '没有可导出的日程。';
+
+  @override
+  String get noSchedulesInImportMessage => '导入文件没有日程。';
+
+  @override
+  String get replaceActiveRequiresSingleScheduleMessage => '替换当前日程时只能选择一个日程。';
+
+  @override
+  String get noActiveScheduleToReplaceMessage => '当前没有可替换的日程。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).

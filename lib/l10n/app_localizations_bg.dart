@@ -1242,4 +1242,145 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get today => 'Today';
+
+  @override
+  String get addEvent => 'Add event';
+
+  @override
+  String get editEvent => 'Edit event';
+
+  @override
+  String get eventTitle => 'Title';
+
+  @override
+  String get eventTitleRequired => 'Title is required';
+
+  @override
+  String get eventStartTime => 'Start time';
+
+  @override
+  String get eventEndTime => 'End time';
+
+  @override
+  String get eventDate => 'Date';
+
+  @override
+  String get eventTime => 'Time';
+
+  @override
+  String get eventNotes => 'Notes';
+
+  @override
+  String get eventColor => 'Color';
+
+  @override
+  String get eventRecurrence => 'Repeat';
+
+  @override
+  String get recurrenceNone => 'Does not repeat';
+
+  @override
+  String get recurrenceWeekly => 'Weekly';
+
+  @override
+  String get recurrenceEndDate => 'End date';
+
+  @override
+  String get recurrenceNoEndDate => 'No end date';
+
+  @override
+  String get recurrenceSetEndDate => 'Set';
+
+  @override
+  String get recurrenceChangeEndDate => 'Change';
+
+  @override
+  String get repeatsWeekly => 'Repeats weekly';
+
+  @override
+  String recurrenceUntil(Object date) {
+    return 'Until $date';
+  }
+
+  @override
+  String get switchToGeneralSchedule => 'Switch to General schedule';
+
+  @override
+  String get generalDisplaySettings => 'General display settings';
+
+  @override
+  String get generalDisplaySettingsDesc =>
+      'Toggles for the general schedule view';
+
+  @override
+  String get closePopupOnOutsideTap => 'Close popup on tap outside';
+
+  @override
+  String get showGridLines => 'Show grid lines';
+
+  @override
+  String get generalScheduleImportExport => 'Schedule import & export';
+
+  @override
+  String get generalScheduleImportExportDesc =>
+      'Import or share general schedules';
+
+  @override
+  String get importGeneralSchedules => 'Import schedules';
+
+  @override
+  String get importGeneralSchedulesDesc => 'Read schedules from a JSON file';
+
+  @override
+  String get shareGeneralSchedules => 'Share schedules';
+
+  @override
+  String get shareGeneralSchedulesDesc => 'Share schedules as a JSON file';
+
+  @override
+  String get saveGeneralSchedules => 'Save schedules';
+
+  @override
+  String get saveGeneralSchedulesDesc => 'Save schedules as a JSON file';
+
+  @override
+  String get selectSchedulesToExport => 'Select schedules to export';
+
+  @override
+  String get selectSchedulesToImport => 'Select schedules to import';
+
+  @override
+  String generalScheduleEventCount(int count) {
+    return 'Events: $count';
+  }
+
+  @override
+  String importedSchedulesCount(int count) {
+    return 'Imported $count schedules';
+  }
+
+  @override
+  String get replaceActiveSchedulePrompt =>
+      'Replace current schedule with the imported one?';
+
+  @override
+  String get addAsNewSchedule => 'Add as new';
+
+  @override
+  String get selectAtLeastOneScheduleMessage =>
+      'Please select at least one schedule.';
+
+  @override
+  String get noExportableScheduleMessage => 'No schedule available to export.';
+
+  @override
+  String get noSchedulesInImportMessage => 'Import file contains no schedules.';
+
+  @override
+  String get replaceActiveRequiresSingleScheduleMessage =>
+      'Choose exactly one schedule to replace the current one.';
+
+  @override
+  String get noActiveScheduleToReplaceMessage =>
+      'No current schedule to replace.';
 }

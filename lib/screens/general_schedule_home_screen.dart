@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,6 +8,7 @@ import '../models/timetable_models.dart';
 import '../providers/timetable_provider.dart';
 import '../widgets/general_event_details_sheet.dart';
 import '../widgets/general_event_editor_sheet.dart';
+import '../widgets/mode_switch_action.dart';
 import 'settings_page.dart';
 import '../widgets/timetable_entry.dart';
 import '../widgets/timetable_grid.dart';
@@ -19,17 +22,58 @@ class GeneralScheduleHomeScreen extends StatefulWidget {
 }
 
 class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
-  late DateTime _displayedWeekStart;
+  PageController? _pageController;
+
+  static final DateTime _kEpoch = DateTime.utc(2020, 1, 6);
 
   static DateTime _mondayOf(DateTime date) {
     final weekday = date.weekday;
     return DateTime(date.year, date.month, date.day - (weekday - 1));
   }
 
+  static DateTime _weekStartForPage(int page) =>
+      _kEpoch.add(Duration(days: page * 7));
+
+  static int _pageForWeekStart(DateTime weekStart) =>
+      weekStart.difference(_kEpoch).inDays ~/ 7;
+
   @override
   void initState() {
     super.initState();
-    _displayedWeekStart = _mondayOf(DateTime.now());
+    _ensurePageController(_pageForWeekStart(_mondayOf(DateTime.now())));
+  }
+
+  @override
+  void dispose() {
+    _pageController?.dispose();
+    super.dispose();
+  }
+
+  void _ensurePageController(int page) {
+    _pageController ??= PageController(initialPage: page);
+  }
+
+  DateTime get _displayedWeekStart {
+    final controller = _pageController;
+    if (controller == null || !controller.hasClients) {
+      return _mondayOf(DateTime.now());
+    }
+    final page = controller.page?.round() ?? controller.initialPage;
+    return _weekStartForPage(page);
+  }
+
+  Future<void> _animateToPage(int page) async {
+    final controller = _pageController;
+    if (controller == null || !controller.hasClients) {
+      _pageController = PageController(initialPage: page);
+      setState(() {});
+      return;
+    }
+    await controller.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -37,12 +81,8 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
     final provider = context.watch<TimetableProvider>();
     final l10n = AppLocalizations.of(context);
 
-    final weekStart = _displayedWeekStart;
-    final weekEnd = weekStart.add(const Duration(days: 7));
-    final occurrences = provider.generalOccurrencesForRange(
-      startInclusive: weekStart,
-      endExclusive: weekEnd,
-    );
+    final page = _pageForWeekStart(_displayedWeekStart);
+    _ensurePageController(page);
 
     return Scaffold(
       appBar: AppBar(
@@ -57,7 +97,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _weekRangeLabel(weekStart, weekEnd),
+                  _weekRangeLabel(_displayedWeekStart),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 Text(
@@ -71,45 +111,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
           ),
         ),
         actions: [
-          PopupMenuButton<AppMode>(
-            icon: const Icon(Icons.swap_horiz),
-            tooltip: l10n.switchMode,
-            onSelected: (mode) => provider.switchMode(mode),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: AppMode.general,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check,
-                      size: 18,
-                      color: provider.isGeneralMode
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.transparent,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(l10n.generalSchedule),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: AppMode.student,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check,
-                      size: 18,
-                      color: provider.isStudentMode
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.transparent,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(l10n.studentTimetable),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          const ModeSwitchAction(),
           IconButton(
             icon: const Icon(Icons.today),
             tooltip: l10n.today,
@@ -117,7 +119,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: l10n.addCourse,
+            tooltip: l10n.addEvent,
             onPressed: () => _openEditor(context, provider),
           ),
           IconButton(
@@ -139,54 +141,86 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
       ),
       body: Column(
         children: [
-          // Week navigation
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
                 icon: const Icon(Icons.chevron_left),
-                onPressed: () => _jumpWeek(-1),
+                onPressed: () => _animateToPage(
+                  _pageForWeekStart(_displayedWeekStart) - 1,
+                ),
               ),
               TextButton(
                 onPressed: () => _pickDate(context),
-                child: Text(_weekRangeLabel(weekStart, weekEnd)),
+                child: Text(_weekRangeLabel(_displayedWeekStart)),
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right),
-                onPressed: () => _jumpWeek(1),
+                onPressed: () => _animateToPage(
+                  _pageForWeekStart(_displayedWeekStart) + 1,
+                ),
               ),
             ],
           ),
-          // Week view
           Expanded(
-            child: TimetableGrid(
-              timetable: _buildDummyTimetable(),
-              periodTimes: _buildHourlySlots(),
-              weekDateStart: weekStart,
-              selectedWeek: 1,
-              realCurrentWeek: 1,
-              localeCode: provider.localeCode,
-              preserveGaps: true,
-              showPastEndedCourses: false,
-              showFutureCourses: true,
-              showGridLines: provider.showTimetableGridLines,
-              onCourseTap: (_) {},
-              onEmptySlotTap: (info) => _openEditor(
-                context,
-                provider,
-                initialDate: weekStart.add(Duration(days: info.weekday - 1)),
-                initialStartMinutes: info.startMinutes,
-                initialEndMinutes: info.endMinutes,
+            child: ScrollConfiguration(
+              behavior: const MaterialScrollBehavior().copyWith(
+                dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                  PointerDeviceKind.trackpad,
+                  PointerDeviceKind.stylus,
+                  PointerDeviceKind.invertedStylus,
+                },
               ),
-              themeColorMode: provider.themeColorMode,
-              courseNameColorValues: const {},
-              colorfulCourseTextColorMode: provider.colorfulCourseTextColorMode,
-              liveCourseOutlineEnabled: false,
-              liveCourseOutlineMode: liveCourseOutlineModeAllDisplayed,
-              liveCourseOutlineColorValue: provider.liveCourseOutlineColorValue,
-              liveCourseOutlineWidth: provider.liveCourseOutlineWidth,
-              entries: occurrences.map((o) => occurrenceToEntry(o)).toList(),
-              onEntryTap: (entry) => _openDetails(context, provider, entry),
+              child: PageView.builder(
+                controller: _pageController!,
+                itemBuilder: (context, page) {
+                  final weekStart = _weekStartForPage(page);
+                  final occurrences = provider.generalOccurrencesForRange(
+                    startInclusive: weekStart,
+                    endExclusive: weekStart.add(const Duration(days: 7)),
+                  );
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(2, 8, 0, 12),
+                    child: TimetableGrid(
+                      timetable: _buildDummyTimetable(),
+                      periodTimes: _buildHourlySlots(),
+                      weekDateStart: weekStart,
+                      selectedWeek: 1,
+                      realCurrentWeek: 1,
+                      localeCode: provider.localeCode,
+                      preserveGaps: true,
+                      showPastEndedCourses: false,
+                      showFutureCourses: true,
+                      showGridLines: provider.showTimetableGridLines,
+                      onCourseTap: (_) {},
+                      onEmptySlotTap: (info) => _openEditor(
+                        context,
+                        provider,
+                        initialDate: weekStart.add(
+                          Duration(days: info.weekday - 1),
+                        ),
+                        initialStartMinutes: info.startMinutes,
+                        initialEndMinutes: info.endMinutes,
+                      ),
+                      themeColorMode: provider.themeColorMode,
+                      courseNameColorValues: const {},
+                      colorfulCourseTextColorMode:
+                          provider.colorfulCourseTextColorMode,
+                      liveCourseOutlineEnabled: false,
+                      liveCourseOutlineMode: liveCourseOutlineModeAllDisplayed,
+                      liveCourseOutlineColorValue:
+                          provider.liveCourseOutlineColorValue,
+                      liveCourseOutlineWidth: provider.liveCourseOutlineWidth,
+                      entries:
+                          occurrences.map((o) => occurrenceToEntry(o)).toList(),
+                      onEntryTap: (entry) =>
+                          _openDetails(context, provider, entry),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -195,13 +229,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
   }
 
   void _goToToday() {
-    setState(() => _displayedWeekStart = _mondayOf(DateTime.now()));
-  }
-
-  void _jumpWeek(int offset) {
-    setState(() {
-      _displayedWeekStart = _displayedWeekStart.add(Duration(days: offset * 7));
-    });
+    _animateToPage(_pageForWeekStart(_mondayOf(DateTime.now())));
   }
 
   Future<void> _pickDate(BuildContext context) async {
@@ -212,11 +240,12 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
       lastDate: DateTime(2100),
     );
     if (picked != null) {
-      setState(() => _displayedWeekStart = _mondayOf(picked));
+      _animateToPage(_pageForWeekStart(_mondayOf(picked)));
     }
   }
 
-  String _weekRangeLabel(DateTime start, DateTime end) {
+  String _weekRangeLabel(DateTime start) {
+    final end = start.add(const Duration(days: 7));
     String fmt(DateTime d) =>
         '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
     return '${fmt(start)} - ${fmt(end)}';
@@ -307,65 +336,38 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
     required bool dismissOnOutsideTap,
     required Widget child,
   }) {
-    final mediaQuery = MediaQuery.of(context);
-    final effectiveWidth = mediaQuery.size.width > maxWidth
-        ? maxWidth
-        : mediaQuery.size.width;
+    final width = MediaQuery.of(context).size.width;
+    final isDesktopLike = width >= 900;
+
     return SafeArea(
-      child: GestureDetector(
-        onTap: dismissOnOutsideTap
-            ? () => Navigator.of(context).maybePop()
-            : null,
-        behavior: HitTestBehavior.opaque,
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.85,
-          minChildSize: 0.3,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (context, scrollController) {
-            return GestureDetector(
-              onTap: () {},
-              child: Container(
-                margin: EdgeInsets.fromLTRB(
-                  (mediaQuery.size.width - effectiveWidth) / 2,
-                  0,
-                  (mediaQuery.size.width - effectiveWidth) / 2,
-                  0,
-                ),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Container(
-                        width: 32,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withAlpha(40),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView(
-                        controller: scrollController,
-                        children: [child],
-                      ),
-                    ),
-                  ],
-                ),
+      top: false,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: dismissOnOutsideTap
+                  ? () => Navigator.of(context).maybePop()
+                  : null,
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isDesktopLike ? maxWidth : width,
               ),
-            );
-          },
-        ),
+              child: Material(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: child,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

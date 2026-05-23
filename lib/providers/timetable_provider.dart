@@ -302,6 +302,124 @@ class TimetableProvider extends ChangeNotifier {
     return results;
   }
 
+  // ── General schedule import / export ──
+
+  String exportSelectedGeneralSchedulesJson(List<String> scheduleIds) {
+    final selectedIdSet = scheduleIds.toSet();
+    final selected = _appData.generalMode.schedules
+        .where((s) => selectedIdSet.contains(s.id))
+        .toList();
+    if (selected.isEmpty) {
+      throw FormatException(
+        selectAtLeastOneScheduleMessage(localeCode: _appData.localeCode),
+      );
+    }
+    return encodeGeneralScheduleDataEnvelope(
+      GeneralScheduleExportData(schedules: selected),
+    );
+  }
+
+  String exportActiveGeneralScheduleJson() {
+    final active = activeGeneralScheduleOrNull;
+    if (active == null) {
+      throw FormatException(
+        noExportableScheduleMessage(localeCode: _appData.localeCode),
+      );
+    }
+    return exportSelectedGeneralSchedulesJson([active.id]);
+  }
+
+  List<GeneralSchedule> previewImportGeneralSchedules(String source) {
+    final decoded = decodeGeneralScheduleDataEnvelope(
+      source,
+      localeCode: _appData.localeCode,
+    );
+    if (decoded.schedules.isEmpty) {
+      throw FormatException(
+        noSchedulesInImportMessage(localeCode: _appData.localeCode),
+      );
+    }
+    return decoded.schedules;
+  }
+
+  Future<int> importSelectedGeneralSchedulesJson(
+    String source, {
+    required List<String> scheduleIds,
+    required GeneralScheduleImportMode mode,
+  }) async {
+    final imported = decodeGeneralScheduleDataEnvelope(
+      source,
+      localeCode: _appData.localeCode,
+    );
+    final selectedIdSet = scheduleIds.toSet();
+    final selected = imported.schedules
+        .where((s) => selectedIdSet.contains(s.id))
+        .toList();
+    if (selected.isEmpty) {
+      throw FormatException(
+        selectAtLeastOneScheduleMessage(localeCode: _appData.localeCode),
+      );
+    }
+
+    if (mode == GeneralScheduleImportMode.replaceActive) {
+      if (selected.length != 1) {
+        throw FormatException(
+          replaceActiveRequiresSingleScheduleMessage(
+            localeCode: _appData.localeCode,
+          ),
+        );
+      }
+      final current = activeGeneralScheduleOrNull;
+      if (current == null) {
+        throw FormatException(
+          noActiveScheduleToReplaceMessage(localeCode: _appData.localeCode),
+        );
+      }
+      final replaced = selected.first.copyWith(id: current.id);
+      _appData = _appData.copyWith(
+        generalMode: _appData.generalMode.withSchedule(replaced),
+      );
+      await _saveAndNotify();
+      return 1;
+    }
+
+    final existingIds = _appData.generalMode.schedules
+        .map((s) => s.id)
+        .toSet();
+    final appended = <GeneralSchedule>[];
+    for (final schedule in selected) {
+      var nextId = schedule.id.trim();
+      if (nextId.isEmpty || existingIds.contains(nextId)) {
+        nextId = _nextImportedScheduleId(existingIds);
+      }
+      existingIds.add(nextId);
+      appended.add(schedule.copyWith(id: nextId));
+    }
+
+    final mergedSchedules = [
+      ..._appData.generalMode.schedules,
+      ...appended,
+    ];
+    _appData = _appData.copyWith(
+      generalMode: _appData.generalMode.copyWith(
+        schedules: mergedSchedules,
+        activeScheduleId: appended.last.id,
+      ),
+    );
+    await _saveAndNotify();
+    return appended.length;
+  }
+
+  String _nextImportedScheduleId(Set<String> existingIds) {
+    var stamp = DateTime.now().microsecondsSinceEpoch;
+    var candidate = 'schedule_import_$stamp';
+    while (existingIds.contains(candidate)) {
+      stamp += 1;
+      candidate = 'schedule_import_$stamp';
+    }
+    return candidate;
+  }
+
   // ── Privacy policy (remote-version driven) ──
 
   String? _remotePrivacyPolicyVersion;

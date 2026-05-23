@@ -13,6 +13,7 @@ import '../providers/timetable_provider.dart';
 import '../services/export_service.dart';
 import '../services/update_service.dart';
 import '../widgets/period_time_set_picker_dialog.dart';
+import 'general_display_settings_page.dart';
 import 'language_settings_page.dart';
 import 'school_html_import_page.dart';
 import 'theme_settings_page.dart';
@@ -26,6 +27,12 @@ enum _DataAction {
   exportTimetablesShare,
   exportTimetablesSave,
   exportTimetablesText,
+}
+
+enum _GeneralDataAction {
+  importSchedules,
+  exportSchedulesShare,
+  exportSchedulesSave,
 }
 
 enum UpdateCheckSource { manual, startup }
@@ -419,13 +426,37 @@ class _SettingsPageState extends State<SettingsPage> {
                   ).colorScheme.outlineVariant.withValues(alpha: 0.35),
                 ),
               ],
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: const Icon(Icons.import_export),
-                title: Text(l10n.dataImportExport),
-                subtitle: Text(l10n.dataImportExportDesc),
-                onTap: () => _showDataActions(provider),
-              ),
+              if (provider.isGeneralMode) ...[
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const Icon(Icons.grid_view_outlined),
+                  title: Text(l10n.generalDisplaySettings),
+                  subtitle: Text(l10n.generalDisplaySettingsDesc),
+                  trailing: const Icon(Icons.keyboard_arrow_right),
+                  onTap: () => _openGeneralDisplaySettingsPage(provider),
+                ),
+                Divider(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outlineVariant.withValues(alpha: 0.35),
+                ),
+              ],
+              if (provider.isStudentMode)
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const Icon(Icons.import_export),
+                  title: Text(l10n.dataImportExport),
+                  subtitle: Text(l10n.dataImportExportDesc),
+                  onTap: () => _showDataActions(provider),
+                ),
+              if (provider.isGeneralMode)
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const Icon(Icons.import_export),
+                  title: Text(l10n.generalScheduleImportExport),
+                  subtitle: Text(l10n.generalScheduleImportExportDesc),
+                  onTap: () => _showGeneralDataActions(provider),
+                ),
               Divider(
                 color: Theme.of(
                   context,
@@ -499,6 +530,19 @@ class _SettingsPageState extends State<SettingsPage> {
         builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
           value: provider,
           child: const TimetableDisplaySettingsPage(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openGeneralDisplaySettingsPage(
+    TimetableProvider provider,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
+          value: provider,
+          child: const GeneralDisplaySettingsPage(),
         ),
       ),
     );
@@ -1083,6 +1127,272 @@ class _SettingsPageState extends State<SettingsPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showGeneralDataActions(TimetableProvider provider) async {
+    final l10n = AppLocalizations.of(context);
+    final action = await showModalBottomSheet<_GeneralDataAction>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return _buildAdaptiveBottomSheet(
+          sheetContext,
+          maxWidth: 680,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.file_download_outlined),
+                  title: Text(l10n.importGeneralSchedules),
+                  subtitle: Text(l10n.importGeneralSchedulesDesc),
+                  onTap: () => Navigator.of(sheetContext)
+                      .pop(_GeneralDataAction.importSchedules),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.share_outlined),
+                  title: Text(l10n.shareGeneralSchedules),
+                  subtitle: Text(l10n.shareGeneralSchedulesDesc),
+                  onTap: () => Navigator.of(sheetContext)
+                      .pop(_GeneralDataAction.exportSchedulesShare),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.save_alt_outlined),
+                  title: Text(l10n.saveGeneralSchedules),
+                  subtitle: Text(l10n.saveGeneralSchedulesDesc),
+                  onTap: () => Navigator.of(sheetContext)
+                      .pop(_GeneralDataAction.exportSchedulesSave),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case _GeneralDataAction.importSchedules:
+        await _importGeneralSchedules(provider);
+      case _GeneralDataAction.exportSchedulesShare:
+        await _exportGeneralSchedules(provider, share: true);
+      case _GeneralDataAction.exportSchedulesSave:
+        await _exportGeneralSchedules(provider, share: false);
+    }
+  }
+
+  Future<List<String>?> _pickGeneralScheduleIds({
+    required List<GeneralSchedule> schedules,
+    required String title,
+    required String confirmText,
+    List<String> initialSelectedIds = const [],
+  }) {
+    final draft = <String>{
+      ...initialSelectedIds.where(
+        (id) => schedules.any((s) => s.id == id),
+      ),
+    };
+    if (draft.isEmpty && schedules.isNotEmpty) {
+      draft.add(schedules.first.id);
+    }
+    return showDialog<List<String>>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final l10n = AppLocalizations.of(context);
+            return AlertDialog(
+              title: Text(title),
+              content: SizedBox(
+                width: 360,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Wrap(
+                        spacing: 8,
+                        children: [
+                          TextButton(
+                            onPressed: () => setState(() {
+                              draft
+                                ..clear()
+                                ..addAll(schedules.map((s) => s.id));
+                            }),
+                            child: Text(l10n.selectAll),
+                          ),
+                          TextButton(
+                            onPressed: () => setState(draft.clear),
+                            child: Text(l10n.clear),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: schedules.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final schedule = schedules[index];
+                          final selected = draft.contains(schedule.id);
+                          return ListTile(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            tileColor: selected
+                                ? Theme.of(context)
+                                    .colorScheme
+                                    .secondaryContainer
+                                : null,
+                            title: Text(schedule.name),
+                            subtitle: Text(
+                              l10n.generalScheduleEventCount(
+                                schedule.events.length,
+                              ),
+                            ),
+                            trailing:
+                                selected ? const Icon(Icons.check) : null,
+                            onTap: () {
+                              setState(() {
+                                if (selected) {
+                                  draft.remove(schedule.id);
+                                } else {
+                                  draft.add(schedule.id);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.cancel),
+                ),
+                FilledButton(
+                  onPressed: draft.isEmpty
+                      ? null
+                      : () => Navigator.of(context).pop(
+                            schedules
+                                .where((s) => draft.contains(s.id))
+                                .map((s) => s.id)
+                                .toList(),
+                          ),
+                  child: Text(confirmText),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _importGeneralSchedules(TimetableProvider provider) async {
+    final l10n = AppLocalizations.of(context);
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TextImportPage(
+          title: l10n.importGeneralSchedules,
+          onSubmit: (context, content) async {
+            try {
+              final preview = provider.previewImportGeneralSchedules(content);
+              if (!context.mounted) return false;
+              final selectedIds = await _pickGeneralScheduleIds(
+                schedules: preview,
+                title: l10n.selectSchedulesToImport,
+                confirmText: l10n.save,
+              );
+              if (selectedIds == null || selectedIds.isEmpty) return false;
+
+              var mode = GeneralScheduleImportMode.addAsNew;
+              if (selectedIds.length == 1 &&
+                  provider.activeGeneralScheduleOrNull != null &&
+                  context.mounted) {
+                final choice = await showDialog<String>(
+                  context: context,
+                  builder: (ctx) {
+                    return AlertDialog(
+                      title: Text(l10n.dataImportExport),
+                      content: Text(l10n.replaceActiveSchedulePrompt),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop('new'),
+                          child: Text(l10n.addAsNewSchedule),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.of(ctx).pop('replace'),
+                          child: Text(l10n.save),
+                        ),
+                      ],
+                    );
+                  },
+                );
+                if (choice == 'replace') {
+                  mode = GeneralScheduleImportMode.replaceActive;
+                }
+              }
+
+              final count = await provider.importSelectedGeneralSchedulesJson(
+                content,
+                scheduleIds: selectedIds,
+                mode: mode,
+              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.importedSchedulesCount(count))),
+                );
+              }
+              return true;
+            } on FormatException catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.message)),
+                );
+              }
+              return false;
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportGeneralSchedules(
+    TimetableProvider provider, {
+    required bool share,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    final activeId = provider.activeGeneralScheduleOrNull?.id;
+    final selectedIds = await _pickGeneralScheduleIds(
+      schedules: provider.generalSchedules,
+      title: l10n.selectSchedulesToExport,
+      confirmText: share ? l10n.share : l10n.save,
+      initialSelectedIds: activeId == null ? const [] : [activeId],
+    );
+    if (selectedIds == null || selectedIds.isEmpty) return;
+    try {
+      final content = provider.exportSelectedGeneralSchedulesJson(selectedIds);
+      const fileName = 'Sked_general_schedules.json';
+      if (share) {
+        await _shareJson(fileName, content);
+      } else {
+        await _saveJsonToFile(fileName, content);
+      }
+    } on FormatException catch (e) {
+      if (mounted) _showMessage(e.message);
+    } catch (_) {
+      if (mounted) _showMessage(l10n.saveFailedRetry);
+    }
   }
 
   Widget _buildAdaptiveBottomSheet(

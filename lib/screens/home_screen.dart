@@ -15,6 +15,7 @@ import '../widgets/course_details_sheet.dart';
 import '../widgets/course_editor_sheet.dart';
 import '../widgets/text_transfer_widgets.dart';
 import '../widgets/timetable_grid.dart';
+import '../widgets/mode_switch_action.dart';
 import 'settings_page.dart';
 import 'timetable_import_flow.dart';
 
@@ -191,7 +192,10 @@ class _HomeScreenState extends State<HomeScreen> {
         final timetable = provider.activeTimetableOrNull;
         if (timetable == null) {
           return Scaffold(
-            appBar: AppBar(title: Text(l10n.appTitle)),
+            appBar: AppBar(
+              title: Text(l10n.appTitle),
+              actions: const [ModeSwitchAction()],
+            ),
             body: _EmptyTimetableState(
               onCreate: provider.addTimetable,
               onImport: () => _importTimetableData(context, provider),
@@ -238,6 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             actions: [
+              const ModeSwitchAction(),
               IconButton(
                 onPressed: () => _openEditor(context, provider),
                 icon: const Icon(Icons.add),

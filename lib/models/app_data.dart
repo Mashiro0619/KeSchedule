@@ -6,6 +6,7 @@ import '../utils/localized_names.dart';
 import '../utils/time_utils.dart';
 import 'app_mode.dart';
 import 'course_item.dart';
+import 'general_schedule.dart';
 import 'general_schedule_data.dart';
 import 'student_mode_data.dart';
 import 'timetable_data.dart';
@@ -321,4 +322,46 @@ AppData buildInitialAppData(
     generalMode: GeneralScheduleData.fromJson(const {}),
     localeCode: localeCode,
   );
+}
+
+enum GeneralScheduleImportMode { addAsNew, replaceActive }
+
+class GeneralScheduleExportData {
+  const GeneralScheduleExportData({required this.schedules});
+
+  final List<GeneralSchedule> schedules;
+
+  Map<String, dynamic> toJson() => {
+    'schedules': schedules.map((s) => s.toJson()).toList(),
+  };
+
+  factory GeneralScheduleExportData.fromJson(Map<String, dynamic> json) {
+    final raw = (json['schedules'] as List<dynamic>? ?? const <dynamic>[]);
+    return GeneralScheduleExportData(
+      schedules: raw
+          .map((s) => GeneralSchedule.fromJson(Map<String, dynamic>.from(s as Map)))
+          .toList(),
+    );
+  }
+}
+
+String encodeGeneralScheduleDataEnvelope(GeneralScheduleExportData data) {
+  return ImportExportEnvelope(
+    schema: generalScheduleDataSchema,
+    version: importExportVersion,
+    data: data.toJson(),
+  ).encode();
+}
+
+GeneralScheduleExportData decodeGeneralScheduleDataEnvelope(
+  String source, {
+  String localeCode = defaultLocaleCode,
+}) {
+  final envelope = ImportExportEnvelope.decode(source);
+  _ensureSupportedEnvelope(
+    envelope,
+    expectedSchema: generalScheduleDataSchema,
+    localeCode: localeCode,
+  );
+  return GeneralScheduleExportData.fromJson(envelope.data);
 }

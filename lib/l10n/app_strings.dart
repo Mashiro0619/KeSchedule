@@ -23,6 +23,11 @@ abstract class AppStrings {
   String get noExportableTimetableMessage;
   String get replaceActiveRequiresSingleTimetableMessage;
   String get noActiveTimetableToReplaceMessage;
+  String get selectAtLeastOneScheduleMessage;
+  String get noExportableScheduleMessage;
+  String get noSchedulesInImportMessage;
+  String get replaceActiveRequiresSingleScheduleMessage;
+  String get noActiveScheduleToReplaceMessage;
   String periodTimeSetInUseMessage(int count);
   String formatDayOfWeekLabel(int dayOfWeek);
   String formatWeekdayShortLabel(int dayOfWeek);
@@ -85,6 +90,26 @@ class _GeneratedAppStrings implements AppStrings {
   @override
   String get noActiveTimetableToReplaceMessage =>
       _l10n.noActiveTimetableToReplaceMessage;
+
+  @override
+  String get selectAtLeastOneScheduleMessage =>
+      _l10n.selectAtLeastOneScheduleMessage;
+
+  @override
+  String get noExportableScheduleMessage =>
+      _l10n.noExportableScheduleMessage;
+
+  @override
+  String get noSchedulesInImportMessage =>
+      _l10n.noSchedulesInImportMessage;
+
+  @override
+  String get replaceActiveRequiresSingleScheduleMessage =>
+      _l10n.replaceActiveRequiresSingleScheduleMessage;
+
+  @override
+  String get noActiveScheduleToReplaceMessage =>
+      _l10n.noActiveScheduleToReplaceMessage;
 
   @override
   String periodTimeSetInUseMessage(int count) {

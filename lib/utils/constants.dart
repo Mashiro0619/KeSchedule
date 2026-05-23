@@ -31,3 +31,4 @@ const importExportVersion = 3;
 const appDataSchema = 'Sked-app-data';
 const timetableDataSchema = 'Sked-timetable-data';
 const periodTimesSchema = 'Sked-period-times';
+const generalScheduleDataSchema = 'Sked-general-schedule-data';
