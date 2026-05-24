@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../models/timetable_models.dart';
 
 enum GeneralCalendarIcsWarningCode {
@@ -338,20 +340,37 @@ List<String> _unfoldLines(String source) {
 
 String _foldLine(String line) {
   const limit = 73;
-  if (line.length <= limit) {
+  if (utf8.encode(line).length <= limit) {
     return line;
   }
   final buffer = StringBuffer();
-  var index = 0;
-  while (index < line.length) {
-    final end = (index + limit).clamp(0, line.length).toInt();
-    if (index == 0) {
-      buffer.write(line.substring(index, end));
-    } else {
+  var segment = StringBuffer();
+  var segmentBytes = 0;
+  var isFirstSegment = true;
+  void flushSegment() {
+    if (!isFirstSegment) {
       buffer.write('\r\n ');
-      buffer.write(line.substring(index, end));
     }
-    index = end;
+    buffer.write(segment);
+    segment = StringBuffer();
+    segmentBytes = 0;
+    isFirstSegment = false;
+  }
+
+  for (final rune in line.runes) {
+    final char = String.fromCharCode(rune);
+    final charBytes = utf8.encode(char).length;
+    if (segmentBytes > 0 && segmentBytes + charBytes > limit) {
+      flushSegment();
+    }
+    segment.write(char);
+    segmentBytes += charBytes;
+    if (segmentBytes >= limit) {
+      flushSegment();
+    }
+  }
+  if (segmentBytes > 0 || isFirstSegment) {
+    flushSegment();
   }
   return buffer.toString();
 }

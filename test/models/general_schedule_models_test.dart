@@ -142,6 +142,51 @@ void main() {
       expect(updated.recurrenceEndDateIso, '2026-07-31T00:00:00.000');
     });
 
+    test('copyWith can explicitly clear nullable event fields', () {
+      final original = GeneralEvent(
+        id: 'nullable',
+        title: 'Nullable',
+        startDateTimeIso: '2026-05-22T09:00:00.000',
+        endDateTimeIso: '2026-05-22T10:00:00.000',
+        recurrenceRule: const GeneralEventRecurrenceRule(
+          type: GeneralEventRecurrence.weekly,
+          untilDateIso: '2026-06-30',
+          count: 5,
+        ),
+        colorValue: 0xFF123456,
+        createdAtIso: '2026-05-20T12:00:00.000',
+        updatedAtIso: '2026-05-21T12:00:00.000',
+      );
+
+      final updated = original.copyWith(
+        recurrenceEndDateIso: null,
+        colorValue: null,
+        createdAtIso: null,
+        updatedAtIso: null,
+      );
+
+      expect(updated.recurrenceRule.type, GeneralEventRecurrence.weekly);
+      expect(updated.recurrenceEndDateIso, isNull);
+      expect(updated.recurrenceRule.count, 5);
+      expect(updated.colorValue, isNull);
+      expect(updated.createdAtIso, isNull);
+      expect(updated.updatedAtIso, isNull);
+    });
+
+    test('recurrence rule copyWith can explicitly clear nullable fields', () {
+      const original = GeneralEventRecurrenceRule(
+        type: GeneralEventRecurrence.weekly,
+        untilDateIso: '2026-06-30',
+        count: 8,
+      );
+
+      final updated = original.copyWith(untilDateIso: null, count: null);
+
+      expect(updated.type, GeneralEventRecurrence.weekly);
+      expect(updated.untilDateIso, isNull);
+      expect(updated.count, isNull);
+    });
+
     test('toJson does not serialize null values unnecessarily', () {
       final event = GeneralEvent(
         id: 'evt7',
@@ -213,6 +258,32 @@ void main() {
       expect(updated.name, 'Renamed');
       expect(updated.events, isEmpty);
     });
+
+    test(
+      'copyWith updates owned event calendar ids when schedule id changes',
+      () {
+        final owned = GeneralEvent(
+          id: 'owned',
+          calendarId: 'old',
+          title: 'Owned',
+          startDateTimeIso: '2026-05-22T09:00:00.000',
+          endDateTimeIso: '2026-05-22T10:00:00.000',
+        );
+        final emptyCalendar = owned.copyWith(id: 'empty', calendarId: '');
+        final external = owned.copyWith(id: 'external', calendarId: 'other');
+        final schedule = GeneralSchedule(
+          id: 'old',
+          name: 'Original',
+          events: [owned, emptyCalendar, external],
+        );
+
+        final updated = schedule.copyWith(id: 'new');
+
+        expect(updated.events[0].calendarId, 'new');
+        expect(updated.events[1].calendarId, 'new');
+        expect(updated.events[2].calendarId, 'other');
+      },
+    );
   });
 
   group('GeneralScheduleData', () {
@@ -323,6 +394,89 @@ void main() {
 
       expect(updated.activeScheduleId, 'sched1');
       expect(updated.selectedDateIso, '2026-05-29');
+    });
+
+    test(
+      'copyWith can explicitly clear selected date to normalized fallback',
+      () {
+        final original = GeneralScheduleData(
+          activeScheduleId: 'sched1',
+          schedules: [
+            GeneralSchedule(id: 'sched1', name: 'First', events: const []),
+          ],
+          selectedDateIso: '2026-05-22',
+        );
+
+        final updated = original.copyWith(selectedDateIso: null);
+
+        expect(updated.selectedDateIso, isNot('2026-05-22'));
+        expect(DateTime.tryParse(updated.selectedDateIso ?? ''), isNotNull);
+      },
+    );
+
+    test('copyWith replaces nullable reminder acknowledgement list', () {
+      final original = GeneralScheduleData(
+        activeScheduleId: 'sched1',
+        schedules: [
+          GeneralSchedule(id: 'sched1', name: 'First', events: const []),
+        ],
+        reminderAcknowledgements: const [
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'sched1|old|2026-05-25T09:00:00.000',
+            updatedAtIso: '2026-05-25T08:55:00.000',
+          ),
+        ],
+      );
+
+      final updated = original.copyWith(
+        reminderAcknowledgements: const [
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'sched1|new|2026-05-25T09:00:00.000',
+            isHandled: false,
+            updatedAtIso: '2026-05-25T08:56:00.000',
+          ),
+        ],
+      );
+
+      expect(updated.reminderAcknowledgements, hasLength(1));
+      expect(
+        updated.reminderAcknowledgements.single.occurrenceKey,
+        contains('new'),
+      );
+      expect(updated.reminderAcknowledgements.single.isHandled, false);
+    });
+
+    test('normalized de-duplicates reminder acknowledgements by key', () {
+      final data = GeneralScheduleData(
+        activeScheduleId: 'sched1',
+        schedules: [
+          GeneralSchedule(id: 'sched1', name: 'First', events: const []),
+        ],
+        reminderAcknowledgements: const [
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'sched1|event|2026-05-25T09:00:00.000',
+            updatedAtIso: '2026-05-25T08:55:00.000',
+          ),
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'sched1|event|2026-05-25T09:00:00.000',
+            isHandled: false,
+            updatedAtIso: '2026-05-25T08:56:00.000',
+          ),
+          GeneralReminderAcknowledgement(
+            occurrenceKey: '',
+            updatedAtIso: '2026-05-25T08:57:00.000',
+          ),
+        ],
+      );
+
+      final normalized = data.normalized();
+
+      expect(normalized.reminderAcknowledgements, hasLength(1));
+      expect(normalized.reminderAcknowledgements.single.isHandled, false);
+      expect(
+        normalized.reminderAcknowledgements.single.updatedAtIso,
+        '2026-05-25T08:56:00.000',
+      );
     });
 
     test('withSchedule replaces schedule by id', () {

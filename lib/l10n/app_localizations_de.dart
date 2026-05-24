@@ -1535,7 +1535,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pickTime => 'Pick time';
 
   @override
-  String get reminder => 'Reminder';
+  String get reminder => 'In-app reminder';
 
   @override
   String get reminderAtStart => 'At start';
@@ -1555,13 +1555,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get markReminderHandled => 'Mark handled';
 
   @override
-  String get restoreReminder => 'Restore reminder';
+  String get restoreReminder => 'Restore in-app reminder';
 
   @override
-  String get reminderHandled => 'Reminder marked handled';
+  String get reminderHandled => 'In-app reminder marked handled';
 
   @override
-  String get reminderRestored => 'Reminder restored';
+  String get reminderRestored => 'In-app reminder restored';
 
   @override
   String get reminderUpcoming => 'Upcoming';

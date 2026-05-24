@@ -1452,7 +1452,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pickTime => '选择时间';
 
   @override
-  String get reminder => '提醒';
+  String get reminder => '应用内提醒';
 
   @override
   String get reminderAtStart => '开始时';
@@ -1472,13 +1472,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get markReminderHandled => '标记已处理';
 
   @override
-  String get restoreReminder => '恢复提醒';
+  String get restoreReminder => '恢复应用内提醒';
 
   @override
-  String get reminderHandled => '提醒已标记处理';
+  String get reminderHandled => '应用内提醒已标记处理';
 
   @override
-  String get reminderRestored => '提醒已恢复';
+  String get reminderRestored => '应用内提醒已恢复';
 
   @override
   String get reminderUpcoming => '即将开始';
@@ -3050,7 +3050,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get pickTime => '選擇時間';
 
   @override
-  String get reminder => '提醒';
+  String get reminder => '應用內提醒';
 
   @override
   String get reminderAtStart => '開始時';
@@ -3070,13 +3070,13 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get markReminderHandled => '標記已處理';
 
   @override
-  String get restoreReminder => '恢復提醒';
+  String get restoreReminder => '恢復應用內提醒';
 
   @override
-  String get reminderHandled => '提醒已標記處理';
+  String get reminderHandled => '應用內提醒已標記處理';
 
   @override
-  String get reminderRestored => '提醒已恢復';
+  String get reminderRestored => '應用內提醒已恢復';
 
   @override
   String get reminderUpcoming => '即將開始';

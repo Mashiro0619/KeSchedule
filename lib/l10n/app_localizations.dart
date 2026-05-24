@@ -2856,7 +2856,7 @@ abstract class AppLocalizations {
   /// No description provided for @reminder.
   ///
   /// In en, this message translates to:
-  /// **'Reminder'**
+  /// **'In-app reminder'**
   String get reminder;
 
   /// No description provided for @reminderAtStart.
@@ -2892,19 +2892,19 @@ abstract class AppLocalizations {
   /// No description provided for @restoreReminder.
   ///
   /// In en, this message translates to:
-  /// **'Restore reminder'**
+  /// **'Restore in-app reminder'**
   String get restoreReminder;
 
   /// No description provided for @reminderHandled.
   ///
   /// In en, this message translates to:
-  /// **'Reminder marked handled'**
+  /// **'In-app reminder marked handled'**
   String get reminderHandled;
 
   /// No description provided for @reminderRestored.
   ///
   /// In en, this message translates to:
-  /// **'Reminder restored'**
+  /// **'In-app reminder restored'**
   String get reminderRestored;
 
   /// No description provided for @reminderUpcoming.

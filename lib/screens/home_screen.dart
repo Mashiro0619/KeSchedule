@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../models/timetable_models.dart';
 import '../providers/timetable_provider.dart';
+import '../widgets/adaptive_modal_surface.dart';
 import '../widgets/course_details_sheet.dart';
 import '../widgets/course_editor_sheet.dart';
 import '../widgets/text_transfer_widgets.dart';
@@ -139,13 +140,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(l10n.privacyPolicyIntro),
                         const SizedBox(height: 16),
-                        _PrivacySummaryRow(text: l10n.privacyGateSummaryStorage),
+                        _PrivacySummaryRow(
+                          text: l10n.privacyGateSummaryStorage,
+                        ),
                         const SizedBox(height: 8),
                         _PrivacySummaryRow(
                           text: l10n.privacyGateSummaryImportExport,
                         ),
                         const SizedBox(height: 8),
-                        _PrivacySummaryRow(text: l10n.privacyGateSummaryUpdates),
+                        _PrivacySummaryRow(
+                          text: l10n.privacyGateSummaryUpdates,
+                        ),
                       ],
                     ),
                   ),
@@ -393,12 +398,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         liveCourseTarget: liveCourseTarget,
                         liveCourseOutlineEnabled:
                             provider.liveCourseOutlineEnabled,
-                        liveCourseOutlineMode:
-                            provider.liveCourseOutlineMode,
+                        liveCourseOutlineMode: provider.liveCourseOutlineMode,
                         liveCourseOutlineColorValue:
                             liveCourseOutlineColorValue,
-                        liveCourseOutlineWidth:
-                            provider.liveCourseOutlineWidth,
+                        liveCourseOutlineWidth: provider.liveCourseOutlineWidth,
                         onCourseTap: (info) =>
                             _openDetails(context, provider, info),
                         onEmptySlotTap: (slotInfo) => _openEditor(
@@ -478,8 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isDismissible: canDismiss,
       enableDrag: canDismiss,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => _buildAdaptiveBottomSheet(
-        sheetContext,
+      builder: (sheetContext) => AdaptiveModalSurface(
         maxWidth: 860,
         dismissOnOutsideTap: canDismiss,
         child: CourseDetailsSheet(
@@ -536,8 +538,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isDismissible: canDismiss,
       enableDrag: canDismiss,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => _buildAdaptiveBottomSheet(
-        sheetContext,
+      builder: (sheetContext) => AdaptiveModalSurface(
         maxWidth: 920,
         dismissOnOutsideTap: canDismiss,
         child: CourseEditorSheet(
@@ -599,13 +600,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   1,
                   math.min(
                     rowCount,
-                    ((maxGridHeight + spacing) / (chipHeight + spacing)).floor(),
+                    ((maxGridHeight + spacing) / (chipHeight + spacing))
+                        .floor(),
                   ),
                 );
                 final gridHeight = rowCount <= visibleRows
                     ? fullGridHeight
                     : (visibleRows * chipHeight) +
-                        ((visibleRows - 1) * spacing);
+                          ((visibleRows - 1) * spacing);
                 return ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: gridHeight),
                   child: SingleChildScrollView(
@@ -617,7 +619,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           Builder(
                             builder: (context) {
                               final weekNumber = index + 1;
-                              final isSelected = weekNumber == provider.selectedWeek;
+                              final isSelected =
+                                  weekNumber == provider.selectedWeek;
                               final isRealCurrentWeek =
                                   weekNumber == realCurrentWeek;
                               final backgroundColor = isSelected
@@ -632,7 +635,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: Colors.transparent,
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(12),
-                                    onTap: () => Navigator.of(context).pop(weekNumber),
+                                    onTap: () =>
+                                        Navigator.of(context).pop(weekNumber),
                                     child: Ink(
                                       decoration: BoxDecoration(
                                         color: backgroundColor,
@@ -640,7 +644,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                         border: Border.all(
                                           color: isSelected
                                               ? theme.colorScheme.secondary
-                                              : theme.colorScheme.outlineVariant,
+                                              : theme
+                                                    .colorScheme
+                                                    .outlineVariant,
                                         ),
                                       ),
                                       child: Center(
@@ -720,7 +726,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 Text(
                                   l10n.timetable,
-                                  style: Theme.of(context).textTheme.headlineSmall,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.headlineSmall,
                                 ),
                                 const SizedBox(height: 24),
                                 TextField(
@@ -736,7 +744,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   textInputAction: TextInputAction.done,
                                   inputFormatters: [
                                     FilteringTextInputFormatter.digitsOnly,
-                                    TextInputFormatter.withFunction((oldValue, newValue) {
+                                    TextInputFormatter.withFunction((
+                                      oldValue,
+                                      newValue,
+                                    ) {
                                       final text = newValue.text;
                                       if (text.isEmpty) {
                                         return newValue;
@@ -745,7 +756,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       if (value == null) {
                                         return oldValue;
                                       }
-                                      final clamped = normalizeTimetableWeeks(value);
+                                      final clamped = normalizeTimetableWeeks(
+                                        value,
+                                      );
                                       if (clamped == value) {
                                         return newValue;
                                       }
@@ -758,7 +771,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       );
                                     }),
                                   ],
-                                  decoration: InputDecoration(labelText: l10n.totalWeeks),
+                                  decoration: InputDecoration(
+                                    labelText: l10n.totalWeeks,
+                                  ),
                                 ),
                               ],
                             ),
@@ -779,7 +794,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 lastDate: DateTime(2035),
                                 initialDate: selectedStartDate,
                               );
-                              if (picked == null || picked == selectedStartDate) {
+                              if (picked == null ||
+                                  picked == selectedStartDate) {
                                 return;
                               }
                               setDialogState(() => selectedStartDate = picked);
@@ -790,7 +806,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Row(
                               children: [
                                 TextButton(
-                                  onPressed: () => Navigator.of(context).pop('delete'),
+                                  onPressed: () =>
+                                      Navigator.of(context).pop('delete'),
                                   child: Text(l10n.delete),
                                 ),
                                 const Spacer(),
@@ -800,7 +817,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 FilledButton(
-                                  onPressed: () => Navigator.of(context).pop('save'),
+                                  onPressed: () =>
+                                      Navigator.of(context).pop('save'),
                                   child: Text(l10n.save),
                                 ),
                               ],
@@ -919,56 +937,12 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            AppLocalizations.of(context).privacyDeclineWebHint,
-          ),
+          content: Text(AppLocalizations.of(context).privacyDeclineWebHint),
         ),
       );
       return;
     }
     await SystemNavigator.pop();
-  }
-
-  Widget _buildAdaptiveBottomSheet(
-    BuildContext context, {
-    required Widget child,
-    required double maxWidth,
-    bool dismissOnOutsideTap = false,
-  }) {
-    final width = MediaQuery.of(context).size.width;
-    final isDesktopLike = width >= 900;
-
-    return SafeArea(
-      top: false,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: dismissOnOutsideTap
-                  ? () => Navigator.of(context).maybePop()
-                  : null,
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isDesktopLike ? maxWidth : width,
-              ),
-              child: Material(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: child,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
