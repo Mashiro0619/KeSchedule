@@ -3116,6 +3116,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export JSON text'**
   String get exportJsonText;
+
+  /// No description provided for @dataRestoredFromBackupNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'App data was restored from the previous backup because the main file failed to load.'**
+  String get dataRestoredFromBackupNotice;
+
+  /// No description provided for @dataBackupRestoreFailedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Both the main data file and its backup are damaged. The app is now using a fresh state.'**
+  String get dataBackupRestoreFailedNotice;
 }
 
 class _AppLocalizationsDelegate

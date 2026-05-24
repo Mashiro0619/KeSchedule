@@ -28,6 +28,8 @@ abstract class AppStrings {
   String get noSchedulesInImportMessage;
   String get replaceActiveRequiresSingleScheduleMessage;
   String get noActiveScheduleToReplaceMessage;
+  String get dataRestoredFromBackupNotice;
+  String get dataBackupRestoreFailedNotice;
   String periodTimeSetInUseMessage(int count);
   String formatDayOfWeekLabel(int dayOfWeek);
   String formatWeekdayShortLabel(int dayOfWeek);
@@ -110,6 +112,14 @@ class _GeneratedAppStrings implements AppStrings {
   @override
   String get noActiveScheduleToReplaceMessage =>
       _l10n.noActiveScheduleToReplaceMessage;
+
+  @override
+  String get dataRestoredFromBackupNotice =>
+      _l10n.dataRestoredFromBackupNotice;
+
+  @override
+  String get dataBackupRestoreFailedNotice =>
+      _l10n.dataBackupRestoreFailedNotice;
 
   @override
   String periodTimeSetInUseMessage(int count) {

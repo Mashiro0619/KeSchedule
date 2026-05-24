@@ -1682,4 +1682,12 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get exportJsonText => 'Export JSON text';
+
+  @override
+  String get dataRestoredFromBackupNotice =>
+      'App data was restored from the previous backup because the main file failed to load.';
+
+  @override
+  String get dataBackupRestoreFailedNotice =>
+      'Both the main data file and its backup are damaged. The app is now using a fresh state.';
 }

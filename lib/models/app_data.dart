@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../data/migrations/app_data_migrations.dart';
 import '../l10n/app_locale.dart';
 import '../utils/constants.dart';
 import '../utils/localized_names.dart';
@@ -43,6 +44,7 @@ class AppData {
   final String? availableUpdateVersion;
 
   Map<String, dynamic> toJson() => {
+    'schemaVersion': appDataCurrentSchemaVersion,
     'activeMode': activeMode.value,
     'studentMode': studentMode.toJson(),
     'generalMode': generalMode.toJson(),
@@ -62,13 +64,18 @@ class AppData {
   };
 
   factory AppData.fromJson(Map<String, dynamic> json) {
+    // Run schemaVersion migrations before any field decoding so legacy data
+    // and future bumps are handled in one place instead of being scattered
+    // across this fromJson body.
+    final migrated = appDataMigrationRunner.run(json);
+
     final localeCode = normalizeLocaleCode(
-      json['localeCode'] as String? ?? defaultLocaleCode,
+      migrated['localeCode'] as String? ?? defaultLocaleCode,
     );
 
     // Detect legacy format: old flat keys exist and studentMode key is absent
     final isLegacy =
-        json.containsKey('timetables') && !json.containsKey('studentMode');
+        migrated.containsKey('timetables') && !migrated.containsKey('studentMode');
 
     final StudentModeData studentMode;
     final GeneralScheduleData generalMode;
@@ -76,24 +83,24 @@ class AppData {
 
     if (isLegacy) {
       // Migrate legacy flat JSON to nested StudentModeData
-      studentMode = StudentModeData.fromJson(json, localeCode: localeCode);
+      studentMode = StudentModeData.fromJson(migrated, localeCode: localeCode);
       generalMode = GeneralScheduleData.fromJson(const {});
       activeMode = studentMode.timetables.isNotEmpty
           ? AppMode.student
           : AppMode.general;
     } else {
-      studentMode = json.containsKey('studentMode')
+      studentMode = migrated.containsKey('studentMode')
           ? StudentModeData.fromJson(
-              Map<String, dynamic>.from(json['studentMode'] as Map),
+              Map<String, dynamic>.from(migrated['studentMode'] as Map),
               localeCode: localeCode,
             )
           : StudentModeData.fromJson({}, localeCode: localeCode);
-      generalMode = json.containsKey('generalMode')
+      generalMode = migrated.containsKey('generalMode')
           ? GeneralScheduleData.fromJson(
-              Map<String, dynamic>.from(json['generalMode'] as Map),
+              Map<String, dynamic>.from(migrated['generalMode'] as Map),
             )
           : _buildDefaultGeneralMode();
-      activeMode = parseAppMode(json['activeMode'] as String?);
+      activeMode = parseAppMode(migrated['activeMode'] as String?);
     }
 
     return AppData(
@@ -102,20 +109,20 @@ class AppData {
       generalMode: generalMode,
       localeCode: localeCode,
       themeMode: normalizeThemeMode(
-        json['themeMode'] as String? ?? defaultThemeMode,
+        migrated['themeMode'] as String? ?? defaultThemeMode,
       ),
       themeColorMode: normalizeThemeColorMode(
-        json['themeColorMode'] as String? ?? defaultThemeColorMode,
+        migrated['themeColorMode'] as String? ?? defaultThemeColorMode,
       ),
       themeSeedColorValue:
-          (json['themeSeedColorValue'] as num?)?.toInt() ??
+          (migrated['themeSeedColorValue'] as num?)?.toInt() ??
           defaultThemeSeedColorValue,
-      colorfulUiColorValues: decodeColorValueMap(json['colorfulUiColorValues']),
+      colorfulUiColorValues: decodeColorValueMap(migrated['colorfulUiColorValues']),
       privacyPolicyAcceptedVersion:
-          json['privacyPolicyAcceptedVersion'] as String?,
-      privacyPolicyAcceptedAtIso: json['privacyPolicyAcceptedAtIso'] as String?,
-      ignoredUpdateVersion: json['ignoredUpdateVersion'] as String?,
-      availableUpdateVersion: json['availableUpdateVersion'] as String?,
+          migrated['privacyPolicyAcceptedVersion'] as String?,
+      privacyPolicyAcceptedAtIso: migrated['privacyPolicyAcceptedAtIso'] as String?,
+      ignoredUpdateVersion: migrated['ignoredUpdateVersion'] as String?,
+      availableUpdateVersion: migrated['availableUpdateVersion'] as String?,
     );
   }
 

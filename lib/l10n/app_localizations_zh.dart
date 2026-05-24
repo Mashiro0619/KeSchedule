@@ -1592,6 +1592,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get exportJsonText => '导出 JSON 文本';
+
+  @override
+  String get dataRestoredFromBackupNotice =>
+      'App data was restored from the previous backup because the main file failed to load.';
+
+  @override
+  String get dataBackupRestoreFailedNotice =>
+      'Both the main data file and its backup are damaged. The app is now using a fresh state.';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -3182,4 +3190,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get exportJsonText => '匯出 JSON 文字';
+
+  @override
+  String get dataRestoredFromBackupNotice =>
+      'App data was restored from the previous backup because the main file failed to load.';
+
+  @override
+  String get dataBackupRestoreFailedNotice =>
+      'Both the main data file and its backup are damaged. The app is now using a fresh state.';
 }

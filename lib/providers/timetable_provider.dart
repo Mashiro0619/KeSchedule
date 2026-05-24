@@ -3,6 +3,7 @@ import 'dart:ui' show Locale;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../data/app_repository.dart';
 import '../data/timetable_storage.dart';
 import '../l10n/app_locale.dart' as app_locale;
 import '../models/school_import_models.dart';
@@ -60,16 +61,18 @@ String _defaultSystemLocaleCodeResolver() {
 class TimetableProvider extends ChangeNotifier {
   TimetableProvider({
     TimetableStorage? storage,
+    AppRepository? repository,
     String Function()? systemLocaleCodeResolver,
     SettingsService? settingsService,
     PrivacyService? privacyService,
-  }) : _storage = storage ?? TimetableStorage(),
+  }) : _repository = repository ??
+           AppRepository(storage: storage ?? TimetableStorage()),
        _systemLocaleCodeResolver =
            systemLocaleCodeResolver ?? _defaultSystemLocaleCodeResolver,
        _settings = settingsService ?? const SettingsService(),
        _privacy = privacyService ?? const PrivacyService();
 
-  final TimetableStorage _storage;
+  final AppRepository _repository;
   final String Function() _systemLocaleCodeResolver;
   final SettingsService _settings;
   final PrivacyService _privacy;
@@ -88,6 +91,11 @@ class TimetableProvider extends ChangeNotifier {
   List<PeriodTimeSet> get periodTimeSets => _appData.studentMode.periodTimeSets;
   int get selectedWeek => _selectedWeek;
   String? get storagePath => _storagePath;
+
+  /// 上次 [load] 的备份恢复状态。UI 必须根据这个状态给用户提示：
+  /// - [RecoveryStatus.restoredFromBackup]：主文件损坏，已从 .bak 恢复。
+  /// - [RecoveryStatus.failedBackupRestore]：主文件与 .bak 均损坏，已用空数据。
+  RecoveryStatus get lastRecoveryStatus => _repository.lastRecoveryStatus;
   bool get closeCoursePopupOnOutsideTap =>
       _appData.studentMode.closeCoursePopupOnOutsideTap;
   bool get preserveTimetableGaps => _appData.studentMode.preserveTimetableGaps;
@@ -907,19 +915,19 @@ class TimetableProvider extends ChangeNotifier {
     }
     _isLoading = true;
     try {
-      final fileData = await _storage.load();
+      final fileData = await _repository.load();
       if (fileData != null) {
         _appData = _normalizeImportedAppData(fileData);
       } else {
         _appData = await _buildDefaultAppData();
         await _save();
       }
-      _storagePath = await _storage.filePath();
+      _storagePath = await _repository.filePath();
     } catch (e, st) {
       debugPrint('Storage load failed, using defaults: $e\n$st');
       _appData = await _buildDefaultAppData();
       try {
-        _storagePath = await _storage.filePath();
+        _storagePath = await _repository.filePath();
       } catch (e2, st2) {
         debugPrint('Storage path unavailable: $e2\n$st2');
         _storagePath = null;
@@ -2325,7 +2333,7 @@ class TimetableProvider extends ChangeNotifier {
 
   Future<void> _save() async {
     _appData = _normalizeImportedAppData(_appData);
-    await _storage.save(_appData);
+    await _repository.save(_appData);
   }
 
   TimetableData _createFallbackTimetable() {

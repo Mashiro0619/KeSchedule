@@ -46,15 +46,18 @@ class TestTimetableStorage implements TimetableStorage {
   }
 
   @override
-  Future<AppData?> load() async {
+  Future<StorageLoadResult> load() async {
     if (!await file.exists()) {
-      return null;
+      return const StorageLoadResult.empty();
     }
     final content = await file.readAsString();
     if (content.trim().isEmpty) {
-      return null;
+      return const StorageLoadResult.empty();
     }
-    return AppData.decode(content);
+    return StorageLoadResult(
+      data: AppData.decode(content),
+      recoveryStatus: RecoveryStatus.none,
+    );
   }
 
   @override
@@ -69,11 +72,14 @@ class MemoryTimetableStorage implements TimetableStorage {
   String? _content;
 
   @override
-  Future<AppData?> load() async {
+  Future<StorageLoadResult> load() async {
     if (_content == null || _content!.trim().isEmpty) {
-      return null;
+      return const StorageLoadResult.empty();
     }
-    return AppData.decode(_content!);
+    return StorageLoadResult(
+      data: AppData.decode(_content!),
+      recoveryStatus: RecoveryStatus.none,
+    );
   }
 
   @override
@@ -3340,6 +3346,13 @@ void main() {
     testWidgets('general reminder strip can mark an occurrence handled', (
       tester,
     ) async {
+      // Pin a wider/taller surface so the day-view event card has room for the
+      // title in a single line regardless of where DateTime.now() places it in
+      // the day grid. Without this the card can be only ~84px wide, wrapping
+      // the title to two lines and overflowing the fixed-height row by ~6px.
+      await tester.binding.setSurfaceSize(const Size(1200, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       final now = DateTime.now();
       final start = now.add(const Duration(minutes: 5));
       final end = start.add(const Duration(hours: 1));

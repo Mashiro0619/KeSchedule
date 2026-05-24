@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/text_transfer_widgets.dart';
 
+import '../data/timetable_storage.dart';
 import '../l10n/app_locale.dart';
 import '../l10n/app_localizations.dart';
 import '../models/timetable_models.dart';
@@ -371,6 +372,14 @@ class _SettingsPageState extends State<SettingsPage> {
           body: ListView(
             padding: const EdgeInsets.symmetric(vertical: 16),
             children: [
+              if (provider.lastRecoveryStatus != RecoveryStatus.none) ...[
+                _RecoveryNoticeTile(status: provider.lastRecoveryStatus),
+                Divider(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outlineVariant.withValues(alpha: 0.35),
+                ),
+              ],
               if (provider.isStudentMode) ...[
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1748,6 +1757,42 @@ class _SettingsPageState extends State<SettingsPage> {
             clipBehavior: Clip.antiAlias,
             child: child,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RecoveryNoticeTile extends StatelessWidget {
+  const _RecoveryNoticeTile({required this.status});
+
+  final RecoveryStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final isFailure = status == RecoveryStatus.failedBackupRestore;
+    final tone = isFailure
+        ? theme.colorScheme.errorContainer
+        : theme.colorScheme.tertiaryContainer;
+    final foreground = isFailure
+        ? theme.colorScheme.onErrorContainer
+        : theme.colorScheme.onTertiaryContainer;
+    final message = isFailure
+        ? l10n.dataBackupRestoreFailedNotice
+        : l10n.dataRestoredFromBackupNotice;
+    return Container(
+      color: tone,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        leading: Icon(
+          isFailure ? Icons.error_outline : Icons.history_toggle_off,
+          color: foreground,
+        ),
+        title: Text(
+          message,
+          style: theme.textTheme.bodyMedium?.copyWith(color: foreground),
         ),
       ),
     );

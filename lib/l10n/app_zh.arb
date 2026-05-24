@@ -1210,4 +1210,10 @@
   "@exportIcsText": {},
   "exportJsonText": "导出 JSON 文本",
   "@exportJsonText": {}
+,
+  "dataRestoredFromBackupNotice": "App data was restored from the previous backup because the main file failed to load.",
+  "@dataRestoredFromBackupNotice": {},
+  "dataBackupRestoreFailedNotice": "Both the main data file and its backup are damaged. The app is now using a fresh state.",
+  "@dataBackupRestoreFailedNotice": {}
+
 }

@@ -11,7 +11,10 @@ class _MemoryTimetableStorage implements TimetableStorage {
   AppData? data;
 
   @override
-  Future<AppData?> load() async => data;
+  Future<StorageLoadResult> load() async => StorageLoadResult(
+    data: data,
+    recoveryStatus: RecoveryStatus.none,
+  );
 
   @override
   Future<void> save(AppData data) async {

@@ -1130,4 +1130,10 @@
   "@importWarningUnsupportedFields": {"placeholders":{"fields":{}}},
   "importWarningUnsupportedRRuleFrequency": "Ignored unsupported repeat frequency: {frequency}",
   "@importWarningUnsupportedRRuleFrequency": {"placeholders":{"frequency":{}}}
+,
+  "dataRestoredFromBackupNotice": "App data was restored from the previous backup because the main file failed to load.",
+  "@dataRestoredFromBackupNotice": {},
+  "dataBackupRestoreFailedNotice": "Both the main data file and its backup are damaged. The app is now using a fresh state.",
+  "@dataBackupRestoreFailedNotice": {}
+
 }

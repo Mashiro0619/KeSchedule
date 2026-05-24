@@ -10,13 +10,24 @@ class _BrowserTimetableStorage implements TimetableStorage {
   static const _storageKey = 'Sked_app_data';
 
   @override
-  Future<AppData?> load() async {
+  Future<StorageLoadResult> load() async {
     final preferences = await SharedPreferences.getInstance();
     final content = preferences.getString(_storageKey);
     if (content == null || content.trim().isEmpty) {
-      return null;
+      return const StorageLoadResult.empty();
     }
-    return AppData.decode(content);
+    try {
+      return StorageLoadResult(
+        data: AppData.decode(content),
+        recoveryStatus: RecoveryStatus.none,
+      );
+    } catch (_) {
+      // 浏览器没有 .bak 后备，只能上报失败让 UI 提示用户。
+      return const StorageLoadResult(
+        data: null,
+        recoveryStatus: RecoveryStatus.failedBackupRestore,
+      );
+    }
   }
 
   @override
