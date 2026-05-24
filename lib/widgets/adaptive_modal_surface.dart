@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_layout_tokens.dart';
+
 class AdaptiveModalSurface extends StatelessWidget {
   const AdaptiveModalSurface({
     super.key,
@@ -15,7 +17,7 @@ class AdaptiveModalSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final isDesktopLike = width >= 900;
+    final isDesktopLike = width >= AppBreakpoints.desktop;
 
     return SafeArea(
       top: false,
@@ -38,7 +40,7 @@ class AdaptiveModalSurface extends StatelessWidget {
               child: Material(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
+                  top: Radius.circular(AppRadii.sheet),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: child,
