@@ -175,7 +175,7 @@ class AppData {
 }
 
 GeneralScheduleData _buildDefaultGeneralMode() {
-  return GeneralScheduleData.fromJson(const {});
+  return GeneralScheduleData.createDefault();
 }
 
 // Import/Export support
@@ -319,7 +319,7 @@ AppData buildInitialAppData(
       timetables: const [],
       periodTimeSets: [defaultSet],
     ),
-    generalMode: GeneralScheduleData.fromJson(const {}),
+    generalMode: GeneralScheduleData.createDefault(),
     localeCode: localeCode,
   );
 }
@@ -332,6 +332,7 @@ class GeneralScheduleExportData {
   final List<GeneralSchedule> schedules;
 
   Map<String, dynamic> toJson() => {
+    'schemaVersion': 2,
     'schedules': schedules.map((s) => s.toJson()).toList(),
   };
 
@@ -339,7 +340,11 @@ class GeneralScheduleExportData {
     final raw = (json['schedules'] as List<dynamic>? ?? const <dynamic>[]);
     return GeneralScheduleExportData(
       schedules: raw
-          .map((s) => GeneralSchedule.fromJson(Map<String, dynamic>.from(s as Map)))
+          .map(
+            (s) => GeneralSchedule.fromJson(
+              Map<String, dynamic>.from(s as Map),
+            ).normalized(),
+          )
           .toList(),
     );
   }

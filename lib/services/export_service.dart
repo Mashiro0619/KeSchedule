@@ -7,15 +7,22 @@ import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ExportPayload {
-  const ExportPayload({required this.fileName, required this.content});
+  const ExportPayload({
+    required this.fileName,
+    required this.content,
+    this.mimeType = 'application/json',
+    this.allowedExtensions = const ['json'],
+  });
 
   final String fileName;
   final String content;
+  final String mimeType;
+  final List<String> allowedExtensions;
 
   XFile toXFile() {
     return XFile.fromData(
       Uint8List.fromList(utf8.encode(content)),
-      mimeType: 'application/json',
+      mimeType: mimeType,
       name: fileName,
     );
   }
@@ -67,7 +74,7 @@ class ExportService {
         final path = await FilePicker.saveFile(
           fileName: payload.fileName,
           type: FileType.custom,
-          allowedExtensions: const ['json'],
+          allowedExtensions: payload.allowedExtensions,
           bytes: Uint8List.fromList(utf8.encode(payload.content)),
         );
         if (path == null) {

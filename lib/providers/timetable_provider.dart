@@ -7,6 +7,7 @@ import '../data/timetable_storage.dart';
 import '../l10n/app_locale.dart' as app_locale;
 import '../models/school_import_models.dart';
 import '../models/timetable_models.dart';
+import '../services/general_calendar_ics_service.dart';
 import '../services/privacy_service.dart';
 import '../services/settings_service.dart';
 
@@ -58,6 +59,7 @@ class TimetableProvider extends ChangeNotifier {
   final String Function() _systemLocaleCodeResolver;
   final SettingsService _settings;
   final PrivacyService _privacy;
+  static const _generalIcsService = GeneralCalendarIcsService();
 
   AppData _appData = buildInitialAppData(buildDefaultPeriodTimes());
   int _selectedWeek = 1;
@@ -133,19 +135,25 @@ class TimetableProvider extends ChangeNotifier {
 
   List<GeneralSchedule> get generalSchedules => _appData.generalMode.schedules;
 
+  List<GeneralSchedule> get visibleGeneralSchedules =>
+      _appData.generalMode.visibleSchedules;
+
   GeneralSchedule? get activeGeneralScheduleOrNull =>
       _appData.generalMode.activeScheduleOrNull;
 
   GeneralSchedule get activeGeneralSchedule =>
       _appData.generalMode.activeSchedule;
 
+  String get generalDefaultView => _appData.generalMode.defaultView;
+  bool get generalShowWeekends => _appData.generalMode.showWeekends;
+  int get generalDayStartHour => _appData.generalMode.dayStartHour;
+  int get generalDayEndHour => _appData.generalMode.dayEndHour;
+  int get generalTimeGridMinutes => _appData.generalMode.timeGridMinutes;
+  bool get closeGeneralEventPopupOnOutsideTap =>
+      _appData.generalMode.closeEventPopupOnOutsideTap;
+
   DateTime get selectedGeneralDate {
-    final iso = _appData.generalMode.selectedDateIso;
-    if (iso != null) {
-      final parsed = DateTime.tryParse(iso);
-      if (parsed != null) return parsed;
-    }
-    return DateTime.now();
+    return _appData.generalMode.selectedDate;
   }
 
   Future<void> switchGeneralSchedule(String scheduleId) async {
@@ -158,16 +166,14 @@ class TimetableProvider extends ChangeNotifier {
     await _saveAndNotify();
   }
 
-  Future<void> addGeneralSchedule({String? name}) async {
-    final stamp = DateTime.now().millisecondsSinceEpoch;
-    final schedule = GeneralSchedule(
-      id: 'schedule_$stamp',
+  Future<void> addGeneralSchedule({String? name, int? colorValue}) async {
+    final mode = _appData.generalMode;
+    final schedule = createDefaultGeneralSchedule(
       name: (name != null && name.trim().isNotEmpty)
           ? name.trim()
-          : 'My schedule',
-      events: const [],
-    );
-    final mode = _appData.generalMode;
+          : 'My calendar',
+      colorValue: colorValue ?? defaultGeneralCalendarColorValue,
+    ).copyWith(sortOrder: mode.schedules.length);
     _appData = _appData.copyWith(
       generalMode: mode.copyWith(
         activeScheduleId: schedule.id,
@@ -178,24 +184,52 @@ class TimetableProvider extends ChangeNotifier {
   }
 
   Future<void> renameGeneralSchedule(String scheduleId, String name) async {
+    final normalizedName = name.trim();
+    if (normalizedName.isEmpty) return;
     final mode = _appData.generalMode;
     final existing = mode.schedules.firstWhere(
       (s) => s.id == scheduleId,
       orElse: () => mode.activeSchedule,
     );
-    final updated = mode.withSchedule(existing.copyWith(name: name));
+    final updated = mode.withSchedule(existing.copyWith(name: normalizedName));
     _appData = _appData.copyWith(generalMode: updated);
+    await _saveAndNotify();
+  }
+
+  Future<void> updateGeneralSchedule(GeneralSchedule schedule) async {
+    if (!_appData.generalMode.schedules.any((s) => s.id == schedule.id)) {
+      return;
+    }
+    _appData = _appData.copyWith(
+      generalMode: _appData.generalMode.withSchedule(schedule),
+    );
+    await _saveAndNotify();
+  }
+
+  Future<void> updateGeneralScheduleVisibility(
+    String scheduleId,
+    bool isVisible,
+  ) async {
+    final mode = _appData.generalMode;
+    final existing = mode.schedules.firstWhere(
+      (s) => s.id == scheduleId,
+      orElse: () => mode.activeSchedule,
+    );
+    _appData = _appData.copyWith(
+      generalMode: mode.withSchedule(existing.copyWith(isVisible: isVisible)),
+    );
     await _saveAndNotify();
   }
 
   Future<void> deleteGeneralSchedule(String scheduleId) async {
     final mode = _appData.generalMode;
-    final remaining = mode.schedules.where((s) => s.id != scheduleId).toList();
-    final nextActiveId = remaining.isNotEmpty
-        ? (remaining.any((s) => s.id == mode.activeScheduleId)
-              ? mode.activeScheduleId
-              : remaining.first.id)
-        : '';
+    var remaining = mode.schedules.where((s) => s.id != scheduleId).toList();
+    if (remaining.isEmpty) {
+      remaining = [createDefaultGeneralSchedule()];
+    }
+    final nextActiveId = remaining.any((s) => s.id == mode.activeScheduleId)
+        ? mode.activeScheduleId
+        : remaining.first.id;
     _appData = _appData.copyWith(
       generalMode: mode.copyWith(
         activeScheduleId: nextActiveId,
@@ -214,92 +248,128 @@ class TimetableProvider extends ChangeNotifier {
     await _saveAndNotify();
   }
 
+  Future<void> updateGeneralDisplaySettings({
+    String? defaultView,
+    bool? showWeekends,
+    int? dayStartHour,
+    int? dayEndHour,
+    int? timeGridMinutes,
+    bool? closeEventPopupOnOutsideTap,
+  }) async {
+    _appData = _appData.copyWith(
+      generalMode: _appData.generalMode.copyWith(
+        defaultView: defaultView,
+        showWeekends: showWeekends,
+        dayStartHour: dayStartHour,
+        dayEndHour: dayEndHour,
+        timeGridMinutes: timeGridMinutes,
+        closeEventPopupOnOutsideTap: closeEventPopupOnOutsideTap,
+      ),
+    );
+    await _saveAndNotify();
+  }
+
   Future<void> saveGeneralEvent(GeneralEvent event) async {
     final mode = _appData.generalMode;
-    final schedule = mode.activeSchedule;
-    final events = [...schedule.events];
-    final index = events.indexWhere((e) => e.id == event.id);
-    if (index >= 0) {
-      events[index] = event;
-    } else {
-      events.add(event);
+    var targetScheduleId = event.calendarId.trim().isEmpty
+        ? mode.activeSchedule.id
+        : event.calendarId.trim();
+    if (!mode.schedules.any((s) => s.id == targetScheduleId)) {
+      targetScheduleId = mode.activeSchedule.id;
     }
-    final updatedSchedule = schedule.copyWith(events: events);
+    final normalized = event.normalized(fallbackCalendarId: targetScheduleId);
+    final updatedSchedules = <GeneralSchedule>[];
+    var inserted = false;
+    for (final schedule in mode.schedules) {
+      var events = schedule.events.where((e) => e.id != event.id).toList();
+      if (schedule.id == targetScheduleId) {
+        events = [...events, normalized]
+          ..sort((a, b) => a.startDateTimeIso.compareTo(b.startDateTimeIso));
+        inserted = true;
+      }
+      updatedSchedules.add(schedule.copyWith(events: events));
+    }
+    if (!inserted) {
+      return;
+    }
     _appData = _appData.copyWith(
-      generalMode: mode.withSchedule(updatedSchedule),
+      generalMode: mode.copyWith(schedules: updatedSchedules),
     );
     await _saveAndNotify();
   }
 
   Future<void> deleteGeneralEvent(String eventId) async {
     final mode = _appData.generalMode;
-    final schedule = mode.activeSchedule;
-    final events = schedule.events.where((e) => e.id != eventId).toList();
-    final updatedSchedule = schedule.copyWith(events: events);
     _appData = _appData.copyWith(
-      generalMode: mode.withSchedule(updatedSchedule),
+      generalMode: mode.copyWith(
+        schedules: [
+          for (final schedule in mode.schedules)
+            schedule.copyWith(
+              events: schedule.events.where((e) => e.id != eventId).toList(),
+            ),
+        ],
+      ),
     );
     await _saveAndNotify();
+  }
+
+  Future<void> deleteGeneralOccurrence(
+    GeneralEventOccurrence occurrence,
+  ) async {
+    final event = occurrence.event;
+    if (!event.recurrenceRule.isRepeating) {
+      await deleteGeneralEvent(event.id);
+      return;
+    }
+    final exceptions = {...event.recurrenceExceptionDateIso}
+      ..add(occurrence.exceptionDateIso);
+    await saveGeneralEvent(
+      event.copyWith(recurrenceExceptionDateIso: exceptions.toList()..sort()),
+    );
+  }
+
+  Future<void> deleteFutureGeneralOccurrences(
+    GeneralEventOccurrence occurrence,
+  ) async {
+    final event = occurrence.event;
+    if (!event.recurrenceRule.isRepeating || occurrence.sequence <= 0) {
+      await deleteGeneralEvent(event.id);
+      return;
+    }
+    final until = occurrence.start
+        .subtract(const Duration(days: 1))
+        .toIso8601String()
+        .split('T')
+        .first;
+    await saveGeneralEvent(
+      event.copyWith(
+        recurrenceRule: event.recurrenceRule.copyWith(untilDateIso: until),
+      ),
+    );
   }
 
   List<GeneralEventOccurrence> generalOccurrencesForRange({
     required DateTime startInclusive,
     required DateTime endExclusive,
+    bool onlyVisibleCalendars = true,
   }) {
-    final schedule = _appData.generalMode.activeSchedule;
-    final results = <GeneralEventOccurrence>[];
-    for (final event in schedule.events) {
-      final eventStart = DateTime.tryParse(event.startDateTimeIso);
-      final eventEnd = DateTime.tryParse(event.endDateTimeIso);
-      if (eventStart == null || eventEnd == null) continue;
+    return expandGeneralOccurrences(
+      calendars: _appData.generalMode.schedules,
+      startInclusive: startInclusive,
+      endExclusive: endExclusive,
+      onlyVisibleCalendars: onlyVisibleCalendars,
+    );
+  }
 
-      if (event.recurrence == GeneralEventRecurrence.weekly) {
-        final recurrenceEnd = event.recurrenceEndDateIso != null
-            ? DateTime.tryParse(event.recurrenceEndDateIso!)
-            : null;
-        final duration = eventEnd.difference(eventStart);
-        var occurrenceStart = eventStart;
-        while (occurrenceStart.isBefore(endExclusive)) {
-          if (recurrenceEnd != null) {
-            final occurrenceDate = DateTime(
-              occurrenceStart.year,
-              occurrenceStart.month,
-              occurrenceStart.day,
-            );
-            final recurrenceEndDate = DateTime(
-              recurrenceEnd.year,
-              recurrenceEnd.month,
-              recurrenceEnd.day,
-            );
-            if (occurrenceDate.isAfter(recurrenceEndDate)) break;
-          }
-          final occurrenceEnd = occurrenceStart.add(duration);
-          if (!occurrenceEnd.isBefore(startInclusive) &&
-              occurrenceStart.isBefore(endExclusive)) {
-            results.add(
-              GeneralEventOccurrence(
-                event: event,
-                start: occurrenceStart,
-                end: occurrenceEnd,
-              ),
-            );
-          }
-          occurrenceStart = occurrenceStart.add(const Duration(days: 7));
-        }
-      } else {
-        if (!eventEnd.isBefore(startInclusive) &&
-            eventStart.isBefore(endExclusive)) {
-          results.add(
-            GeneralEventOccurrence(
-              event: event,
-              start: eventStart,
-              end: eventEnd,
-            ),
-          );
-        }
-      }
-    }
-    return results;
+  List<GeneralEventOccurrence> upcomingGeneralOccurrences({
+    DateTime? now,
+    Duration horizon = const Duration(days: 7),
+  }) {
+    final anchor = now ?? DateTime.now();
+    return generalOccurrencesForRange(
+      startInclusive: anchor,
+      endExclusive: anchor.add(horizon),
+    );
   }
 
   // ── General schedule import / export ──
@@ -327,6 +397,25 @@ class TimetableProvider extends ChangeNotifier {
       );
     }
     return exportSelectedGeneralSchedulesJson([active.id]);
+  }
+
+  String exportSelectedGeneralSchedulesIcs(List<String> scheduleIds) {
+    final selectedIdSet = scheduleIds.toSet();
+    final selected = _appData.generalMode.schedules
+        .where((s) => selectedIdSet.contains(s.id))
+        .toList();
+    if (selected.isEmpty) {
+      throw FormatException(
+        selectAtLeastOneScheduleMessage(localeCode: _appData.localeCode),
+      );
+    }
+    return _generalIcsService.exportSchedules(selected);
+  }
+
+  GeneralCalendarIcsImportResult previewImportGeneralSchedulesIcs(
+    String source,
+  ) {
+    return _generalIcsService.importSchedules(source);
   }
 
   List<GeneralSchedule> previewImportGeneralSchedules(String source) {
@@ -383,9 +472,7 @@ class TimetableProvider extends ChangeNotifier {
       return 1;
     }
 
-    final existingIds = _appData.generalMode.schedules
-        .map((s) => s.id)
-        .toSet();
+    final existingIds = _appData.generalMode.schedules.map((s) => s.id).toSet();
     final appended = <GeneralSchedule>[];
     for (final schedule in selected) {
       var nextId = schedule.id.trim();
@@ -396,13 +483,56 @@ class TimetableProvider extends ChangeNotifier {
       appended.add(schedule.copyWith(id: nextId));
     }
 
-    final mergedSchedules = [
-      ..._appData.generalMode.schedules,
-      ...appended,
-    ];
+    final mergedSchedules = [..._appData.generalMode.schedules, ...appended];
     _appData = _appData.copyWith(
       generalMode: _appData.generalMode.copyWith(
         schedules: mergedSchedules,
+        activeScheduleId: appended.last.id,
+      ),
+    );
+    await _saveAndNotify();
+    return appended.length;
+  }
+
+  Future<int> importGeneralSchedulesIcs(
+    String source, {
+    required GeneralScheduleImportMode mode,
+  }) async {
+    final imported = _generalIcsService.importSchedules(source);
+    if (imported.schedules.isEmpty) {
+      throw FormatException(
+        noSchedulesInImportMessage(localeCode: _appData.localeCode),
+      );
+    }
+
+    if (mode == GeneralScheduleImportMode.replaceActive) {
+      final current = activeGeneralScheduleOrNull;
+      if (current == null) {
+        throw FormatException(
+          noActiveScheduleToReplaceMessage(localeCode: _appData.localeCode),
+        );
+      }
+      final replaced = imported.schedules.first.copyWith(id: current.id);
+      _appData = _appData.copyWith(
+        generalMode: _appData.generalMode.withSchedule(replaced),
+      );
+      await _saveAndNotify();
+      return 1;
+    }
+
+    final existingIds = _appData.generalMode.schedules.map((s) => s.id).toSet();
+    final appended = <GeneralSchedule>[];
+    for (final schedule in imported.schedules) {
+      var nextId = schedule.id.trim();
+      if (nextId.isEmpty || existingIds.contains(nextId)) {
+        nextId = _nextImportedScheduleId(existingIds);
+      }
+      existingIds.add(nextId);
+      appended.add(schedule.copyWith(id: nextId));
+    }
+    _appData = _appData.copyWith(
+      generalMode: _appData.generalMode.copyWith(
+        schedules: [..._appData.generalMode.schedules, ...appended],
         activeScheduleId: appended.last.id,
       ),
     );
@@ -1761,6 +1891,7 @@ class TimetableProvider extends ChangeNotifier {
         ),
       ),
       localeCode: app_locale.normalizeLocaleCode(data.localeCode),
+      generalMode: data.generalMode.normalized(),
     );
   }
 

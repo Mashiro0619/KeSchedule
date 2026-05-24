@@ -4170,16 +4170,24 @@ void main() {
     test('TimetableEntry occurrence adapter 保留标题地点开始结束时间和持续时间', () {
       final event = GeneralEvent(
         id: 'evt1',
+        calendarId: 'sched1',
         title: '会议',
         location: 'Room B',
         startDateTimeIso: '2026-05-20T14:00:00.000',
         endDateTimeIso: '2026-05-20T15:30:00.000',
         colorValue: 0xFF123456,
       );
+      final schedule = GeneralSchedule(
+        id: 'sched1',
+        name: 'Work',
+        events: [event],
+      );
       final occurrence = GeneralEventOccurrence(
         event: event,
+        calendar: schedule,
         start: DateTime(2026, 5, 20, 14, 0),
         end: DateTime(2026, 5, 20, 15, 30),
+        sequence: 0,
       );
       final entry = occurrenceToEntry(occurrence);
       expect(entry.id, 'evt1');

@@ -30,9 +30,12 @@ enum _DataAction {
 }
 
 enum _GeneralDataAction {
-  importSchedules,
-  exportSchedulesShare,
-  exportSchedulesSave,
+  importSchedulesJson,
+  importSchedulesIcs,
+  exportSchedulesJsonShare,
+  exportSchedulesJsonSave,
+  exportSchedulesIcsShare,
+  exportSchedulesIcsSave,
 }
 
 enum UpdateCheckSource { manual, startup }
@@ -995,23 +998,27 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _shareJson(String fileName, String content) async {
-    await _exportService.shareFile(
-      ExportPayload(fileName: fileName, content: content),
-    );
+    await _shareFile(ExportPayload(fileName: fileName, content: content));
+  }
+
+  Future<void> _shareFile(ExportPayload payload) async {
+    await _exportService.shareFile(payload);
   }
 
   Future<void> _saveJsonToFile(String fileName, String content) async {
+    await _saveFileToDisk(ExportPayload(fileName: fileName, content: content));
+  }
+
+  Future<void> _saveFileToDisk(ExportPayload payload) async {
     final l10n = AppLocalizations.of(context);
-    final result = await _exportService.saveFile(
-      ExportPayload(fileName: fileName, content: content),
-    );
+    final result = await _exportService.saveFile(payload);
     if (!mounted) {
       return;
     }
 
     switch (result.status) {
       case ExportSaveStatus.saved:
-        _showMessage(l10n.savedToPath(result.path ?? fileName));
+        _showMessage(l10n.savedToPath(result.path ?? payload.fileName));
         return;
       case ExportSaveStatus.cancelled:
         _showMessage(l10n.saveCancelled);
@@ -1023,7 +1030,7 @@ class _SettingsPageState extends State<SettingsPage> {
           confirmText: l10n.retrySave,
         );
         if (retry == true && mounted) {
-          await _saveJsonToFile(fileName, content);
+          await _saveFileToDisk(payload);
         }
         return;
       case ExportSaveStatus.permissionPermanentlyDenied:
@@ -1042,7 +1049,7 @@ class _SettingsPageState extends State<SettingsPage> {
           message: l10n.browserDownloadRestrictedMessage,
         );
         if (shouldShare == true) {
-          await _shareJson(fileName, content);
+          await _shareFile(payload);
           if (mounted) {
             _showMessage(l10n.exportSwitchedToShare);
           }
@@ -1058,7 +1065,7 @@ class _SettingsPageState extends State<SettingsPage> {
               : l10n.fileSaveFailedGenericMessage,
         );
         if (shouldShare == true) {
-          await _shareJson(fileName, content);
+          await _shareFile(payload);
           if (mounted) {
             _showMessage(l10n.exportSwitchedToShare);
           }
@@ -1146,25 +1153,54 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.file_download_outlined),
-                  title: Text(l10n.importGeneralSchedules),
+                  title: Text('${l10n.importGeneralSchedules} JSON'),
                   subtitle: Text(l10n.importGeneralSchedulesDesc),
-                  onTap: () => Navigator.of(sheetContext)
-                      .pop(_GeneralDataAction.importSchedules),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_GeneralDataAction.importSchedulesJson),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.calendar_month_outlined),
+                  title: const Text('Import ICS'),
+                  subtitle: const Text(
+                    'Read events from an .ics calendar file',
+                  ),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_GeneralDataAction.importSchedulesIcs),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.share_outlined),
-                  title: Text(l10n.shareGeneralSchedules),
+                  title: Text('${l10n.shareGeneralSchedules} JSON'),
                   subtitle: Text(l10n.shareGeneralSchedulesDesc),
-                  onTap: () => Navigator.of(sheetContext)
-                      .pop(_GeneralDataAction.exportSchedulesShare),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_GeneralDataAction.exportSchedulesJsonShare),
                 ),
                 ListTile(
                   leading: const Icon(Icons.save_alt_outlined),
-                  title: Text(l10n.saveGeneralSchedules),
+                  title: Text('${l10n.saveGeneralSchedules} JSON'),
                   subtitle: Text(l10n.saveGeneralSchedulesDesc),
-                  onTap: () => Navigator.of(sheetContext)
-                      .pop(_GeneralDataAction.exportSchedulesSave),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_GeneralDataAction.exportSchedulesJsonSave),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.ios_share_outlined),
+                  title: const Text('Share ICS'),
+                  subtitle: const Text('Share selected calendars as .ics'),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_GeneralDataAction.exportSchedulesIcsShare),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.event_available_outlined),
+                  title: const Text('Save ICS'),
+                  subtitle: const Text('Save selected calendars as .ics'),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_GeneralDataAction.exportSchedulesIcsSave),
                 ),
               ],
             ),
@@ -1174,12 +1210,18 @@ class _SettingsPageState extends State<SettingsPage> {
     );
     if (action == null || !mounted) return;
     switch (action) {
-      case _GeneralDataAction.importSchedules:
+      case _GeneralDataAction.importSchedulesJson:
         await _importGeneralSchedules(provider);
-      case _GeneralDataAction.exportSchedulesShare:
+      case _GeneralDataAction.importSchedulesIcs:
+        await _importGeneralSchedulesIcs(provider);
+      case _GeneralDataAction.exportSchedulesJsonShare:
         await _exportGeneralSchedules(provider, share: true);
-      case _GeneralDataAction.exportSchedulesSave:
+      case _GeneralDataAction.exportSchedulesJsonSave:
         await _exportGeneralSchedules(provider, share: false);
+      case _GeneralDataAction.exportSchedulesIcsShare:
+        await _exportGeneralSchedulesIcs(provider, share: true);
+      case _GeneralDataAction.exportSchedulesIcsSave:
+        await _exportGeneralSchedulesIcs(provider, share: false);
     }
   }
 
@@ -1190,9 +1232,7 @@ class _SettingsPageState extends State<SettingsPage> {
     List<String> initialSelectedIds = const [],
   }) {
     final draft = <String>{
-      ...initialSelectedIds.where(
-        (id) => schedules.any((s) => s.id == id),
-      ),
+      ...initialSelectedIds.where((id) => schedules.any((s) => s.id == id)),
     };
     if (draft.isEmpty && schedules.isNotEmpty) {
       draft.add(schedules.first.id);
@@ -1235,8 +1275,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       child: ListView.separated(
                         shrinkWrap: true,
                         itemCount: schedules.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: 8),
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final schedule = schedules[index];
                           final selected = draft.contains(schedule.id);
@@ -1245,9 +1284,9 @@ class _SettingsPageState extends State<SettingsPage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             tileColor: selected
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .secondaryContainer
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.secondaryContainer
                                 : null,
                             title: Text(schedule.name),
                             subtitle: Text(
@@ -1255,8 +1294,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 schedule.events.length,
                               ),
                             ),
-                            trailing:
-                                selected ? const Icon(Icons.check) : null,
+                            trailing: selected ? const Icon(Icons.check) : null,
                             onTap: () {
                               setState(() {
                                 if (selected) {
@@ -1282,11 +1320,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   onPressed: draft.isEmpty
                       ? null
                       : () => Navigator.of(context).pop(
-                            schedules
-                                .where((s) => draft.contains(s.id))
-                                .map((s) => s.id)
-                                .toList(),
-                          ),
+                          schedules
+                              .where((s) => draft.contains(s.id))
+                              .map((s) => s.id)
+                              .toList(),
+                        ),
                   child: Text(confirmText),
                 ),
               ],
@@ -1355,9 +1393,83 @@ class _SettingsPageState extends State<SettingsPage> {
               return true;
             } on FormatException catch (e) {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.message)),
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(e.message)));
+              }
+              return false;
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _importGeneralSchedulesIcs(TimetableProvider provider) async {
+    final l10n = AppLocalizations.of(context);
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TextImportPage(
+          title: 'Import ICS',
+          labelText: 'ICS content',
+          hintText: 'Paste BEGIN:VCALENDAR content here',
+          onSubmit: (context, content) async {
+            try {
+              final preview = provider.previewImportGeneralSchedulesIcs(
+                content,
+              );
+              if (!context.mounted) return false;
+              var mode = GeneralScheduleImportMode.addAsNew;
+              if (preview.schedules.length == 1 &&
+                  provider.activeGeneralScheduleOrNull != null &&
+                  context.mounted) {
+                final choice = await showDialog<String>(
+                  context: context,
+                  builder: (ctx) {
+                    return AlertDialog(
+                      title: const Text('Import ICS'),
+                      content: Text(
+                        'Found ${preview.schedules.first.events.length} events. Import as a new calendar or replace the active calendar?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop('new'),
+                          child: Text(l10n.addAsNewSchedule),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.of(ctx).pop('replace'),
+                          child: Text(l10n.save),
+                        ),
+                      ],
+                    );
+                  },
                 );
+                if (choice == 'replace') {
+                  mode = GeneralScheduleImportMode.replaceActive;
+                }
+              }
+              final count = await provider.importGeneralSchedulesIcs(
+                content,
+                mode: mode,
+              );
+              if (context.mounted) {
+                final warnings = preview.warnings.take(2).join(' ');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      warnings.isEmpty
+                          ? l10n.importedSchedulesCount(count)
+                          : '${l10n.importedSchedulesCount(count)} $warnings',
+                    ),
+                  ),
+                );
+              }
+              return true;
+            } on FormatException catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(e.message)));
               }
               return false;
             }
@@ -1387,6 +1499,40 @@ class _SettingsPageState extends State<SettingsPage> {
         await _shareJson(fileName, content);
       } else {
         await _saveJsonToFile(fileName, content);
+      }
+    } on FormatException catch (e) {
+      if (mounted) _showMessage(e.message);
+    } catch (_) {
+      if (mounted) _showMessage(l10n.saveFailedRetry);
+    }
+  }
+
+  Future<void> _exportGeneralSchedulesIcs(
+    TimetableProvider provider, {
+    required bool share,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    final activeId = provider.activeGeneralScheduleOrNull?.id;
+    final selectedIds = await _pickGeneralScheduleIds(
+      schedules: provider.generalSchedules,
+      title: 'Select calendars to export as ICS',
+      confirmText: share ? l10n.share : l10n.save,
+      initialSelectedIds: activeId == null ? const [] : [activeId],
+    );
+    if (selectedIds == null || selectedIds.isEmpty) return;
+    try {
+      final content = provider.exportSelectedGeneralSchedulesIcs(selectedIds);
+      const fileName = 'Sked_general_schedules.ics';
+      final payload = ExportPayload(
+        fileName: fileName,
+        content: content,
+        mimeType: 'text/calendar',
+        allowedExtensions: const ['ics'],
+      );
+      if (share) {
+        await _shareFile(payload);
+      } else {
+        await _saveFileToDisk(payload);
       }
     } on FormatException catch (e) {
       if (mounted) _showMessage(e.message);

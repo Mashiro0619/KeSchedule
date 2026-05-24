@@ -75,7 +75,7 @@ void main() {
       expect(decoded.title, 'Weekly Standup');
     });
 
-    test('unknown recurrence defaults to none', () {
+    test('monthly recurrence is supported', () {
       final json = {
         'id': 'evt3',
         'title': 'Test',
@@ -85,7 +85,7 @@ void main() {
       };
       final decoded = GeneralEvent.fromJson(json);
 
-      expect(decoded.recurrence, GeneralEventRecurrence.none);
+      expect(decoded.recurrence, GeneralEventRecurrence.monthly);
     });
 
     test('missing optional fields get defaults', () {
@@ -231,6 +231,21 @@ void main() {
       expect(decoded.activeScheduleId, 'sched1');
       expect(decoded.schedules.length, 1);
       expect(decoded.selectedDateIso, '2026-05-22');
+      expect(decoded.closeEventPopupOnOutsideTap, true);
+    });
+
+    test('general popup dismiss setting round-trips independently', () {
+      final data = GeneralScheduleData(
+        activeScheduleId: 'sched1',
+        schedules: [
+          GeneralSchedule(id: 'sched1', name: 'My Schedule', events: const []),
+        ],
+        closeEventPopupOnOutsideTap: false,
+      );
+
+      final decoded = GeneralScheduleData.fromJson(data.toJson());
+
+      expect(decoded.closeEventPopupOnOutsideTap, false);
     });
 
     test('missing activeScheduleId defaults to first schedule', () {
@@ -256,7 +271,9 @@ void main() {
     test('copyWith preserves unchanged fields', () {
       final original = GeneralScheduleData(
         activeScheduleId: 'sched1',
-        schedules: const [],
+        schedules: [
+          GeneralSchedule(id: 'sched1', name: 'First', events: const []),
+        ],
         selectedDateIso: '2026-05-22',
       );
 
@@ -295,24 +312,80 @@ void main() {
 
       expect(updated.schedules.length, 2);
     });
+
+    test('normalized data makes schedule and event ids unique', () {
+      final data = GeneralScheduleData(
+        activeScheduleId: 'dup',
+        schedules: [
+          GeneralSchedule(
+            id: 'dup',
+            name: 'First',
+            events: [
+              GeneralEvent(
+                id: 'evt',
+                calendarId: 'dup',
+                title: 'First event',
+                startDateTimeIso: '2026-05-22T09:00:00.000',
+                endDateTimeIso: '2026-05-22T10:00:00.000',
+              ),
+            ],
+          ),
+          GeneralSchedule(
+            id: 'dup',
+            name: 'Second',
+            events: [
+              GeneralEvent(
+                id: 'evt',
+                calendarId: 'dup',
+                title: 'Second event',
+                startDateTimeIso: '2026-05-23T09:00:00.000',
+                endDateTimeIso: '2026-05-23T10:00:00.000',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final normalized = data.normalized();
+      final scheduleIds = normalized.schedules.map((s) => s.id).toSet();
+      final eventIds = normalized.schedules
+          .expand((s) => s.events)
+          .map((e) => e.id)
+          .toSet();
+
+      expect(scheduleIds.length, 2);
+      expect(eventIds.length, 2);
+      for (final schedule in normalized.schedules) {
+        expect(schedule.events.single.calendarId, schedule.id);
+      }
+    });
   });
 
   group('GeneralEventOccurrence', () {
     test('holds reference to source event and computed dates', () {
       final event = GeneralEvent(
         id: 'evt1',
+        calendarId: 'sched1',
         title: 'Meeting',
         startDateTimeIso: '2026-05-22T09:00:00.000',
         endDateTimeIso: '2026-05-22T10:00:00.000',
       );
+      final schedule = GeneralSchedule(
+        id: 'sched1',
+        name: 'Work',
+        events: [event],
+      );
 
       final occurrence = GeneralEventOccurrence(
         event: event,
+        calendar: schedule,
         start: DateTime(2026, 5, 22, 9, 0),
         end: DateTime(2026, 5, 22, 10, 0),
+        sequence: 0,
       );
 
       expect(occurrence.event.id, 'evt1');
+      expect(occurrence.calendar.id, 'sched1');
       expect(occurrence.start.hour, 9);
       expect(occurrence.end.hour, 10);
     });
