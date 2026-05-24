@@ -135,6 +135,25 @@ class SettingsService {
     );
   }
 
+  AppData updateSchoolImportParserSettings(
+    AppData data,
+    SchoolImportParserSettings settings,
+  ) {
+    final current = data.studentMode.schoolImportParserSettings;
+    if (current.source == settings.source &&
+        current.customBaseUrl == settings.customBaseUrl &&
+        current.customApiKey == settings.customApiKey &&
+        current.customModel == settings.customModel &&
+        current.customPrompt == settings.customPrompt) {
+      return data;
+    }
+    return data.copyWith(
+      studentMode: data.studentMode.copyWith(
+        schoolImportParserSettings: settings,
+      ),
+    );
+  }
+
   AppData updateLiveCourseOutlineColorValue(AppData data, int colorValue) {
     if (data.studentMode.liveCourseOutlineColorValue == colorValue) return data;
     return data.copyWith(studentMode: data.studentMode.copyWith(liveCourseOutlineColorValue: colorValue));
@@ -161,6 +180,16 @@ class SettingsService {
   }) {
     final normalizedWidth = normalizeLiveCourseOutlineWidth(width);
     final normalizedMode = normalizeLiveCourseOutlineMode(mode);
+    final current = data.studentMode;
+    if (current.liveCourseOutlineEnabled == enabled &&
+        current.liveCourseOutlineFollowTheme == followTheme &&
+        current.liveCourseOutlineColorValue == colorValue &&
+        current.liveCourseOutlineCustomColorInitialized ==
+            customColorInitialized &&
+        current.liveCourseOutlineMode == normalizedMode &&
+        current.liveCourseOutlineWidth == normalizedWidth) {
+      return data;
+    }
     return data.copyWith(
       studentMode: data.studentMode.copyWith(
         liveCourseOutlineEnabled: enabled,
