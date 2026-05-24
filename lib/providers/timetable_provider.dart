@@ -320,7 +320,7 @@ class TimetableProvider extends ChangeNotifier {
     final duplicated = occurrence.event.copyWith(
       id: _nextGeneralEventId(),
       calendarId: occurrence.calendar.id,
-      title: '${occurrence.event.title} copy',
+      title: occurrence.event.title,
       startDateTimeIso: occurrence.start.toIso8601String(),
       endDateTimeIso: occurrence.end.toIso8601String(),
       recurrenceRule: const GeneralEventRecurrenceRule(),

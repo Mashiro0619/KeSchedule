@@ -1297,6 +1297,259 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noActiveScheduleToReplaceMessage => '当前没有可替换的日程。';
+
+  @override
+  String get calendars => '日历';
+
+  @override
+  String get calendar => '日历';
+
+  @override
+  String get viewWeek => '周';
+
+  @override
+  String get viewDay => '日';
+
+  @override
+  String get viewList => '列表';
+
+  @override
+  String get eventDuplicated => '已复制日程';
+
+  @override
+  String get searchEvents => '搜索日程';
+
+  @override
+  String get clearSearch => '清除搜索';
+
+  @override
+  String get filterByColor => '按颜色筛选';
+
+  @override
+  String get allColors => '全部颜色';
+
+  @override
+  String upcomingEventsCount(int count) {
+    return '即将开始 $count';
+  }
+
+  @override
+  String overdueEventsCount(int count) {
+    return '已过期 $count';
+  }
+
+  @override
+  String get allDay => '全天';
+
+  @override
+  String moreEvents(int count) {
+    return '+$count 个';
+  }
+
+  @override
+  String get noMatchingEvents => '无匹配事件';
+
+  @override
+  String get noUpcomingEvents => '无即将开始事件';
+
+  @override
+  String get addCalendar => '添加日历';
+
+  @override
+  String get newCalendar => '新日历';
+
+  @override
+  String get hideCalendar => '隐藏日历';
+
+  @override
+  String get showCalendar => '显示日历';
+
+  @override
+  String get rename => '重命名';
+
+  @override
+  String get renameCalendar => '重命名日历';
+
+  @override
+  String get name => '名称';
+
+  @override
+  String get deleteCalendar => '删除日历';
+
+  @override
+  String deleteCalendarMessage(Object name) {
+    return '删除“$name”？';
+  }
+
+  @override
+  String get deleteThisOccurrence => '删除本次';
+
+  @override
+  String get deleteFutureOccurrences => '删除后续';
+
+  @override
+  String get deleteAllOccurrences => '删除全部';
+
+  @override
+  String get duplicateEvent => '复制';
+
+  @override
+  String get repeatsDaily => '每天重复';
+
+  @override
+  String get repeatsMonthly => '每月重复';
+
+  @override
+  String repeatsEvery(int interval, Object unit) {
+    return '每 $interval $unit重复';
+  }
+
+  @override
+  String recurrenceCountTimes(int count) {
+    return '$count 次';
+  }
+
+  @override
+  String get recurrenceDaily => '每天';
+
+  @override
+  String get recurrenceMonthly => '每月';
+
+  @override
+  String get recurrenceCustom => '自定义';
+
+  @override
+  String get recurrenceEvery => '每';
+
+  @override
+  String get recurrenceUnit => '单位';
+
+  @override
+  String get recurrenceDays => '天';
+
+  @override
+  String get recurrenceWeeks => '周';
+
+  @override
+  String get recurrenceMonths => '月';
+
+  @override
+  String get recurrenceRepeatCount => '重复次数';
+
+  @override
+  String get recurrenceNoLimit => '无限制';
+
+  @override
+  String get recurrencePositiveNumber => '请输入正数';
+
+  @override
+  String get clearEndDate => '清除结束日期';
+
+  @override
+  String get pickDate => '选择日期';
+
+  @override
+  String get pickTime => '选择时间';
+
+  @override
+  String get reminder => '提醒';
+
+  @override
+  String get reminderAtStart => '开始时';
+
+  @override
+  String reminderMinutesBefore(int minutes) {
+    return '提前 $minutes 分钟';
+  }
+
+  @override
+  String get reminderHourBefore => '提前 1 小时';
+
+  @override
+  String get reminderDayBefore => '提前 1 天';
+
+  @override
+  String get showWeekends => '显示周末';
+
+  @override
+  String get startHour => '开始小时';
+
+  @override
+  String get endHour => '结束小时';
+
+  @override
+  String get timeGridDensity => '时间网格密度';
+
+  @override
+  String get importJsonFile => '导入 JSON 文件';
+
+  @override
+  String get pasteJson => '粘贴 JSON';
+
+  @override
+  String get importGeneralSchedulesJsonTextDesc => '从复制的 JSON 导入日历';
+
+  @override
+  String get importIcsFile => '导入 ICS 文件';
+
+  @override
+  String get importIcsFileDesc => '从 .ics 日历文件读取事件';
+
+  @override
+  String get pasteIcs => '粘贴 ICS';
+
+  @override
+  String get pasteIcsDesc => '从复制的日历文本导入事件';
+
+  @override
+  String get copyJson => '复制 JSON';
+
+  @override
+  String get copyJsonDesc => '将选中日历复制为 JSON 文本';
+
+  @override
+  String get shareIcs => '分享 ICS';
+
+  @override
+  String get shareIcsDesc => '将选中日历分享为 .ics';
+
+  @override
+  String get saveIcs => '保存 ICS';
+
+  @override
+  String get saveIcsDesc => '将选中日历保存为 .ics';
+
+  @override
+  String get copyIcs => '复制 ICS';
+
+  @override
+  String get copyIcsDesc => '将选中日历复制为 ICS 文本';
+
+  @override
+  String get importIcs => '导入 ICS';
+
+  @override
+  String get icsContent => 'ICS 内容';
+
+  @override
+  String get pasteIcsContentHint => '在这里粘贴 BEGIN:VCALENDAR 内容';
+
+  @override
+  String importIcsPreviewPrompt(int count) {
+    return '发现 $count 个事件。要作为新日历导入，还是替换当前日历？';
+  }
+
+  @override
+  String get selectCalendarsToCopyIcs => '选择要复制为 ICS 的日历';
+
+  @override
+  String get selectCalendarsToExportIcs => '选择要导出为 ICS 的日历';
+
+  @override
+  String get exportIcsText => '导出 ICS 文本';
+
+  @override
+  String get exportJsonText => '导出 JSON 文本';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2436,4 +2689,413 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String semesterWeeksList(Object value) {
     return '第 $value 週';
   }
+
+  @override
+  String get generalSchedule => '通用日程';
+
+  @override
+  String get studentTimetable => '學生課表';
+
+  @override
+  String get switchMode => '切換模式';
+
+  @override
+  String get generalScheduleComingSoon => '通用日程即將上線';
+
+  @override
+  String get switchToStudentTimetable => '切換到學生課表';
+
+  @override
+  String get mySchedule => '我的日程';
+
+  @override
+  String get today => '今天';
+
+  @override
+  String get addEvent => '新增日程';
+
+  @override
+  String get editEvent => '編輯日程';
+
+  @override
+  String get eventTitle => '標題';
+
+  @override
+  String get eventTitleRequired => '請輸入日程標題';
+
+  @override
+  String get eventStartTime => '開始時間';
+
+  @override
+  String get eventEndTime => '結束時間';
+
+  @override
+  String get eventDate => '日期';
+
+  @override
+  String get eventTime => '時間';
+
+  @override
+  String get eventNotes => '備註';
+
+  @override
+  String get eventColor => '顏色';
+
+  @override
+  String get eventRecurrence => '重複';
+
+  @override
+  String get recurrenceNone => '不重複';
+
+  @override
+  String get recurrenceWeekly => '每週';
+
+  @override
+  String get recurrenceEndDate => '結束日期';
+
+  @override
+  String get recurrenceNoEndDate => '無結束日期';
+
+  @override
+  String get recurrenceSetEndDate => '設定';
+
+  @override
+  String get recurrenceChangeEndDate => '更改';
+
+  @override
+  String get repeatsWeekly => '每週重複';
+
+  @override
+  String recurrenceUntil(Object date) {
+    return '截止 $date';
+  }
+
+  @override
+  String get switchToGeneralSchedule => '切換到通用日程';
+
+  @override
+  String get generalDisplaySettings => '通用顯示設定';
+
+  @override
+  String get generalDisplaySettingsDesc => '通用日程頁面的顯示開關';
+
+  @override
+  String get closePopupOnOutsideTap => '點擊外部關閉彈窗';
+
+  @override
+  String get showGridLines => '顯示格線';
+
+  @override
+  String get generalScheduleImportExport => '日程匯入匯出';
+
+  @override
+  String get generalScheduleImportExportDesc => '匯入或分享通用日程';
+
+  @override
+  String get importGeneralSchedules => '匯入日程';
+
+  @override
+  String get importGeneralSchedulesDesc => '從 JSON 檔案讀取日程';
+
+  @override
+  String get shareGeneralSchedules => '分享日程';
+
+  @override
+  String get shareGeneralSchedulesDesc => '以 JSON 檔案分享日程';
+
+  @override
+  String get saveGeneralSchedules => '儲存日程';
+
+  @override
+  String get saveGeneralSchedulesDesc => '儲存為 JSON 檔案';
+
+  @override
+  String get selectSchedulesToExport => '選擇要匯出的日程';
+
+  @override
+  String get selectSchedulesToImport => '選擇要匯入的日程';
+
+  @override
+  String generalScheduleEventCount(int count) {
+    return '事件 $count';
+  }
+
+  @override
+  String importedSchedulesCount(int count) {
+    return '已匯入 $count 個日程';
+  }
+
+  @override
+  String get replaceActiveSchedulePrompt => '用匯入的日程取代目前日程？';
+
+  @override
+  String get addAsNewSchedule => '新增';
+
+  @override
+  String get selectAtLeastOneScheduleMessage => '請至少選擇一個日程。';
+
+  @override
+  String get noExportableScheduleMessage => '沒有可匯出的日程。';
+
+  @override
+  String get noSchedulesInImportMessage => '匯入檔案沒有日程。';
+
+  @override
+  String get replaceActiveRequiresSingleScheduleMessage => '取代目前日程時只能選擇一個日程。';
+
+  @override
+  String get noActiveScheduleToReplaceMessage => '目前沒有可取代的日程。';
+
+  @override
+  String get calendars => '日曆';
+
+  @override
+  String get calendar => '日曆';
+
+  @override
+  String get viewWeek => '週';
+
+  @override
+  String get viewDay => '日';
+
+  @override
+  String get viewList => '列表';
+
+  @override
+  String get eventDuplicated => '已複製日程';
+
+  @override
+  String get searchEvents => '搜尋日程';
+
+  @override
+  String get clearSearch => '清除搜尋';
+
+  @override
+  String get filterByColor => '按顏色篩選';
+
+  @override
+  String get allColors => '全部顏色';
+
+  @override
+  String upcomingEventsCount(int count) {
+    return '即將開始 $count';
+  }
+
+  @override
+  String overdueEventsCount(int count) {
+    return '已逾期 $count';
+  }
+
+  @override
+  String get allDay => '全天';
+
+  @override
+  String moreEvents(int count) {
+    return '+$count 個';
+  }
+
+  @override
+  String get noMatchingEvents => '無匹配事件';
+
+  @override
+  String get noUpcomingEvents => '無即將開始事件';
+
+  @override
+  String get addCalendar => '新增日曆';
+
+  @override
+  String get newCalendar => '新日曆';
+
+  @override
+  String get hideCalendar => '隱藏日曆';
+
+  @override
+  String get showCalendar => '顯示日曆';
+
+  @override
+  String get rename => '重新命名';
+
+  @override
+  String get renameCalendar => '重新命名日曆';
+
+  @override
+  String get name => '名稱';
+
+  @override
+  String get deleteCalendar => '刪除日曆';
+
+  @override
+  String deleteCalendarMessage(Object name) {
+    return '刪除「$name」？';
+  }
+
+  @override
+  String get deleteThisOccurrence => '刪除本次';
+
+  @override
+  String get deleteFutureOccurrences => '刪除後續';
+
+  @override
+  String get deleteAllOccurrences => '刪除全部';
+
+  @override
+  String get duplicateEvent => '複製';
+
+  @override
+  String get repeatsDaily => '每天重複';
+
+  @override
+  String get repeatsMonthly => '每月重複';
+
+  @override
+  String repeatsEvery(int interval, Object unit) {
+    return '每 $interval $unit重複';
+  }
+
+  @override
+  String recurrenceCountTimes(int count) {
+    return '$count 次';
+  }
+
+  @override
+  String get recurrenceDaily => '每天';
+
+  @override
+  String get recurrenceMonthly => '每月';
+
+  @override
+  String get recurrenceCustom => '自訂';
+
+  @override
+  String get recurrenceEvery => '每';
+
+  @override
+  String get recurrenceUnit => '單位';
+
+  @override
+  String get recurrenceDays => '天';
+
+  @override
+  String get recurrenceWeeks => '週';
+
+  @override
+  String get recurrenceMonths => '月';
+
+  @override
+  String get recurrenceRepeatCount => '重複次數';
+
+  @override
+  String get recurrenceNoLimit => '無限制';
+
+  @override
+  String get recurrencePositiveNumber => '請輸入正數';
+
+  @override
+  String get clearEndDate => '清除結束日期';
+
+  @override
+  String get pickDate => '選擇日期';
+
+  @override
+  String get pickTime => '選擇時間';
+
+  @override
+  String get reminder => '提醒';
+
+  @override
+  String get reminderAtStart => '開始時';
+
+  @override
+  String reminderMinutesBefore(int minutes) {
+    return '提前 $minutes 分鐘';
+  }
+
+  @override
+  String get reminderHourBefore => '提前 1 小時';
+
+  @override
+  String get reminderDayBefore => '提前 1 天';
+
+  @override
+  String get showWeekends => '顯示週末';
+
+  @override
+  String get startHour => '開始小時';
+
+  @override
+  String get endHour => '結束小時';
+
+  @override
+  String get timeGridDensity => '時間格線密度';
+
+  @override
+  String get importJsonFile => '匯入 JSON 檔案';
+
+  @override
+  String get pasteJson => '貼上 JSON';
+
+  @override
+  String get importGeneralSchedulesJsonTextDesc => '從複製的 JSON 匯入日曆';
+
+  @override
+  String get importIcsFile => '匯入 ICS 檔案';
+
+  @override
+  String get importIcsFileDesc => '從 .ics 日曆檔案讀取事件';
+
+  @override
+  String get pasteIcs => '貼上 ICS';
+
+  @override
+  String get pasteIcsDesc => '從複製的日曆文字匯入事件';
+
+  @override
+  String get copyJson => '複製 JSON';
+
+  @override
+  String get copyJsonDesc => '將選取日曆複製為 JSON 文字';
+
+  @override
+  String get shareIcs => '分享 ICS';
+
+  @override
+  String get shareIcsDesc => '將選取日曆分享為 .ics';
+
+  @override
+  String get saveIcs => '儲存 ICS';
+
+  @override
+  String get saveIcsDesc => '將選取日曆儲存為 .ics';
+
+  @override
+  String get copyIcs => '複製 ICS';
+
+  @override
+  String get copyIcsDesc => '將選取日曆複製為 ICS 文字';
+
+  @override
+  String get importIcs => '匯入 ICS';
+
+  @override
+  String get icsContent => 'ICS 內容';
+
+  @override
+  String get pasteIcsContentHint => '在這裡貼上 BEGIN:VCALENDAR 內容';
+
+  @override
+  String importIcsPreviewPrompt(int count) {
+    return '發現 $count 個事件。要作為新日曆匯入，還是取代目前日曆？';
+  }
+
+  @override
+  String get selectCalendarsToCopyIcs => '選擇要複製為 ICS 的日曆';
+
+  @override
+  String get selectCalendarsToExportIcs => '選擇要匯出為 ICS 的日曆';
+
+  @override
+  String get exportIcsText => '匯出 ICS 文字';
+
+  @override
+  String get exportJsonText => '匯出 JSON 文字';
 }

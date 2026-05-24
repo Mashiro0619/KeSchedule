@@ -2091,6 +2091,60 @@ void main() {
       expect(find.text('课表解析设置'), findsOneWidget);
     });
 
+    testWidgets(
+      'general import/export actions are scrollable on small screens',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(360, 420));
+        addTearDown(() async {
+          await tester.binding.setSurfaceSize(null);
+        });
+        final provider = TimetableProvider(
+          storage: MemoryTimetableStorage(
+            initialData: _buildTestAppData().copyWith(
+              activeMode: AppMode.general,
+            ),
+          ),
+        );
+        await provider.load();
+
+        await tester.pumpWidget(
+          ChangeNotifierProvider<TimetableProvider>.value(
+            value: provider,
+            child: const MaterialApp(
+              locale: Locale('en'),
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: SettingsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final generalImportExportTile = find.text('Schedule import & export');
+        await tester.ensureVisible(generalImportExportTile);
+        await tester.pumpAndSettle();
+        await tester.tap(generalImportExportTile);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Import JSON file'), findsOneWidget);
+        expect(find.text('Import ICS file'), findsOneWidget);
+
+        await tester.scrollUntilVisible(
+          find.text('Copy ICS'),
+          160,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Copy ICS'), findsOneWidget);
+      },
+    );
+
     testWidgets('HTML 导入页在自定义解析配置不完整时显示跳转配置页按钮', (tester) async {
       final incompleteProvider = TimetableProvider(
         storage: MemoryTimetableStorage(
@@ -3223,6 +3277,7 @@ void main() {
       final calendar = GeneralSchedule(
         id: 'cal1',
         name: 'Work',
+        colorValue: 0xFFABCDEF,
         events: [
           GeneralEvent(
             id: 'evt1',
@@ -3230,6 +3285,7 @@ void main() {
             title: 'Dentist',
             startDateTimeIso: '2026-05-18T09:00:00.000',
             endDateTimeIso: '2026-05-18T10:00:00.000',
+            colorValue: 0xFF123456,
           ),
           GeneralEvent(
             id: 'evt2',
@@ -3273,6 +3329,12 @@ void main() {
 
       expect(find.text('Dentist'), findsOneWidget);
       expect(find.text('Review'), findsNothing);
+
+      await tester.tap(find.byTooltip('Filter by color'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('#FF123456'), findsOneWidget);
+      expect(find.text('#FFABCDEF'), findsNothing);
     });
 
     testWidgets('general week view fits all visible days on narrow screens', (
@@ -3288,7 +3350,7 @@ void main() {
         storage: MemoryTimetableStorage(
           initialData: _buildTestAppData().copyWith(
             activeMode: AppMode.general,
-            generalMode: const GeneralScheduleData(
+            generalMode: GeneralScheduleData(
               activeScheduleId: 'cal1',
               schedules: [calendar],
               selectedDateIso: '2026-05-18',

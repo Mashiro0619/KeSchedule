@@ -2570,6 +2570,480 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No current schedule to replace.'**
   String get noActiveScheduleToReplaceMessage;
+
+  /// No description provided for @calendars.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendars'**
+  String get calendars;
+
+  /// No description provided for @calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendar;
+
+  /// No description provided for @viewWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get viewWeek;
+
+  /// No description provided for @viewDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get viewDay;
+
+  /// No description provided for @viewList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get viewList;
+
+  /// No description provided for @eventDuplicated.
+  ///
+  /// In en, this message translates to:
+  /// **'Event duplicated'**
+  String get eventDuplicated;
+
+  /// No description provided for @searchEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Search events'**
+  String get searchEvents;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
+
+  /// No description provided for @filterByColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by color'**
+  String get filterByColor;
+
+  /// No description provided for @allColors.
+  ///
+  /// In en, this message translates to:
+  /// **'All colors'**
+  String get allColors;
+
+  /// No description provided for @upcomingEventsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming {count}'**
+  String upcomingEventsCount(int count);
+
+  /// No description provided for @overdueEventsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue {count}'**
+  String overdueEventsCount(int count);
+
+  /// No description provided for @allDay.
+  ///
+  /// In en, this message translates to:
+  /// **'All-day'**
+  String get allDay;
+
+  /// No description provided for @moreEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String moreEvents(int count);
+
+  /// No description provided for @noMatchingEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching events'**
+  String get noMatchingEvents;
+
+  /// No description provided for @noUpcomingEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming events'**
+  String get noUpcomingEvents;
+
+  /// No description provided for @addCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Add calendar'**
+  String get addCalendar;
+
+  /// No description provided for @newCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'New calendar'**
+  String get newCalendar;
+
+  /// No description provided for @hideCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide calendar'**
+  String get hideCalendar;
+
+  /// No description provided for @showCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Show calendar'**
+  String get showCalendar;
+
+  /// No description provided for @rename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get rename;
+
+  /// No description provided for @renameCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename calendar'**
+  String get renameCalendar;
+
+  /// No description provided for @name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get name;
+
+  /// No description provided for @deleteCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete calendar'**
+  String get deleteCalendar;
+
+  /// No description provided for @deleteCalendarMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"?'**
+  String deleteCalendarMessage(Object name);
+
+  /// No description provided for @deleteThisOccurrence.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this'**
+  String get deleteThisOccurrence;
+
+  /// No description provided for @deleteFutureOccurrences.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete future'**
+  String get deleteFutureOccurrences;
+
+  /// No description provided for @deleteAllOccurrences.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all'**
+  String get deleteAllOccurrences;
+
+  /// No description provided for @duplicateEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateEvent;
+
+  /// No description provided for @repeatsDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats daily'**
+  String get repeatsDaily;
+
+  /// No description provided for @repeatsMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats monthly'**
+  String get repeatsMonthly;
+
+  /// No description provided for @repeatsEvery.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats every {interval} {unit}'**
+  String repeatsEvery(int interval, Object unit);
+
+  /// No description provided for @recurrenceCountTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} times'**
+  String recurrenceCountTimes(int count);
+
+  /// No description provided for @recurrenceDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get recurrenceDaily;
+
+  /// No description provided for @recurrenceMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get recurrenceMonthly;
+
+  /// No description provided for @recurrenceCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get recurrenceCustom;
+
+  /// No description provided for @recurrenceEvery.
+  ///
+  /// In en, this message translates to:
+  /// **'Every'**
+  String get recurrenceEvery;
+
+  /// No description provided for @recurrenceUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get recurrenceUnit;
+
+  /// No description provided for @recurrenceDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get recurrenceDays;
+
+  /// No description provided for @recurrenceWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'Weeks'**
+  String get recurrenceWeeks;
+
+  /// No description provided for @recurrenceMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'Months'**
+  String get recurrenceMonths;
+
+  /// No description provided for @recurrenceRepeatCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat count'**
+  String get recurrenceRepeatCount;
+
+  /// No description provided for @recurrenceNoLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get recurrenceNoLimit;
+
+  /// No description provided for @recurrencePositiveNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a positive number'**
+  String get recurrencePositiveNumber;
+
+  /// No description provided for @clearEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear end date'**
+  String get clearEndDate;
+
+  /// No description provided for @pickDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date'**
+  String get pickDate;
+
+  /// No description provided for @pickTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick time'**
+  String get pickTime;
+
+  /// No description provided for @reminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get reminder;
+
+  /// No description provided for @reminderAtStart.
+  ///
+  /// In en, this message translates to:
+  /// **'At start'**
+  String get reminderAtStart;
+
+  /// No description provided for @reminderMinutesBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min before'**
+  String reminderMinutesBefore(int minutes);
+
+  /// No description provided for @reminderHourBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'1 hour before'**
+  String get reminderHourBefore;
+
+  /// No description provided for @reminderDayBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'1 day before'**
+  String get reminderDayBefore;
+
+  /// No description provided for @showWeekends.
+  ///
+  /// In en, this message translates to:
+  /// **'Show weekends'**
+  String get showWeekends;
+
+  /// No description provided for @startHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Start hour'**
+  String get startHour;
+
+  /// No description provided for @endHour.
+  ///
+  /// In en, this message translates to:
+  /// **'End hour'**
+  String get endHour;
+
+  /// No description provided for @timeGridDensity.
+  ///
+  /// In en, this message translates to:
+  /// **'Time grid density'**
+  String get timeGridDensity;
+
+  /// No description provided for @importJsonFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Import JSON file'**
+  String get importJsonFile;
+
+  /// No description provided for @pasteJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste JSON'**
+  String get pasteJson;
+
+  /// No description provided for @importGeneralSchedulesJsonTextDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Import calendars from copied JSON'**
+  String get importGeneralSchedulesJsonTextDesc;
+
+  /// No description provided for @importIcsFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Import ICS file'**
+  String get importIcsFile;
+
+  /// No description provided for @importIcsFileDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Read events from an .ics calendar file'**
+  String get importIcsFileDesc;
+
+  /// No description provided for @pasteIcs.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste ICS'**
+  String get pasteIcs;
+
+  /// No description provided for @pasteIcsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Import events from copied calendar text'**
+  String get pasteIcsDesc;
+
+  /// No description provided for @copyJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy JSON'**
+  String get copyJson;
+
+  /// No description provided for @copyJsonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy selected calendars as JSON text'**
+  String get copyJsonDesc;
+
+  /// No description provided for @shareIcs.
+  ///
+  /// In en, this message translates to:
+  /// **'Share ICS'**
+  String get shareIcs;
+
+  /// No description provided for @shareIcsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Share selected calendars as .ics'**
+  String get shareIcsDesc;
+
+  /// No description provided for @saveIcs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save ICS'**
+  String get saveIcs;
+
+  /// No description provided for @saveIcsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Save selected calendars as .ics'**
+  String get saveIcsDesc;
+
+  /// No description provided for @copyIcs.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy ICS'**
+  String get copyIcs;
+
+  /// No description provided for @copyIcsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy selected calendars as ICS text'**
+  String get copyIcsDesc;
+
+  /// No description provided for @importIcs.
+  ///
+  /// In en, this message translates to:
+  /// **'Import ICS'**
+  String get importIcs;
+
+  /// No description provided for @icsContent.
+  ///
+  /// In en, this message translates to:
+  /// **'ICS content'**
+  String get icsContent;
+
+  /// No description provided for @pasteIcsContentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste BEGIN:VCALENDAR content here'**
+  String get pasteIcsContentHint;
+
+  /// No description provided for @importIcsPreviewPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Found {count} events. Import as a new calendar or replace the active calendar?'**
+  String importIcsPreviewPrompt(int count);
+
+  /// No description provided for @selectCalendarsToCopyIcs.
+  ///
+  /// In en, this message translates to:
+  /// **'Select calendars to copy as ICS'**
+  String get selectCalendarsToCopyIcs;
+
+  /// No description provided for @selectCalendarsToExportIcs.
+  ///
+  /// In en, this message translates to:
+  /// **'Select calendars to export as ICS'**
+  String get selectCalendarsToExportIcs;
+
+  /// No description provided for @exportIcsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Export ICS text'**
+  String get exportIcsText;
+
+  /// No description provided for @exportJsonText.
+  ///
+  /// In en, this message translates to:
+  /// **'Export JSON text'**
+  String get exportJsonText;
 }
 
 class _AppLocalizationsDelegate

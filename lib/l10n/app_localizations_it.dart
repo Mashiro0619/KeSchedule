@@ -1378,4 +1378,258 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get noActiveScheduleToReplaceMessage =>
       'No current schedule to replace.';
+
+  @override
+  String get calendars => 'Calendars';
+
+  @override
+  String get calendar => 'Calendar';
+
+  @override
+  String get viewWeek => 'Week';
+
+  @override
+  String get viewDay => 'Day';
+
+  @override
+  String get viewList => 'List';
+
+  @override
+  String get eventDuplicated => 'Event duplicated';
+
+  @override
+  String get searchEvents => 'Search events';
+
+  @override
+  String get clearSearch => 'Clear search';
+
+  @override
+  String get filterByColor => 'Filter by color';
+
+  @override
+  String get allColors => 'All colors';
+
+  @override
+  String upcomingEventsCount(int count) {
+    return 'Upcoming $count';
+  }
+
+  @override
+  String overdueEventsCount(int count) {
+    return 'Overdue $count';
+  }
+
+  @override
+  String get allDay => 'All-day';
+
+  @override
+  String moreEvents(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String get noMatchingEvents => 'No matching events';
+
+  @override
+  String get noUpcomingEvents => 'No upcoming events';
+
+  @override
+  String get addCalendar => 'Add calendar';
+
+  @override
+  String get newCalendar => 'New calendar';
+
+  @override
+  String get hideCalendar => 'Hide calendar';
+
+  @override
+  String get showCalendar => 'Show calendar';
+
+  @override
+  String get rename => 'Rename';
+
+  @override
+  String get renameCalendar => 'Rename calendar';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get deleteCalendar => 'Delete calendar';
+
+  @override
+  String deleteCalendarMessage(Object name) {
+    return 'Delete \"$name\"?';
+  }
+
+  @override
+  String get deleteThisOccurrence => 'Delete this';
+
+  @override
+  String get deleteFutureOccurrences => 'Delete future';
+
+  @override
+  String get deleteAllOccurrences => 'Delete all';
+
+  @override
+  String get duplicateEvent => 'Duplicate';
+
+  @override
+  String get repeatsDaily => 'Repeats daily';
+
+  @override
+  String get repeatsMonthly => 'Repeats monthly';
+
+  @override
+  String repeatsEvery(int interval, Object unit) {
+    return 'Repeats every $interval $unit';
+  }
+
+  @override
+  String recurrenceCountTimes(int count) {
+    return '$count times';
+  }
+
+  @override
+  String get recurrenceDaily => 'Daily';
+
+  @override
+  String get recurrenceMonthly => 'Monthly';
+
+  @override
+  String get recurrenceCustom => 'Custom';
+
+  @override
+  String get recurrenceEvery => 'Every';
+
+  @override
+  String get recurrenceUnit => 'Unit';
+
+  @override
+  String get recurrenceDays => 'Days';
+
+  @override
+  String get recurrenceWeeks => 'Weeks';
+
+  @override
+  String get recurrenceMonths => 'Months';
+
+  @override
+  String get recurrenceRepeatCount => 'Repeat count';
+
+  @override
+  String get recurrenceNoLimit => 'No limit';
+
+  @override
+  String get recurrencePositiveNumber => 'Enter a positive number';
+
+  @override
+  String get clearEndDate => 'Clear end date';
+
+  @override
+  String get pickDate => 'Pick date';
+
+  @override
+  String get pickTime => 'Pick time';
+
+  @override
+  String get reminder => 'Reminder';
+
+  @override
+  String get reminderAtStart => 'At start';
+
+  @override
+  String reminderMinutesBefore(int minutes) {
+    return '$minutes min before';
+  }
+
+  @override
+  String get reminderHourBefore => '1 hour before';
+
+  @override
+  String get reminderDayBefore => '1 day before';
+
+  @override
+  String get showWeekends => 'Show weekends';
+
+  @override
+  String get startHour => 'Start hour';
+
+  @override
+  String get endHour => 'End hour';
+
+  @override
+  String get timeGridDensity => 'Time grid density';
+
+  @override
+  String get importJsonFile => 'Import JSON file';
+
+  @override
+  String get pasteJson => 'Paste JSON';
+
+  @override
+  String get importGeneralSchedulesJsonTextDesc =>
+      'Import calendars from copied JSON';
+
+  @override
+  String get importIcsFile => 'Import ICS file';
+
+  @override
+  String get importIcsFileDesc => 'Read events from an .ics calendar file';
+
+  @override
+  String get pasteIcs => 'Paste ICS';
+
+  @override
+  String get pasteIcsDesc => 'Import events from copied calendar text';
+
+  @override
+  String get copyJson => 'Copy JSON';
+
+  @override
+  String get copyJsonDesc => 'Copy selected calendars as JSON text';
+
+  @override
+  String get shareIcs => 'Share ICS';
+
+  @override
+  String get shareIcsDesc => 'Share selected calendars as .ics';
+
+  @override
+  String get saveIcs => 'Save ICS';
+
+  @override
+  String get saveIcsDesc => 'Save selected calendars as .ics';
+
+  @override
+  String get copyIcs => 'Copy ICS';
+
+  @override
+  String get copyIcsDesc => 'Copy selected calendars as ICS text';
+
+  @override
+  String get importIcs => 'Import ICS';
+
+  @override
+  String get icsContent => 'ICS content';
+
+  @override
+  String get pasteIcsContentHint => 'Paste BEGIN:VCALENDAR content here';
+
+  @override
+  String importIcsPreviewPrompt(int count) {
+    return 'Found $count events. Import as a new calendar or replace the active calendar?';
+  }
+
+  @override
+  String get selectCalendarsToCopyIcs => 'Select calendars to copy as ICS';
+
+  @override
+  String get selectCalendarsToExportIcs => 'Select calendars to export as ICS';
+
+  @override
+  String get exportIcsText => 'Export ICS text';
+
+  @override
+  String get exportJsonText => 'Export JSON text';
 }

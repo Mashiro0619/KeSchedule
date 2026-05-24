@@ -52,6 +52,10 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
       query: _searchQuery,
       colorValue: _colorFilterValue,
     );
+    final colorOptions = _availableFilterColors(
+      provider.visibleGeneralSchedules,
+      query: _searchQuery,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -85,7 +89,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.calendar_month_outlined),
-            tooltip: 'Calendars',
+            tooltip: l10n.calendars,
             onPressed: () => _openCalendarManager(context, provider),
           ),
           IconButton(
@@ -124,21 +128,21 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                 children: [
                   Expanded(
                     child: SegmentedButton<String>(
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: generalViewWeek,
-                          icon: Icon(Icons.view_week_outlined),
-                          label: Text('Week'),
+                          icon: const Icon(Icons.view_week_outlined),
+                          label: Text(l10n.viewWeek),
                         ),
                         ButtonSegment(
                           value: generalViewDay,
-                          icon: Icon(Icons.view_day_outlined),
-                          label: Text('Day'),
+                          icon: const Icon(Icons.view_day_outlined),
+                          label: Text(l10n.viewDay),
                         ),
                         ButtonSegment(
                           value: generalViewList,
-                          icon: Icon(Icons.list_alt_outlined),
-                          label: Text('List'),
+                          icon: const Icon(Icons.list_alt_outlined),
+                          label: Text(l10n.viewList),
                         ),
                       ],
                       selected: {view},
@@ -154,7 +158,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
             _FilterBar(
               controller: _searchController,
               colorValue: _colorFilterValue,
-              colorOptions: _availableFilterColors(provider.generalSchedules),
+              colorOptions: colorOptions,
               onSearchChanged: (value) => setState(() {
                 _searchQuery = value;
               }),
@@ -293,12 +297,11 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
           },
           onDuplicate: () async {
             final messenger = ScaffoldMessenger.of(context);
+            final message = AppLocalizations.of(context).eventDuplicated;
             await provider.duplicateGeneralOccurrence(occurrence);
             if (sheetContext.mounted) Navigator.of(sheetContext).pop();
             if (mounted) {
-              messenger.showSnackBar(
-                const SnackBar(content: Text('Event duplicated')),
-              );
+              messenger.showSnackBar(SnackBar(content: Text(message)));
             }
           },
           onDeleteThis: () async {
@@ -405,6 +408,7 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
       child: Row(
@@ -416,12 +420,12 @@ class _FilterBar extends StatelessWidget {
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 isDense: true,
-                hintText: 'Search events',
+                hintText: l10n.searchEvents,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: controller.text.isEmpty
                     ? null
                     : IconButton(
-                        tooltip: 'Clear search',
+                        tooltip: l10n.clearSearch,
                         onPressed: onClearSearch,
                         icon: const Icon(Icons.clear),
                       ),
@@ -431,13 +435,13 @@ class _FilterBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           PopupMenuButton<int>(
-            tooltip: 'Filter by color',
+            tooltip: l10n.filterByColor,
             icon: Icon(
               colorValue == null ? Icons.filter_alt_outlined : Icons.filter_alt,
             ),
             onSelected: (value) => onColorChanged(value < 0 ? null : value),
             itemBuilder: (context) => [
-              const PopupMenuItem<int>(value: -1, child: Text('All colors')),
+              PopupMenuItem<int>(value: -1, child: Text(l10n.allColors)),
               for (final option in colorOptions)
                 PopupMenuItem<int>(
                   value: option,
@@ -599,6 +603,7 @@ class _CalendarTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (days.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -644,7 +649,7 @@ class _CalendarTimeline extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'All-day',
+                            l10n.allDay,
                             style: Theme.of(context).textTheme.labelSmall,
                             textAlign: TextAlign.center,
                           ),
@@ -953,7 +958,7 @@ class _ListCalendarView extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
               child: Text(
-                '${_formatDate(date)}  ${_weekdayLabel(date)}',
+                '${_formatDate(date)}  ${_weekdayLabel(context, date)}',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ),
@@ -984,7 +989,7 @@ class _ReminderStrip extends StatelessWidget {
           endExclusive: now.add(const Duration(hours: 24)),
         )
         .where(filter.matches)
-        .where(_hasReminder)
+        .where((occurrence) => _isInReminderWindow(occurrence, now))
         .take(3)
         .toList();
     final overdue = provider
@@ -1000,6 +1005,7 @@ class _ReminderStrip extends StatelessWidget {
       return const SizedBox(height: 4);
     }
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       height: 44,
       child: ListView(
@@ -1009,13 +1015,13 @@ class _ReminderStrip extends StatelessWidget {
           if (upcoming.isNotEmpty)
             _StatusPill(
               icon: Icons.notifications_active_outlined,
-              label: 'Upcoming ${upcoming.length}',
+              label: l10n.upcomingEventsCount(upcoming.length),
               color: theme.colorScheme.primary,
             ),
           if (overdue.isNotEmpty)
             _StatusPill(
               icon: Icons.pending_actions_outlined,
-              label: 'Overdue ${overdue.length}',
+              label: l10n.overdueEventsCount(overdue.length),
               color: theme.colorScheme.error,
             ),
         ],
@@ -1092,7 +1098,10 @@ class _DayHeader extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(_weekdayLabel(date), style: theme.textTheme.labelMedium),
+                  Text(
+                    _weekdayLabel(context, date),
+                    style: theme.textTheme.labelMedium,
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     date.day.toString(),
@@ -1127,6 +1136,7 @@ class _AllDayColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: width,
       decoration: BoxDecoration(
@@ -1150,7 +1160,7 @@ class _AllDayColumn extends StatelessWidget {
                   ),
                 if (occurrences.length > 2)
                   Text(
-                    '+${occurrences.length - 2} more',
+                    l10n.moreEvents(occurrences.length - 2),
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
               ],
@@ -1173,18 +1183,22 @@ class _AllDayChip extends StatelessWidget {
     return Material(
       color: color.withAlpha(36),
       borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-          child: Text(
-            occurrence.event.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: _readableColor(color),
-              fontWeight: FontWeight.w600,
+      child: Semantics(
+        button: true,
+        label: occurrence.event.title,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+            child: Text(
+              occurrence.event.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: _readableColor(color),
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -1295,46 +1309,53 @@ class _OccurrenceCard extends StatelessWidget {
       color: color.withAlpha(210),
       borderRadius: BorderRadius.circular(8),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: dense ? 3 : 6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: dense
-                ? MainAxisAlignment.center
-                : MainAxisAlignment.start,
-            children: [
-              Text(
-                occurrence.event.title,
-                maxLines: dense ? 1 : 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (!dense) ...[
-                const SizedBox(height: 2),
+      child: Semantics(
+        button: true,
+        label: occurrence.event.title,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: dense ? 3 : 6,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: dense
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
+              children: [
                 Text(
-                  _formatOccurrenceTime(occurrence),
-                  maxLines: 1,
+                  occurrence.event.title,
+                  maxLines: dense ? 1 : 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: textColor.withAlpha(220),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (occurrence.event.location.isNotEmpty)
+                if (!dense) ...[
+                  const SizedBox(height: 2),
                   Text(
-                    occurrence.event.location,
+                    _formatOccurrenceTime(context, occurrence),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: textColor.withAlpha(220),
                     ),
                   ),
+                  if (occurrence.event.location.isNotEmpty)
+                    Text(
+                      occurrence.event.location,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: textColor.withAlpha(220),
+                      ),
+                    ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -1386,7 +1407,7 @@ class _ListOccurrenceTile extends StatelessWidget {
       title: Text(occurrence.event.title),
       subtitle: Text(
         [
-          _formatOccurrenceTime(occurrence),
+          _formatOccurrenceTime(context, occurrence),
           if (occurrence.event.location.isNotEmpty) occurrence.event.location,
           occurrence.calendar.name,
         ].join('  |  '),
@@ -1410,6 +1431,7 @@ class _EmptyListState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
@@ -1423,14 +1445,14 @@ class _EmptyListState extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              filtered ? 'No matching events' : 'No upcoming events',
+              filtered ? l10n.noMatchingEvents : l10n.noUpcomingEvents,
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onToday,
               icon: const Icon(Icons.today_outlined),
-              label: const Text('Today'),
+              label: Text(l10n.today),
             ),
           ],
         ),
@@ -1456,13 +1478,13 @@ class _CalendarManagerSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 18, 12, 8),
             child: Row(
               children: [
-                Text('Calendars', style: theme.textTheme.titleLarge),
+                Text(l10n.calendars, style: theme.textTheme.titleLarge),
                 const Spacer(),
                 IconButton(
-                  tooltip: 'Add calendar',
+                  tooltip: l10n.addCalendar,
                   icon: const Icon(Icons.add),
                   onPressed: () => provider.addGeneralSchedule(
-                    name: 'New calendar',
+                    name: l10n.newCalendar,
                     colorValue: _nextCalendarColor(provider.generalSchedules),
                   ),
                 ),
@@ -1485,12 +1507,16 @@ class _CalendarManagerSheet extends StatelessWidget {
                   selected: active,
                   leading: _ColorDot(color: Color(schedule.colorValue)),
                   title: Text(schedule.name),
-                  subtitle: Text('${schedule.events.length} events'),
+                  subtitle: Text(
+                    l10n.generalScheduleEventCount(schedule.events.length),
+                  ),
                   trailing: Wrap(
                     spacing: 2,
                     children: [
                       IconButton(
-                        tooltip: schedule.isVisible ? 'Hide' : 'Show',
+                        tooltip: schedule.isVisible
+                            ? l10n.hideCalendar
+                            : l10n.showCalendar,
                         icon: Icon(
                           schedule.isVisible
                               ? Icons.visibility_outlined
@@ -1503,7 +1529,7 @@ class _CalendarManagerSheet extends StatelessWidget {
                             ),
                       ),
                       IconButton(
-                        tooltip: 'Rename',
+                        tooltip: l10n.rename,
                         icon: const Icon(Icons.edit_outlined),
                         onPressed: () => _renameCalendar(context, schedule),
                       ),
@@ -1535,13 +1561,13 @@ class _CalendarManagerSheet extends StatelessWidget {
       builder: (dialogContext) {
         final l10n = AppLocalizations.of(dialogContext);
         return AlertDialog(
-          title: const Text('Rename calendar'),
+          title: Text(l10n.renameCalendar),
           content: TextField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.name,
+              border: const OutlineInputBorder(),
             ),
           ),
           actions: [
@@ -1573,8 +1599,8 @@ class _CalendarManagerSheet extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete calendar'),
-        content: Text('Delete "${schedule.name}"?'),
+        title: Text(l10n.deleteCalendar),
+        content: Text(l10n.deleteCalendarMessage(schedule.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -1622,15 +1648,24 @@ List<DateTime> _visibleWeekDays(DateTime weekStart, bool showWeekends) {
   ];
 }
 
-List<int> _availableFilterColors(List<GeneralSchedule> schedules) {
+List<int> _availableFilterColors(
+  List<GeneralSchedule> schedules, {
+  String query = '',
+}) {
   final values = <int>{};
+  final normalizedQuery = query.trim().toLowerCase();
   for (final schedule in schedules) {
-    values.add(schedule.colorValue);
     for (final event in schedule.events) {
-      final colorValue = event.colorValue;
-      if (colorValue != null) {
-        values.add(colorValue);
+      if (normalizedQuery.isNotEmpty &&
+          ![
+            event.title,
+            event.location,
+            event.notes,
+            schedule.name,
+          ].any((value) => value.toLowerCase().contains(normalizedQuery))) {
+        continue;
       }
+      values.add(event.colorValue ?? schedule.colorValue);
     }
   }
   return values.toList()..sort();
@@ -1655,9 +1690,12 @@ String _formatTime(DateTime date) {
   return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 }
 
-String _formatOccurrenceTime(GeneralEventOccurrence occurrence) {
+String _formatOccurrenceTime(
+  BuildContext context,
+  GeneralEventOccurrence occurrence,
+) {
   if (occurrence.isAllDay) {
-    return 'All-day';
+    return AppLocalizations.of(context).allDay;
   }
   if (!_sameDay(occurrence.start, occurrence.end)) {
     return '${_formatDate(occurrence.start)} ${_formatTime(occurrence.start)} - ${_formatDate(occurrence.end)} ${_formatTime(occurrence.end)}';
@@ -1665,9 +1703,17 @@ String _formatOccurrenceTime(GeneralEventOccurrence occurrence) {
   return '${_formatTime(occurrence.start)} - ${_formatTime(occurrence.end)}';
 }
 
-String _weekdayLabel(DateTime date) {
-  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  return labels[date.weekday - 1];
+String _weekdayLabel(BuildContext context, DateTime date) {
+  final l10n = AppLocalizations.of(context);
+  return switch (date.weekday) {
+    DateTime.monday => l10n.weekdayShortMonday,
+    DateTime.tuesday => l10n.weekdayShortTuesday,
+    DateTime.wednesday => l10n.weekdayShortWednesday,
+    DateTime.thursday => l10n.weekdayShortThursday,
+    DateTime.friday => l10n.weekdayShortFriday,
+    DateTime.saturday => l10n.weekdayShortSaturday,
+    _ => l10n.weekdayShortSunday,
+  };
 }
 
 String _dateKey(DateTime date) => normalizeDateOnly(date).toIso8601String();
@@ -1682,8 +1728,19 @@ bool _occurrenceIntersectsDay(GeneralEventOccurrence occurrence, DateTime day) {
   return occurrence.end.isAfter(start) && occurrence.start.isBefore(end);
 }
 
-bool _hasReminder(GeneralEventOccurrence occurrence) {
-  return occurrence.event.reminders.isNotEmpty;
+bool _isInReminderWindow(GeneralEventOccurrence occurrence, DateTime now) {
+  if (!now.isBefore(occurrence.start)) {
+    return false;
+  }
+  for (final reminder in occurrence.event.reminders) {
+    final reminderAt = occurrence.start.subtract(
+      Duration(minutes: reminder.minutesBefore),
+    );
+    if (!now.isBefore(reminderAt)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 int _nowMinutes() {

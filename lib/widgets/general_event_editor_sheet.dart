@@ -259,10 +259,10 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _calendarId,
-                    decoration: const InputDecoration(
-                      labelText: 'Calendar',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.calendar_month_outlined),
+                    decoration: InputDecoration(
+                      labelText: l10n.calendar,
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.calendar_month_outlined),
                     ),
                     items: [
                       for (final calendar in _calendars)
@@ -285,7 +285,7 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     secondary: const Icon(Icons.event_available_outlined),
-                    title: const Text('All-day'),
+                    title: Text(l10n.allDay),
                     value: _isAllDay,
                     onChanged: (value) => setState(() {
                       _isAllDay = value;
@@ -296,7 +296,7 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                   ),
                   _DateTimeRow(
                     icon: Icons.play_arrow_outlined,
-                    label: 'Start',
+                    label: l10n.eventStartTime,
                     date: _startDate,
                     time: _startTime,
                     showTime: !_isAllDay,
@@ -320,7 +320,7 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                   ),
                   _DateTimeRow(
                     icon: Icons.stop_outlined,
-                    label: 'End',
+                    label: l10n.eventEndTime,
                     date: _endDate,
                     time: _endTime,
                     showTime: !_isAllDay,
@@ -341,26 +341,26 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.repeat),
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: GeneralEventRecurrence.none,
-                        child: Text('Does not repeat'),
+                        child: Text(l10n.recurrenceNone),
                       ),
                       DropdownMenuItem(
                         value: GeneralEventRecurrence.daily,
-                        child: Text('Daily'),
+                        child: Text(l10n.recurrenceDaily),
                       ),
                       DropdownMenuItem(
                         value: GeneralEventRecurrence.weekly,
-                        child: Text('Weekly'),
+                        child: Text(l10n.recurrenceWeekly),
                       ),
                       DropdownMenuItem(
                         value: GeneralEventRecurrence.monthly,
-                        child: Text('Monthly'),
+                        child: Text(l10n.recurrenceMonthly),
                       ),
                       DropdownMenuItem(
                         value: GeneralEventRecurrence.custom,
-                        child: Text('Custom'),
+                        child: Text(l10n.recurrenceCustom),
                       ),
                     ],
                     onChanged: (value) {
@@ -506,13 +506,13 @@ class _DateTimeRow extends StatelessWidget {
       trailing: Wrap(
         children: [
           IconButton(
-            tooltip: 'Pick date',
+            tooltip: AppLocalizations.of(context).pickDate,
             onPressed: onPickDate,
             icon: const Icon(Icons.calendar_today_outlined),
           ),
           if (showTime)
             IconButton(
-              tooltip: 'Pick time',
+              tooltip: AppLocalizations.of(context).pickTime,
               onPressed: onPickTime,
               icon: const Icon(Icons.access_time),
             ),
@@ -547,6 +547,7 @@ class _RepeatOptions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         if (recurrence == GeneralEventRecurrence.custom)
@@ -555,9 +556,9 @@ class _RepeatOptions extends StatelessWidget {
               Expanded(
                 child: DropdownButtonFormField<int>(
                   initialValue: interval.clamp(1, 30).toInt(),
-                  decoration: const InputDecoration(
-                    labelText: 'Every',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.recurrenceEvery,
+                    border: const OutlineInputBorder(),
                   ),
                   items: [
                     for (var value = 1; value <= 30; value++)
@@ -572,22 +573,22 @@ class _RepeatOptions extends StatelessWidget {
               Expanded(
                 child: DropdownButtonFormField<GeneralEventRecurrenceUnit>(
                   initialValue: customUnit,
-                  decoration: const InputDecoration(
-                    labelText: 'Unit',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.recurrenceUnit,
+                    border: const OutlineInputBorder(),
                   ),
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                       value: GeneralEventRecurrenceUnit.day,
-                      child: Text('Days'),
+                      child: Text(l10n.recurrenceDays),
                     ),
                     DropdownMenuItem(
                       value: GeneralEventRecurrenceUnit.week,
-                      child: Text('Weeks'),
+                      child: Text(l10n.recurrenceWeeks),
                     ),
                     DropdownMenuItem(
                       value: GeneralEventRecurrenceUnit.month,
-                      child: Text('Months'),
+                      child: Text(l10n.recurrenceMonths),
                     ),
                   ],
                   onChanged: (value) {
@@ -605,17 +606,17 @@ class _RepeatOptions extends StatelessWidget {
               child: TextFormField(
                 controller: repeatCountController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Repeat count',
-                  hintText: 'No limit',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.recurrenceRepeatCount,
+                  hintText: l10n.recurrenceNoLimit,
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) {
                   final text = value?.trim() ?? '';
                   if (text.isEmpty) return null;
                   final parsed = int.tryParse(text);
                   if (parsed == null || parsed < 1) {
-                    return 'Enter a positive number';
+                    return l10n.recurrencePositiveNumber;
                   }
                   return null;
                 },
@@ -627,14 +628,16 @@ class _RepeatOptions extends StatelessWidget {
                 onPressed: onPickUntil,
                 icon: const Icon(Icons.event_repeat_outlined),
                 label: Text(
-                  untilDate == null ? 'End date' : _fmtDate(untilDate!),
+                  untilDate == null
+                      ? l10n.recurrenceEndDate
+                      : _fmtDate(untilDate!),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
             if (untilDate != null)
               IconButton(
-                tooltip: 'Clear end date',
+                tooltip: l10n.clearEndDate,
                 onPressed: onClearUntil,
                 icon: const Icon(Icons.clear),
               ),
@@ -653,24 +656,25 @@ class _ReminderPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Reminder',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.notifications_outlined),
+      decoration: InputDecoration(
+        labelText: l10n.reminder,
+        border: const OutlineInputBorder(),
+        prefixIcon: const Icon(Icons.notifications_outlined),
       ),
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
         children: [
           FilterChip(
-            label: const Text('None'),
+            label: Text(l10n.none),
             selected: reminders.isEmpty,
             onSelected: (_) => onChanged(const []),
           ),
           for (final option in _reminderOptions)
             FilterChip(
-              label: Text(_reminderLabel(option)),
+              label: Text(_reminderLabel(option, l10n)),
               selected: reminders.contains(option),
               onSelected: (selected) {
                 final next = reminders.toSet();
@@ -756,15 +760,12 @@ String _fmtDate(DateTime date) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }
 
-String _reminderLabel(int minutes) {
+String _reminderLabel(int minutes, AppLocalizations l10n) {
   return switch (minutes) {
-    0 => 'At start',
-    5 => '5 min',
-    10 => '10 min',
-    30 => '30 min',
-    60 => '1 hour',
-    1440 => '1 day',
-    _ => '$minutes min',
+    0 => l10n.reminderAtStart,
+    60 => l10n.reminderHourBefore,
+    1440 => l10n.reminderDayBefore,
+    _ => l10n.reminderMinutesBefore(minutes),
   };
 }
 

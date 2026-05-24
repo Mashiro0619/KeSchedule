@@ -21,21 +21,21 @@ class GeneralDisplaySettingsPage extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: SegmentedButton<String>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: generalViewWeek,
-                      icon: Icon(Icons.view_week_outlined),
-                      label: Text('Week'),
+                      icon: const Icon(Icons.view_week_outlined),
+                      label: Text(l10n.viewWeek),
                     ),
                     ButtonSegment(
                       value: generalViewDay,
-                      icon: Icon(Icons.view_day_outlined),
-                      label: Text('Day'),
+                      icon: const Icon(Icons.view_day_outlined),
+                      label: Text(l10n.viewDay),
                     ),
                     ButtonSegment(
                       value: generalViewList,
-                      icon: Icon(Icons.list_alt_outlined),
-                      label: Text('List'),
+                      icon: const Icon(Icons.list_alt_outlined),
+                      label: Text(l10n.viewList),
                     ),
                   ],
                   selected: {provider.generalDefaultView},
@@ -48,13 +48,13 @@ class GeneralDisplaySettingsPage extends StatelessWidget {
                 ),
               ),
               SwitchListTile(
-                title: const Text('Show weekends'),
+                title: Text(l10n.showWeekends),
                 value: provider.generalShowWeekends,
                 onChanged: (value) =>
                     provider.updateGeneralDisplaySettings(showWeekends: value),
               ),
               _HourTile(
-                title: 'Start hour',
+                title: l10n.startHour,
                 value: provider.generalDayStartHour,
                 min: 0,
                 max: provider.generalDayEndHour - 1,
@@ -62,7 +62,7 @@ class GeneralDisplaySettingsPage extends StatelessWidget {
                     provider.updateGeneralDisplaySettings(dayStartHour: value),
               ),
               _HourTile(
-                title: 'End hour',
+                title: l10n.endHour,
                 value: provider.generalDayEndHour,
                 min: provider.generalDayStartHour + 1,
                 max: 24,
@@ -71,7 +71,7 @@ class GeneralDisplaySettingsPage extends StatelessWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.grid_4x4_outlined),
-                title: const Text('Time grid density'),
+                title: Text(l10n.timeGridDensity),
                 trailing: DropdownButton<int>(
                   value: provider.generalTimeGridMinutes,
                   items: const [
@@ -90,7 +90,7 @@ class GeneralDisplaySettingsPage extends StatelessWidget {
               ),
               const Divider(height: 24),
               SwitchListTile(
-                title: const Text('Close popup on outside tap'),
+                title: Text(l10n.closePopupOnOutsideTap),
                 value: provider.closeGeneralEventPopupOnOutsideTap,
                 onChanged: (value) => provider.updateGeneralDisplaySettings(
                   closeEventPopupOnOutsideTap: value,

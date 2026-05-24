@@ -70,18 +70,18 @@ class GeneralEventDetailsSheet extends StatelessWidget {
             const SizedBox(height: 18),
             _InfoRow(
               icon: Icons.access_time,
-              value: _formatOccurrenceTime(occurrence),
+              value: _formatOccurrenceTime(occurrence, l10n),
             ),
             if (isRepeating)
               _InfoRow(
                 icon: Icons.repeat,
-                value: _repeatSummary(event.recurrenceRule),
+                value: _repeatSummary(event.recurrenceRule, l10n),
               ),
             if (event.reminders.isNotEmpty)
               _InfoRow(
                 icon: Icons.notifications_outlined,
                 value: event.reminders
-                    .map((item) => _reminderLabel(item.minutesBefore))
+                    .map((item) => _reminderLabel(item.minutesBefore, l10n))
                     .join(', '),
               ),
             if (event.location.isNotEmpty)
@@ -107,7 +107,9 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: onDeleteThis,
                     icon: const Icon(Icons.delete_outline),
-                    label: Text(isRepeating ? 'Delete this' : l10n.delete),
+                    label: Text(
+                      isRepeating ? l10n.deleteThisOccurrence : l10n.delete,
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                     ),
@@ -116,7 +118,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: onDeleteFuture,
                     icon: const Icon(Icons.delete_sweep_outlined),
-                    label: const Text('Delete future'),
+                    label: Text(l10n.deleteFutureOccurrences),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                     ),
@@ -125,7 +127,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: onDeleteAll,
                     icon: const Icon(Icons.delete_forever_outlined),
-                    label: const Text('Delete all'),
+                    label: Text(l10n.deleteAllOccurrences),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                     ),
@@ -140,7 +142,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: onDuplicate,
                     icon: const Icon(Icons.content_copy_outlined),
-                    label: const Text('Duplicate'),
+                    label: Text(l10n.duplicateEvent),
                   ),
               ],
             ),
@@ -178,13 +180,16 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-String _formatOccurrenceTime(GeneralEventOccurrence occurrence) {
+String _formatOccurrenceTime(
+  GeneralEventOccurrence occurrence,
+  AppLocalizations l10n,
+) {
   if (occurrence.isAllDay) {
     final end = occurrence.end.subtract(const Duration(days: 1));
     if (_sameDay(occurrence.start, end)) {
-      return '${_fmtDate(occurrence.start)}  All-day';
+      return '${_fmtDate(occurrence.start)}  ${l10n.allDay}';
     }
-    return '${_fmtDate(occurrence.start)} - ${_fmtDate(end)}  All-day';
+    return '${_fmtDate(occurrence.start)} - ${_fmtDate(end)}  ${l10n.allDay}';
   }
   if (_sameDay(occurrence.start, occurrence.end)) {
     return '${_fmtDate(occurrence.start)} ${_fmtTime(occurrence.start)} - ${_fmtTime(occurrence.end)}';
@@ -192,39 +197,39 @@ String _formatOccurrenceTime(GeneralEventOccurrence occurrence) {
   return '${_fmtDate(occurrence.start)} ${_fmtTime(occurrence.start)} - ${_fmtDate(occurrence.end)} ${_fmtTime(occurrence.end)}';
 }
 
-String _repeatSummary(GeneralEventRecurrenceRule rule) {
+String _repeatSummary(GeneralEventRecurrenceRule rule, AppLocalizations l10n) {
   final base = switch (rule.type) {
-    GeneralEventRecurrence.daily => 'Repeats daily',
-    GeneralEventRecurrence.weekly => 'Repeats weekly',
-    GeneralEventRecurrence.monthly => 'Repeats monthly',
-    GeneralEventRecurrence.custom =>
-      'Repeats every ${rule.normalizedInterval} ${_unitLabel(rule.unit)}',
-    GeneralEventRecurrence.none => 'Does not repeat',
+    GeneralEventRecurrence.daily => l10n.repeatsDaily,
+    GeneralEventRecurrence.weekly => l10n.repeatsWeekly,
+    GeneralEventRecurrence.monthly => l10n.repeatsMonthly,
+    GeneralEventRecurrence.custom => l10n.repeatsEvery(
+      rule.normalizedInterval,
+      _unitLabel(rule.unit, l10n),
+    ),
+    GeneralEventRecurrence.none => l10n.recurrenceNone,
   };
   final suffix = [
-    if (rule.untilDateIso != null) 'until ${rule.untilDateIso}',
-    if (rule.count != null && rule.count! > 0) '${rule.count} times',
+    if (rule.untilDateIso != null) l10n.recurrenceUntil(rule.untilDateIso!),
+    if (rule.count != null && rule.count! > 0)
+      l10n.recurrenceCountTimes(rule.count!),
   ].join(', ');
   return suffix.isEmpty ? base : '$base, $suffix';
 }
 
-String _unitLabel(GeneralEventRecurrenceUnit unit) {
+String _unitLabel(GeneralEventRecurrenceUnit unit, AppLocalizations l10n) {
   return switch (unit) {
-    GeneralEventRecurrenceUnit.day => 'days',
-    GeneralEventRecurrenceUnit.week => 'weeks',
-    GeneralEventRecurrenceUnit.month => 'months',
+    GeneralEventRecurrenceUnit.day => l10n.recurrenceDays,
+    GeneralEventRecurrenceUnit.week => l10n.recurrenceWeeks,
+    GeneralEventRecurrenceUnit.month => l10n.recurrenceMonths,
   };
 }
 
-String _reminderLabel(int minutes) {
+String _reminderLabel(int minutes, AppLocalizations l10n) {
   return switch (minutes) {
-    0 => 'At start',
-    5 => '5 minutes before',
-    10 => '10 minutes before',
-    30 => '30 minutes before',
-    60 => '1 hour before',
-    1440 => '1 day before',
-    _ => '$minutes minutes before',
+    0 => l10n.reminderAtStart,
+    60 => l10n.reminderHourBefore,
+    1440 => l10n.reminderDayBefore,
+    _ => l10n.reminderMinutesBefore(minutes),
   };
 }
 

@@ -22,6 +22,85 @@ class _MemoryTimetableStorage implements TimetableStorage {
 }
 
 void main() {
+  test('filters occurrences by visible calendars by default', () async {
+    final visibleCalendar = GeneralSchedule(
+      id: 'visible',
+      name: 'Visible',
+      events: [
+        GeneralEvent(
+          id: 'evt_visible',
+          calendarId: 'visible',
+          title: 'Visible event',
+          startDateTimeIso: '2026-05-25T09:00:00.000',
+          endDateTimeIso: '2026-05-25T10:00:00.000',
+        ),
+      ],
+    );
+    final hiddenCalendar = GeneralSchedule(
+      id: 'hidden',
+      name: 'Hidden',
+      isVisible: false,
+      events: [
+        GeneralEvent(
+          id: 'evt_hidden',
+          calendarId: 'hidden',
+          title: 'Hidden event',
+          startDateTimeIso: '2026-05-25T11:00:00.000',
+          endDateTimeIso: '2026-05-25T12:00:00.000',
+        ),
+      ],
+    );
+    final provider = TimetableProvider(
+      storage: _MemoryTimetableStorage(
+        buildInitialAppData(buildDefaultPeriodTimes()).copyWith(
+          generalMode: GeneralScheduleData(
+            activeScheduleId: 'visible',
+            schedules: [visibleCalendar, hiddenCalendar],
+            selectedDateIso: '2026-05-25',
+          ),
+        ),
+      ),
+      systemLocaleCodeResolver: () => defaultLocaleCode,
+    );
+
+    await provider.load();
+    final visibleOnly = provider.generalOccurrencesForRange(
+      startInclusive: DateTime(2026, 5, 25),
+      endExclusive: DateTime(2026, 5, 26),
+    );
+    final allCalendars = provider.generalOccurrencesForRange(
+      startInclusive: DateTime(2026, 5, 25),
+      endExclusive: DateTime(2026, 5, 26),
+      onlyVisibleCalendars: false,
+    );
+
+    expect(visibleOnly.map((item) => item.event.id), ['evt_visible']);
+    expect(allCalendars.map((item) => item.event.id), [
+      'evt_visible',
+      'evt_hidden',
+    ]);
+  });
+
+  test('deleting the last calendar creates a default calendar', () async {
+    final provider = TimetableProvider(
+      storage: _MemoryTimetableStorage(
+        buildInitialAppData(buildDefaultPeriodTimes()),
+      ),
+      systemLocaleCodeResolver: () => defaultLocaleCode,
+    );
+
+    await provider.load();
+    final onlyCalendarId = provider.activeGeneralSchedule.id;
+    await provider.deleteGeneralSchedule(onlyCalendarId);
+
+    expect(provider.generalSchedules, hasLength(1));
+    expect(
+      provider.activeGeneralSchedule.id,
+      provider.generalSchedules.single.id,
+    );
+    expect(provider.activeGeneralSchedule.events, isEmpty);
+  });
+
   test('duplicates the selected occurrence as a one-time event', () async {
     final initial = buildInitialAppData(buildDefaultPeriodTimes());
     final provider = TimetableProvider(
@@ -43,6 +122,11 @@ void main() {
           unit: GeneralEventRecurrenceUnit.week,
           count: 4,
         ),
+        recurrenceExceptionDateIso: const ['2026-06-01'],
+        location: 'Room A',
+        notes: 'Bring notes',
+        colorValue: 0xFF123456,
+        reminders: const [GeneralEventReminder(minutesBefore: 10)],
       ),
     );
 
@@ -56,10 +140,16 @@ void main() {
     final duplicated = await provider.duplicateGeneralOccurrence(occurrence);
 
     expect(duplicated.id, isNot('repeat1'));
-    expect(duplicated.title, 'Standup copy');
+    expect(duplicated.title, 'Standup');
     expect(duplicated.startDateTimeIso, startsWith('2026-05-25T09:00:00'));
     expect(duplicated.endDateTimeIso, startsWith('2026-05-25T09:30:00'));
     expect(duplicated.recurrenceRule.isRepeating, false);
+    expect(duplicated.recurrenceExceptionDateIso, isEmpty);
+    expect(duplicated.location, 'Room A');
+    expect(duplicated.notes, 'Bring notes');
+    expect(duplicated.colorValue, 0xFF123456);
+    expect(duplicated.reminders.single.minutesBefore, 10);
+    expect(duplicated.calendarId, calendarId);
 
     final sameDay = provider.generalOccurrencesForRange(
       startInclusive: DateTime(2026, 5, 25),

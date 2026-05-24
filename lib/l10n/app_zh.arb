@@ -963,5 +963,210 @@
   "replaceActiveRequiresSingleScheduleMessage": "替换当前日程时只能选择一个日程。",
   "@replaceActiveRequiresSingleScheduleMessage": {},
   "noActiveScheduleToReplaceMessage": "当前没有可替换的日程。",
-  "@noActiveScheduleToReplaceMessage": {}
+  "@noActiveScheduleToReplaceMessage": {},
+  "calendars": "日历",
+  "@calendars": {},
+  "calendar": "日历",
+  "@calendar": {},
+  "viewWeek": "周",
+  "@viewWeek": {},
+  "viewDay": "日",
+  "@viewDay": {},
+  "viewList": "列表",
+  "@viewList": {},
+  "eventDuplicated": "已复制日程",
+  "@eventDuplicated": {},
+  "searchEvents": "搜索日程",
+  "@searchEvents": {},
+  "clearSearch": "清除搜索",
+  "@clearSearch": {},
+  "filterByColor": "按颜色筛选",
+  "@filterByColor": {},
+  "allColors": "全部颜色",
+  "@allColors": {},
+  "upcomingEventsCount": "即将开始 {count}",
+  "@upcomingEventsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "overdueEventsCount": "已过期 {count}",
+  "@overdueEventsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allDay": "全天",
+  "@allDay": {},
+  "moreEvents": "+{count} 个",
+  "@moreEvents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noMatchingEvents": "无匹配事件",
+  "@noMatchingEvents": {},
+  "noUpcomingEvents": "无即将开始事件",
+  "@noUpcomingEvents": {},
+  "addCalendar": "添加日历",
+  "@addCalendar": {},
+  "newCalendar": "新日历",
+  "@newCalendar": {},
+  "hideCalendar": "隐藏日历",
+  "@hideCalendar": {},
+  "showCalendar": "显示日历",
+  "@showCalendar": {},
+  "rename": "重命名",
+  "@rename": {},
+  "renameCalendar": "重命名日历",
+  "@renameCalendar": {},
+  "name": "名称",
+  "@name": {},
+  "deleteCalendar": "删除日历",
+  "@deleteCalendar": {},
+  "deleteCalendarMessage": "删除“{name}”？",
+  "@deleteCalendarMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "deleteThisOccurrence": "删除本次",
+  "@deleteThisOccurrence": {},
+  "deleteFutureOccurrences": "删除后续",
+  "@deleteFutureOccurrences": {},
+  "deleteAllOccurrences": "删除全部",
+  "@deleteAllOccurrences": {},
+  "duplicateEvent": "复制",
+  "@duplicateEvent": {},
+  "repeatsDaily": "每天重复",
+  "@repeatsDaily": {},
+  "repeatsMonthly": "每月重复",
+  "@repeatsMonthly": {},
+  "repeatsEvery": "每 {interval} {unit}重复",
+  "@repeatsEvery": {
+    "placeholders": {
+      "interval": {
+        "type": "int"
+      },
+      "unit": {}
+    }
+  },
+  "recurrenceCountTimes": "{count} 次",
+  "@recurrenceCountTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recurrenceDaily": "每天",
+  "@recurrenceDaily": {},
+  "recurrenceMonthly": "每月",
+  "@recurrenceMonthly": {},
+  "recurrenceCustom": "自定义",
+  "@recurrenceCustom": {},
+  "recurrenceEvery": "每",
+  "@recurrenceEvery": {},
+  "recurrenceUnit": "单位",
+  "@recurrenceUnit": {},
+  "recurrenceDays": "天",
+  "@recurrenceDays": {},
+  "recurrenceWeeks": "周",
+  "@recurrenceWeeks": {},
+  "recurrenceMonths": "月",
+  "@recurrenceMonths": {},
+  "recurrenceRepeatCount": "重复次数",
+  "@recurrenceRepeatCount": {},
+  "recurrenceNoLimit": "无限制",
+  "@recurrenceNoLimit": {},
+  "recurrencePositiveNumber": "请输入正数",
+  "@recurrencePositiveNumber": {},
+  "clearEndDate": "清除结束日期",
+  "@clearEndDate": {},
+  "pickDate": "选择日期",
+  "@pickDate": {},
+  "pickTime": "选择时间",
+  "@pickTime": {},
+  "reminder": "提醒",
+  "@reminder": {},
+  "reminderAtStart": "开始时",
+  "@reminderAtStart": {},
+  "reminderMinutesBefore": "提前 {minutes} 分钟",
+  "@reminderMinutesBefore": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderHourBefore": "提前 1 小时",
+  "@reminderHourBefore": {},
+  "reminderDayBefore": "提前 1 天",
+  "@reminderDayBefore": {},
+  "showWeekends": "显示周末",
+  "@showWeekends": {},
+  "startHour": "开始小时",
+  "@startHour": {},
+  "endHour": "结束小时",
+  "@endHour": {},
+  "timeGridDensity": "时间网格密度",
+  "@timeGridDensity": {},
+  "importJsonFile": "导入 JSON 文件",
+  "@importJsonFile": {},
+  "pasteJson": "粘贴 JSON",
+  "@pasteJson": {},
+  "importGeneralSchedulesJsonTextDesc": "从复制的 JSON 导入日历",
+  "@importGeneralSchedulesJsonTextDesc": {},
+  "importIcsFile": "导入 ICS 文件",
+  "@importIcsFile": {},
+  "importIcsFileDesc": "从 .ics 日历文件读取事件",
+  "@importIcsFileDesc": {},
+  "pasteIcs": "粘贴 ICS",
+  "@pasteIcs": {},
+  "pasteIcsDesc": "从复制的日历文本导入事件",
+  "@pasteIcsDesc": {},
+  "copyJson": "复制 JSON",
+  "@copyJson": {},
+  "copyJsonDesc": "将选中日历复制为 JSON 文本",
+  "@copyJsonDesc": {},
+  "shareIcs": "分享 ICS",
+  "@shareIcs": {},
+  "shareIcsDesc": "将选中日历分享为 .ics",
+  "@shareIcsDesc": {},
+  "saveIcs": "保存 ICS",
+  "@saveIcs": {},
+  "saveIcsDesc": "将选中日历保存为 .ics",
+  "@saveIcsDesc": {},
+  "copyIcs": "复制 ICS",
+  "@copyIcs": {},
+  "copyIcsDesc": "将选中日历复制为 ICS 文本",
+  "@copyIcsDesc": {},
+  "importIcs": "导入 ICS",
+  "@importIcs": {},
+  "icsContent": "ICS 内容",
+  "@icsContent": {},
+  "pasteIcsContentHint": "在这里粘贴 BEGIN:VCALENDAR 内容",
+  "@pasteIcsContentHint": {},
+  "importIcsPreviewPrompt": "发现 {count} 个事件。要作为新日历导入，还是替换当前日历？",
+  "@importIcsPreviewPrompt": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectCalendarsToCopyIcs": "选择要复制为 ICS 的日历",
+  "@selectCalendarsToCopyIcs": {},
+  "selectCalendarsToExportIcs": "选择要导出为 ICS 的日历",
+  "@selectCalendarsToExportIcs": {},
+  "exportIcsText": "导出 ICS 文本",
+  "@exportIcsText": {},
+  "exportJsonText": "导出 JSON 文本",
+  "@exportJsonText": {}
 }

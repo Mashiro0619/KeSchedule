@@ -963,5 +963,210 @@
   "replaceActiveRequiresSingleScheduleMessage": "Choose exactly one schedule to replace the current one.",
   "@replaceActiveRequiresSingleScheduleMessage": {},
   "noActiveScheduleToReplaceMessage": "No current schedule to replace.",
-  "@noActiveScheduleToReplaceMessage": {}
+  "@noActiveScheduleToReplaceMessage": {},
+  "calendars": "Calendars",
+  "@calendars": {},
+  "calendar": "Calendar",
+  "@calendar": {},
+  "viewWeek": "Week",
+  "@viewWeek": {},
+  "viewDay": "Day",
+  "@viewDay": {},
+  "viewList": "List",
+  "@viewList": {},
+  "eventDuplicated": "Event duplicated",
+  "@eventDuplicated": {},
+  "searchEvents": "Search events",
+  "@searchEvents": {},
+  "clearSearch": "Clear search",
+  "@clearSearch": {},
+  "filterByColor": "Filter by color",
+  "@filterByColor": {},
+  "allColors": "All colors",
+  "@allColors": {},
+  "upcomingEventsCount": "Upcoming {count}",
+  "@upcomingEventsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "overdueEventsCount": "Overdue {count}",
+  "@overdueEventsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allDay": "All-day",
+  "@allDay": {},
+  "moreEvents": "+{count} more",
+  "@moreEvents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noMatchingEvents": "No matching events",
+  "@noMatchingEvents": {},
+  "noUpcomingEvents": "No upcoming events",
+  "@noUpcomingEvents": {},
+  "addCalendar": "Add calendar",
+  "@addCalendar": {},
+  "newCalendar": "New calendar",
+  "@newCalendar": {},
+  "hideCalendar": "Hide calendar",
+  "@hideCalendar": {},
+  "showCalendar": "Show calendar",
+  "@showCalendar": {},
+  "rename": "Rename",
+  "@rename": {},
+  "renameCalendar": "Rename calendar",
+  "@renameCalendar": {},
+  "name": "Name",
+  "@name": {},
+  "deleteCalendar": "Delete calendar",
+  "@deleteCalendar": {},
+  "deleteCalendarMessage": "Delete \"{name}\"?",
+  "@deleteCalendarMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "deleteThisOccurrence": "Delete this",
+  "@deleteThisOccurrence": {},
+  "deleteFutureOccurrences": "Delete future",
+  "@deleteFutureOccurrences": {},
+  "deleteAllOccurrences": "Delete all",
+  "@deleteAllOccurrences": {},
+  "duplicateEvent": "Duplicate",
+  "@duplicateEvent": {},
+  "repeatsDaily": "Repeats daily",
+  "@repeatsDaily": {},
+  "repeatsMonthly": "Repeats monthly",
+  "@repeatsMonthly": {},
+  "repeatsEvery": "Repeats every {interval} {unit}",
+  "@repeatsEvery": {
+    "placeholders": {
+      "interval": {
+        "type": "int"
+      },
+      "unit": {}
+    }
+  },
+  "recurrenceCountTimes": "{count} times",
+  "@recurrenceCountTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recurrenceDaily": "Daily",
+  "@recurrenceDaily": {},
+  "recurrenceMonthly": "Monthly",
+  "@recurrenceMonthly": {},
+  "recurrenceCustom": "Custom",
+  "@recurrenceCustom": {},
+  "recurrenceEvery": "Every",
+  "@recurrenceEvery": {},
+  "recurrenceUnit": "Unit",
+  "@recurrenceUnit": {},
+  "recurrenceDays": "Days",
+  "@recurrenceDays": {},
+  "recurrenceWeeks": "Weeks",
+  "@recurrenceWeeks": {},
+  "recurrenceMonths": "Months",
+  "@recurrenceMonths": {},
+  "recurrenceRepeatCount": "Repeat count",
+  "@recurrenceRepeatCount": {},
+  "recurrenceNoLimit": "No limit",
+  "@recurrenceNoLimit": {},
+  "recurrencePositiveNumber": "Enter a positive number",
+  "@recurrencePositiveNumber": {},
+  "clearEndDate": "Clear end date",
+  "@clearEndDate": {},
+  "pickDate": "Pick date",
+  "@pickDate": {},
+  "pickTime": "Pick time",
+  "@pickTime": {},
+  "reminder": "Reminder",
+  "@reminder": {},
+  "reminderAtStart": "At start",
+  "@reminderAtStart": {},
+  "reminderMinutesBefore": "{minutes} min before",
+  "@reminderMinutesBefore": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderHourBefore": "1 hour before",
+  "@reminderHourBefore": {},
+  "reminderDayBefore": "1 day before",
+  "@reminderDayBefore": {},
+  "showWeekends": "Show weekends",
+  "@showWeekends": {},
+  "startHour": "Start hour",
+  "@startHour": {},
+  "endHour": "End hour",
+  "@endHour": {},
+  "timeGridDensity": "Time grid density",
+  "@timeGridDensity": {},
+  "importJsonFile": "Import JSON file",
+  "@importJsonFile": {},
+  "pasteJson": "Paste JSON",
+  "@pasteJson": {},
+  "importGeneralSchedulesJsonTextDesc": "Import calendars from copied JSON",
+  "@importGeneralSchedulesJsonTextDesc": {},
+  "importIcsFile": "Import ICS file",
+  "@importIcsFile": {},
+  "importIcsFileDesc": "Read events from an .ics calendar file",
+  "@importIcsFileDesc": {},
+  "pasteIcs": "Paste ICS",
+  "@pasteIcs": {},
+  "pasteIcsDesc": "Import events from copied calendar text",
+  "@pasteIcsDesc": {},
+  "copyJson": "Copy JSON",
+  "@copyJson": {},
+  "copyJsonDesc": "Copy selected calendars as JSON text",
+  "@copyJsonDesc": {},
+  "shareIcs": "Share ICS",
+  "@shareIcs": {},
+  "shareIcsDesc": "Share selected calendars as .ics",
+  "@shareIcsDesc": {},
+  "saveIcs": "Save ICS",
+  "@saveIcs": {},
+  "saveIcsDesc": "Save selected calendars as .ics",
+  "@saveIcsDesc": {},
+  "copyIcs": "Copy ICS",
+  "@copyIcs": {},
+  "copyIcsDesc": "Copy selected calendars as ICS text",
+  "@copyIcsDesc": {},
+  "importIcs": "Import ICS",
+  "@importIcs": {},
+  "icsContent": "ICS content",
+  "@icsContent": {},
+  "pasteIcsContentHint": "Paste BEGIN:VCALENDAR content here",
+  "@pasteIcsContentHint": {},
+  "importIcsPreviewPrompt": "Found {count} events. Import as a new calendar or replace the active calendar?",
+  "@importIcsPreviewPrompt": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectCalendarsToCopyIcs": "Select calendars to copy as ICS",
+  "@selectCalendarsToCopyIcs": {},
+  "selectCalendarsToExportIcs": "Select calendars to export as ICS",
+  "@selectCalendarsToExportIcs": {},
+  "exportIcsText": "Export ICS text",
+  "@exportIcsText": {},
+  "exportJsonText": "Export JSON text",
+  "@exportJsonText": {}
 }

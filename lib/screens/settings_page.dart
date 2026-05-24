@@ -1152,100 +1152,101 @@ class _SettingsPageState extends State<SettingsPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
+        final maxHeight = MediaQuery.of(sheetContext).size.height * 0.85;
         return _buildAdaptiveBottomSheet(
           sheetContext,
           maxWidth: 680,
           child: SafeArea(
             top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.file_download_outlined),
-                  title: const Text('Import JSON file'),
-                  subtitle: Text(l10n.importGeneralSchedulesDesc),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_GeneralDataAction.importSchedulesJsonFile),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.paste_outlined),
-                  title: const Text('Paste JSON'),
-                  subtitle: const Text('Import calendars from copied JSON'),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_GeneralDataAction.importSchedulesJsonText),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.calendar_month_outlined),
-                  title: const Text('Import ICS file'),
-                  subtitle: const Text(
-                    'Read events from an .ics calendar file',
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(bottom: 12),
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.file_download_outlined),
+                    title: Text(l10n.importJsonFile),
+                    subtitle: Text(l10n.importGeneralSchedulesDesc),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_GeneralDataAction.importSchedulesJsonFile),
                   ),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_GeneralDataAction.importSchedulesIcsFile),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.event_note_outlined),
-                  title: const Text('Paste ICS'),
-                  subtitle: const Text(
-                    'Import events from copied calendar text',
+                  ListTile(
+                    leading: const Icon(Icons.paste_outlined),
+                    title: Text(l10n.pasteJson),
+                    subtitle: Text(l10n.importGeneralSchedulesJsonTextDesc),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_GeneralDataAction.importSchedulesJsonText),
                   ),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_GeneralDataAction.importSchedulesIcsText),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.share_outlined),
-                  title: Text('${l10n.shareGeneralSchedules} JSON'),
-                  subtitle: Text(l10n.shareGeneralSchedulesDesc),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_GeneralDataAction.exportSchedulesJsonShare),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.save_alt_outlined),
-                  title: Text('${l10n.saveGeneralSchedules} JSON'),
-                  subtitle: Text(l10n.saveGeneralSchedulesDesc),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_GeneralDataAction.exportSchedulesJsonSave),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.text_snippet_outlined),
-                  title: const Text('Copy JSON'),
-                  subtitle: const Text('Copy selected calendars as JSON text'),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_GeneralDataAction.exportSchedulesJsonText),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.ios_share_outlined),
-                  title: const Text('Share ICS'),
-                  subtitle: const Text('Share selected calendars as .ics'),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_GeneralDataAction.exportSchedulesIcsShare),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.event_available_outlined),
-                  title: const Text('Save ICS'),
-                  subtitle: const Text('Save selected calendars as .ics'),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_GeneralDataAction.exportSchedulesIcsSave),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.event_note_outlined),
-                  title: const Text('Copy ICS'),
-                  subtitle: const Text('Copy selected calendars as ICS text'),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_GeneralDataAction.exportSchedulesIcsText),
-                ),
-              ],
+                  ListTile(
+                    leading: const Icon(Icons.calendar_month_outlined),
+                    title: Text(l10n.importIcsFile),
+                    subtitle: Text(l10n.importIcsFileDesc),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_GeneralDataAction.importSchedulesIcsFile),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.event_note_outlined),
+                    title: Text(l10n.pasteIcs),
+                    subtitle: Text(l10n.pasteIcsDesc),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_GeneralDataAction.importSchedulesIcsText),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.share_outlined),
+                    title: Text('${l10n.shareGeneralSchedules} JSON'),
+                    subtitle: Text(l10n.shareGeneralSchedulesDesc),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_GeneralDataAction.exportSchedulesJsonShare),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.save_alt_outlined),
+                    title: Text('${l10n.saveGeneralSchedules} JSON'),
+                    subtitle: Text(l10n.saveGeneralSchedulesDesc),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_GeneralDataAction.exportSchedulesJsonSave),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.text_snippet_outlined),
+                    title: Text(l10n.copyJson),
+                    subtitle: Text(l10n.copyJsonDesc),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_GeneralDataAction.exportSchedulesJsonText),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.ios_share_outlined),
+                    title: Text(l10n.shareIcs),
+                    subtitle: Text(l10n.shareIcsDesc),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_GeneralDataAction.exportSchedulesIcsShare),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.event_available_outlined),
+                    title: Text(l10n.saveIcs),
+                    subtitle: Text(l10n.saveIcsDesc),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_GeneralDataAction.exportSchedulesIcsSave),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.event_note_outlined),
+                    title: Text(l10n.copyIcs),
+                    subtitle: Text(l10n.copyIcsDesc),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_GeneralDataAction.exportSchedulesIcsText),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -1496,12 +1497,13 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _importGeneralSchedulesIcsText(
     TimetableProvider provider,
   ) async {
+    final l10n = AppLocalizations.of(context);
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TextImportPage(
-          title: 'Import ICS',
-          labelText: 'ICS content',
-          hintText: 'Paste BEGIN:VCALENDAR content here',
+          title: l10n.importIcs,
+          labelText: l10n.icsContent,
+          hintText: l10n.pasteIcsContentHint,
           onSubmit: (context, content) async {
             return _importGeneralSchedulesIcsSource(provider, content, context);
           },
@@ -1527,9 +1529,11 @@ class _SettingsPageState extends State<SettingsPage> {
           context: feedbackContext,
           builder: (ctx) {
             return AlertDialog(
-              title: const Text('Import ICS'),
+              title: Text(l10n.importIcs),
               content: Text(
-                'Found ${preview.schedules.first.events.length} events. Import as a new calendar or replace the active calendar?',
+                l10n.importIcsPreviewPrompt(
+                  preview.schedules.first.events.length,
+                ),
               ),
               actions: [
                 TextButton(
@@ -1636,7 +1640,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final selectedIds = await _pickGeneralScheduleIds(
       schedules: provider.generalSchedules,
       title: format == _ExportFormat.ics
-          ? 'Select calendars to copy as ICS'
+          ? l10n.selectCalendarsToCopyIcs
           : l10n.selectSchedulesToExport,
       confirmText: l10n.copyText,
       initialSelectedIds: activeId == null ? const [] : [activeId],
@@ -1649,8 +1653,8 @@ class _SettingsPageState extends State<SettingsPage> {
       await showTextExportDialog(
         context,
         title: format == _ExportFormat.ics
-            ? 'Export ICS text'
-            : 'Export JSON text',
+            ? l10n.exportIcsText
+            : l10n.exportJsonText,
         content: content,
       );
     } on FormatException catch (e) {
@@ -1668,7 +1672,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final activeId = provider.activeGeneralScheduleOrNull?.id;
     final selectedIds = await _pickGeneralScheduleIds(
       schedules: provider.generalSchedules,
-      title: 'Select calendars to export as ICS',
+      title: l10n.selectCalendarsToExportIcs,
       confirmText: share ? l10n.share : l10n.save,
       initialSelectedIds: activeId == null ? const [] : [activeId],
     );
