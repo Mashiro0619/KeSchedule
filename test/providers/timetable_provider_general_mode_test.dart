@@ -3,6 +3,7 @@ import 'package:sked/data/timetable_storage.dart';
 import 'package:sked/l10n/app_locale.dart';
 import 'package:sked/models/timetable_models.dart';
 import 'package:sked/providers/timetable_provider.dart';
+import 'package:sked/services/general_calendar_ics_service.dart';
 
 class _MemoryTimetableStorage implements TimetableStorage {
   _MemoryTimetableStorage(this.data);
@@ -158,6 +159,223 @@ void main() {
     expect(sameDay.map((item) => item.event.id), contains(duplicated.id));
     expect(sameDay.map((item) => item.event.id), contains('repeat1'));
   });
+
+  test('dismisses and restores general reminder occurrences', () async {
+    final initial = buildInitialAppData(buildDefaultPeriodTimes());
+    final provider = TimetableProvider(
+      storage: _MemoryTimetableStorage(initial),
+      systemLocaleCodeResolver: () => defaultLocaleCode,
+    );
+
+    await provider.load();
+    final calendarId = provider.activeGeneralSchedule.id;
+    await provider.saveGeneralEvent(
+      GeneralEvent(
+        id: 'reminder1',
+        calendarId: calendarId,
+        title: 'Reminder event',
+        startDateTimeIso: '2026-05-25T10:00:00.000',
+        endDateTimeIso: '2026-05-25T11:00:00.000',
+        reminders: const [GeneralEventReminder(minutesBefore: 10)],
+      ),
+    );
+
+    final now = DateTime(2026, 5, 25, 9, 55);
+    final initialItems = provider.generalReminderItems(now: now);
+
+    expect(initialItems, hasLength(1));
+    expect(initialItems.single.status, GeneralReminderStatus.upcoming);
+
+    await provider.dismissGeneralReminder(initialItems.single.occurrence);
+
+    expect(
+      provider.isGeneralReminderHandled(initialItems.single.occurrence),
+      true,
+    );
+    expect(provider.generalReminderItems(now: now), isEmpty);
+
+    await provider.restoreGeneralReminder(initialItems.single.occurrence);
+
+    expect(
+      provider.isGeneralReminderHandled(initialItems.single.occurrence),
+      false,
+    );
+    expect(provider.generalReminderItems(now: now), hasLength(1));
+  });
+
+  test(
+    'general reminder items include recent overdue unhandled events',
+    () async {
+      final initial = buildInitialAppData(buildDefaultPeriodTimes());
+      final provider = TimetableProvider(
+        storage: _MemoryTimetableStorage(initial),
+        systemLocaleCodeResolver: () => defaultLocaleCode,
+      );
+
+      await provider.load();
+      final calendarId = provider.activeGeneralSchedule.id;
+      await provider.saveGeneralEvent(
+        GeneralEvent(
+          id: 'overdue1',
+          calendarId: calendarId,
+          title: 'Overdue event',
+          startDateTimeIso: '2026-05-25T08:00:00.000',
+          endDateTimeIso: '2026-05-25T09:00:00.000',
+        ),
+      );
+
+      final now = DateTime(2026, 5, 25, 10);
+      final items = provider.generalReminderItems(now: now);
+
+      expect(items, hasLength(1));
+      expect(items.single.status, GeneralReminderStatus.overdue);
+    },
+  );
+
+  test(
+    'general JSON import returns structured result for selected calendars',
+    () async {
+      final provider = TimetableProvider(
+        storage: _MemoryTimetableStorage(
+          buildInitialAppData(buildDefaultPeriodTimes()),
+        ),
+        systemLocaleCodeResolver: () => defaultLocaleCode,
+      );
+      final source = encodeGeneralScheduleDataEnvelope(
+        GeneralScheduleExportData(
+          schedules: [
+            GeneralSchedule(id: 'import_a', name: 'Import A', events: const []),
+            GeneralSchedule(id: 'import_b', name: 'Import B', events: const []),
+          ],
+        ),
+      );
+
+      await provider.load();
+      final result = await provider.importSelectedGeneralSchedulesJson(
+        source,
+        scheduleIds: const ['import_a', 'import_b'],
+        mode: GeneralScheduleImportMode.addAsNew,
+      );
+
+      expect(result.importedCount, 2);
+      expect(result.scheduleNames, ['Import A', 'Import B']);
+      expect(result.hasWarnings, false);
+      expect(
+        provider.generalSchedules.map((item) => item.name),
+        contains('Import A'),
+      );
+      expect(
+        provider.generalSchedules.map((item) => item.name),
+        contains('Import B'),
+      );
+    },
+  );
+
+  test('general JSON import can replace the active calendar', () async {
+    final provider = TimetableProvider(
+      storage: _MemoryTimetableStorage(
+        buildInitialAppData(buildDefaultPeriodTimes()),
+      ),
+      systemLocaleCodeResolver: () => defaultLocaleCode,
+    );
+    final source = encodeGeneralScheduleDataEnvelope(
+      GeneralScheduleExportData(
+        schedules: [
+          GeneralSchedule(
+            id: 'replacement',
+            name: 'Replacement',
+            events: [
+              GeneralEvent(
+                id: 'replacement_event',
+                calendarId: 'replacement',
+                title: 'Replacement Event',
+                startDateTimeIso: '2026-05-25T09:00:00.000',
+                endDateTimeIso: '2026-05-25T10:00:00.000',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await provider.load();
+    final activeId = provider.activeGeneralSchedule.id;
+    final result = await provider.importSelectedGeneralSchedulesJson(
+      source,
+      scheduleIds: const ['replacement'],
+      mode: GeneralScheduleImportMode.replaceActive,
+    );
+
+    expect(result.importedCount, 1);
+    expect(provider.activeGeneralSchedule.id, activeId);
+    expect(provider.activeGeneralSchedule.name, 'Replacement');
+    expect(
+      provider.activeGeneralSchedule.events.single.title,
+      'Replacement Event',
+    );
+  });
+
+  test(
+    'malformed general JSON import fails before mutating calendars',
+    () async {
+      final provider = TimetableProvider(
+        storage: _MemoryTimetableStorage(
+          buildInitialAppData(buildDefaultPeriodTimes()),
+        ),
+        systemLocaleCodeResolver: () => defaultLocaleCode,
+      );
+
+      await provider.load();
+      final before = provider.generalSchedules.length;
+
+      await expectLater(
+        provider.importSelectedGeneralSchedulesJson(
+          '{not-json',
+          scheduleIds: const ['missing'],
+          mode: GeneralScheduleImportMode.addAsNew,
+        ),
+        throwsFormatException,
+      );
+      expect(provider.generalSchedules, hasLength(before));
+    },
+  );
+
+  test(
+    'general ICS import returns structured localized-warning data',
+    () async {
+      final provider = TimetableProvider(
+        storage: _MemoryTimetableStorage(
+          buildInitialAppData(buildDefaultPeriodTimes()),
+        ),
+        systemLocaleCodeResolver: () => defaultLocaleCode,
+      );
+      const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:test-warning
+DTSTART:20260525T090000
+DTEND:20260525T100000
+SUMMARY:Imported
+X-SKED-UNKNOWN:kept
+END:VEVENT
+END:VCALENDAR
+''';
+
+      await provider.load();
+      final result = await provider.importGeneralSchedulesIcs(
+        source,
+        mode: GeneralScheduleImportMode.addAsNew,
+      );
+
+      expect(result.importedCount, 1);
+      expect(result.hasWarnings, true);
+      expect(
+        result.icsWarnings.single.code,
+        GeneralCalendarIcsWarningCode.unsupportedFields,
+      );
+    },
+  );
 
   test(
     'general popup dismiss setting does not mutate student setting',

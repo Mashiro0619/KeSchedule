@@ -2883,6 +2883,42 @@ abstract class AppLocalizations {
   /// **'1 day before'**
   String get reminderDayBefore;
 
+  /// No description provided for @markReminderHandled.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark handled'**
+  String get markReminderHandled;
+
+  /// No description provided for @restoreReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore reminder'**
+  String get restoreReminder;
+
+  /// No description provided for @reminderHandled.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder marked handled'**
+  String get reminderHandled;
+
+  /// No description provided for @reminderRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder restored'**
+  String get reminderRestored;
+
+  /// No description provided for @reminderUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get reminderUpcoming;
+
+  /// No description provided for @reminderOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get reminderOverdue;
+
   /// No description provided for @showWeekends.
   ///
   /// In en, this message translates to:
@@ -3020,6 +3056,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Found {count} events. Import as a new calendar or replace the active calendar?'**
   String importIcsPreviewPrompt(int count);
+
+  /// No description provided for @importedSchedulesWithWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} schedules with {warningCount} warnings'**
+  String importedSchedulesWithWarnings(int count, int warningCount);
+
+  /// No description provided for @importWarningSkippedMissingStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped an event without a start time.'**
+  String get importWarningSkippedMissingStart;
+
+  /// No description provided for @importWarningSkippedUnsupportedStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped an event with an unsupported start time.'**
+  String get importWarningSkippedUnsupportedStart;
+
+  /// No description provided for @importWarningAdjustedEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjusted an event whose end time was not after its start.'**
+  String get importWarningAdjustedEnd;
+
+  /// No description provided for @importWarningUnsupportedFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported ICS fields were added to notes: {fields}'**
+  String importWarningUnsupportedFields(Object fields);
+
+  /// No description provided for @importWarningUnsupportedRRuleFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignored unsupported repeat frequency: {frequency}'**
+  String importWarningUnsupportedRRuleFrequency(Object frequency);
 
   /// No description provided for @selectCalendarsToCopyIcs.
   ///

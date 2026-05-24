@@ -9,6 +9,9 @@ class GeneralEventDetailsSheet extends StatelessWidget {
     required this.occurrence,
     this.onEdit,
     this.onDuplicate,
+    this.isReminderHandled = false,
+    this.onDismissReminder,
+    this.onRestoreReminder,
     this.onDeleteThis,
     this.onDeleteFuture,
     this.onDeleteAll,
@@ -17,6 +20,9 @@ class GeneralEventDetailsSheet extends StatelessWidget {
   final GeneralEventOccurrence occurrence;
   final VoidCallback? onEdit;
   final VoidCallback? onDuplicate;
+  final bool isReminderHandled;
+  final VoidCallback? onDismissReminder;
+  final VoidCallback? onRestoreReminder;
   final VoidCallback? onDeleteThis;
   final VoidCallback? onDeleteFuture;
   final VoidCallback? onDeleteAll;
@@ -54,10 +60,17 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(event.title, style: theme.textTheme.titleLarge),
+                      Text(
+                        event.title,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleLarge,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         occurrence.calendar.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: theme.colorScheme.primary,
                         ),
@@ -143,6 +156,18 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                     onPressed: onDuplicate,
                     icon: const Icon(Icons.content_copy_outlined),
                     label: Text(l10n.duplicateEvent),
+                  ),
+                if (!isReminderHandled && onDismissReminder != null)
+                  OutlinedButton.icon(
+                    onPressed: onDismissReminder,
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(l10n.markReminderHandled),
+                  ),
+                if (isReminderHandled && onRestoreReminder != null)
+                  OutlinedButton.icon(
+                    onPressed: onRestoreReminder,
+                    icon: const Icon(Icons.restore_outlined),
+                    label: Text(l10n.restoreReminder),
                   ),
               ],
             ),

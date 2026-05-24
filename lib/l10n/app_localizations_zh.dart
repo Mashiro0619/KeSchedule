@@ -1469,6 +1469,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reminderDayBefore => '提前 1 天';
 
   @override
+  String get markReminderHandled => '标记已处理';
+
+  @override
+  String get restoreReminder => '恢复提醒';
+
+  @override
+  String get reminderHandled => '提醒已标记处理';
+
+  @override
+  String get reminderRestored => '提醒已恢复';
+
+  @override
+  String get reminderUpcoming => '即将开始';
+
+  @override
+  String get reminderOverdue => '已过期';
+
+  @override
   String get showWeekends => '显示周末';
 
   @override
@@ -1537,6 +1555,30 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String importIcsPreviewPrompt(int count) {
     return '发现 $count 个事件。要作为新日历导入，还是替换当前日历？';
+  }
+
+  @override
+  String importedSchedulesWithWarnings(int count, int warningCount) {
+    return '已导入 $count 个日程，包含 $warningCount 条提示';
+  }
+
+  @override
+  String get importWarningSkippedMissingStart => '已跳过缺少开始时间的事件。';
+
+  @override
+  String get importWarningSkippedUnsupportedStart => '已跳过开始时间格式不支持的事件。';
+
+  @override
+  String get importWarningAdjustedEnd => '已修正结束时间不晚于开始时间的事件。';
+
+  @override
+  String importWarningUnsupportedFields(Object fields) {
+    return '不支持的 ICS 字段已写入备注：$fields';
+  }
+
+  @override
+  String importWarningUnsupportedRRuleFrequency(Object frequency) {
+    return '已忽略不支持的重复频率：$frequency';
   }
 
   @override
@@ -3017,6 +3059,24 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get reminderDayBefore => '提前 1 天';
 
   @override
+  String get markReminderHandled => '標記已處理';
+
+  @override
+  String get restoreReminder => '恢復提醒';
+
+  @override
+  String get reminderHandled => '提醒已標記處理';
+
+  @override
+  String get reminderRestored => '提醒已恢復';
+
+  @override
+  String get reminderUpcoming => '即將開始';
+
+  @override
+  String get reminderOverdue => '已逾期';
+
+  @override
   String get showWeekends => '顯示週末';
 
   @override
@@ -3085,6 +3145,30 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String importIcsPreviewPrompt(int count) {
     return '發現 $count 個事件。要作為新日曆匯入，還是取代目前日曆？';
+  }
+
+  @override
+  String importedSchedulesWithWarnings(int count, int warningCount) {
+    return '已匯入 $count 個日程，包含 $warningCount 條提示';
+  }
+
+  @override
+  String get importWarningSkippedMissingStart => '已跳過缺少開始時間的事件。';
+
+  @override
+  String get importWarningSkippedUnsupportedStart => '已跳過開始時間格式不支援的事件。';
+
+  @override
+  String get importWarningAdjustedEnd => '已修正結束時間不晚於開始時間的事件。';
+
+  @override
+  String importWarningUnsupportedFields(Object fields) {
+    return '不支援的 ICS 欄位已寫入備註：$fields';
+  }
+
+  @override
+  String importWarningUnsupportedRRuleFrequency(Object frequency) {
+    return '已忽略不支援的重複頻率：$frequency';
   }
 
   @override

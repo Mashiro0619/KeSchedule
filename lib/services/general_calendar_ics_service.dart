@@ -1,13 +1,49 @@
 import '../models/timetable_models.dart';
 
+enum GeneralCalendarIcsWarningCode {
+  missingDtStart,
+  unsupportedDtStart,
+  adjustedEnd,
+  unsupportedFields,
+  unsupportedRRuleFrequency,
+}
+
+class GeneralCalendarIcsImportWarning {
+  const GeneralCalendarIcsImportWarning({
+    required this.code,
+    this.values = const [],
+  });
+
+  final GeneralCalendarIcsWarningCode code;
+  final List<String> values;
+
+  String get fallbackMessage {
+    return switch (code) {
+      GeneralCalendarIcsWarningCode.missingDtStart =>
+        'Skipped an event without DTSTART.',
+      GeneralCalendarIcsWarningCode.unsupportedDtStart =>
+        'Skipped an event with unsupported DTSTART.',
+      GeneralCalendarIcsWarningCode.adjustedEnd =>
+        'Adjusted an event whose end time was not after start.',
+      GeneralCalendarIcsWarningCode.unsupportedFields =>
+        'Ignored unsupported fields: ${values.join(', ')}.',
+      GeneralCalendarIcsWarningCode.unsupportedRRuleFrequency =>
+        'Unsupported RRULE frequency "${values.isEmpty ? '' : values.first}" was ignored.',
+    };
+  }
+}
+
 class GeneralCalendarIcsImportResult {
   const GeneralCalendarIcsImportResult({
     required this.schedules,
-    this.warnings = const [],
+    this.warningItems = const [],
   });
 
   final List<GeneralSchedule> schedules;
-  final List<String> warnings;
+  final List<GeneralCalendarIcsImportWarning> warningItems;
+
+  List<String> get warnings =>
+      warningItems.map((item) => item.fallbackMessage).toList();
 }
 
 class GeneralCalendarIcsService {
@@ -68,7 +104,7 @@ class GeneralCalendarIcsService {
           : 'Imported calendar',
       colorValue: colorValue,
     );
-    final warnings = <String>[];
+    final warnings = <GeneralCalendarIcsImportWarning>[];
     final events = <GeneralEvent>[];
     for (final block in blocks) {
       final event = _importEvent(block, schedule.id, warnings);
@@ -82,7 +118,7 @@ class GeneralCalendarIcsService {
     events.sort((a, b) => a.startDateTimeIso.compareTo(b.startDateTimeIso));
     return GeneralCalendarIcsImportResult(
       schedules: [schedule.copyWith(events: events)],
-      warnings: warnings,
+      warningItems: warnings,
     );
   }
 
@@ -130,7 +166,7 @@ class GeneralCalendarIcsService {
   GeneralEvent? _importEvent(
     List<String> lines,
     String calendarId,
-    List<String> warnings,
+    List<GeneralCalendarIcsImportWarning> warnings,
   ) {
     final fields = <String, _IcsField>{};
     for (final line in lines) {
@@ -145,12 +181,20 @@ class GeneralCalendarIcsService {
     }
     final startField = fields['DTSTART'];
     if (startField == null) {
-      warnings.add('Skipped an event without DTSTART.');
+      warnings.add(
+        const GeneralCalendarIcsImportWarning(
+          code: GeneralCalendarIcsWarningCode.missingDtStart,
+        ),
+      );
       return null;
     }
     final start = _parseIcsDateTime(startField);
     if (start == null) {
-      warnings.add('Skipped an event with unsupported DTSTART.');
+      warnings.add(
+        const GeneralCalendarIcsImportWarning(
+          code: GeneralCalendarIcsWarningCode.unsupportedDtStart,
+        ),
+      );
       return null;
     }
     final isAllDay = startField.params['VALUE'] == 'DATE';
@@ -163,7 +207,11 @@ class GeneralCalendarIcsService {
       end = isAllDay
           ? normalizeDateOnly(start).add(const Duration(days: 1))
           : start.add(const Duration(hours: 1));
-      warnings.add('Adjusted an event whose end time was not after start.');
+      warnings.add(
+        const GeneralCalendarIcsImportWarning(
+          code: GeneralCalendarIcsWarningCode.adjustedEnd,
+        ),
+      );
     }
 
     final uid = fields['UID']?.value.trim();
@@ -177,7 +225,12 @@ class GeneralCalendarIcsService {
         'Unsupported ICS fields ignored: ${unsupported.join(', ')}',
     ].join('\n\n');
     if (unsupported.isNotEmpty) {
-      warnings.add('Ignored unsupported fields: ${unsupported.join(', ')}.');
+      warnings.add(
+        GeneralCalendarIcsImportWarning(
+          code: GeneralCalendarIcsWarningCode.unsupportedFields,
+          values: unsupported,
+        ),
+      );
     }
 
     return GeneralEvent(
@@ -380,7 +433,10 @@ String? _exportRRule(GeneralEventRecurrenceRule rule) {
   return parts.join(';');
 }
 
-GeneralEventRecurrenceRule _parseRRule(String? value, List<String> warnings) {
+GeneralEventRecurrenceRule _parseRRule(
+  String? value,
+  List<GeneralCalendarIcsImportWarning> warnings,
+) {
   if (value == null || value.trim().isEmpty) {
     return const GeneralEventRecurrenceRule();
   }
@@ -403,7 +459,12 @@ GeneralEventRecurrenceRule _parseRRule(String? value, List<String> warnings) {
     _ => null,
   };
   if (unit == null) {
-    warnings.add('Unsupported RRULE frequency "$freq" was ignored.');
+    warnings.add(
+      GeneralCalendarIcsImportWarning(
+        code: GeneralCalendarIcsWarningCode.unsupportedRRuleFrequency,
+        values: [freq ?? ''],
+      ),
+    );
     return const GeneralEventRecurrenceRule();
   }
   final type = interval <= 1

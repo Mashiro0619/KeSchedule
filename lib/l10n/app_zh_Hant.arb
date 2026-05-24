@@ -995,6 +995,18 @@
   "@reminderHourBefore": {},
   "reminderDayBefore": "提前 1 天",
   "@reminderDayBefore": {},
+  "markReminderHandled": "標記已處理",
+  "@markReminderHandled": {},
+  "restoreReminder": "恢復提醒",
+  "@restoreReminder": {},
+  "reminderHandled": "提醒已標記處理",
+  "@reminderHandled": {},
+  "reminderRestored": "提醒已恢復",
+  "@reminderRestored": {},
+  "reminderUpcoming": "即將開始",
+  "@reminderUpcoming": {},
+  "reminderOverdue": "已逾期",
+  "@reminderOverdue": {},
   "showWeekends": "顯示週末",
   "@showWeekends": {},
   "startHour": "開始小時",
@@ -1045,6 +1057,35 @@
       "count": {
         "type": "int"
       }
+    }
+  },
+  "importedSchedulesWithWarnings": "已匯入 {count} 個日程，包含 {warningCount} 條提示",
+  "@importedSchedulesWithWarnings": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "warningCount": {
+        "type": "int"
+      }
+    }
+  },
+  "importWarningSkippedMissingStart": "已跳過缺少開始時間的事件。",
+  "@importWarningSkippedMissingStart": {},
+  "importWarningSkippedUnsupportedStart": "已跳過開始時間格式不支援的事件。",
+  "@importWarningSkippedUnsupportedStart": {},
+  "importWarningAdjustedEnd": "已修正結束時間不晚於開始時間的事件。",
+  "@importWarningAdjustedEnd": {},
+  "importWarningUnsupportedFields": "不支援的 ICS 欄位已寫入備註：{fields}",
+  "@importWarningUnsupportedFields": {
+    "placeholders": {
+      "fields": {}
+    }
+  },
+  "importWarningUnsupportedRRuleFrequency": "已忽略不支援的重複頻率：{frequency}",
+  "@importWarningUnsupportedRRuleFrequency": {
+    "placeholders": {
+      "frequency": {}
     }
   },
   "selectCalendarsToCopyIcs": "選擇要複製為 ICS 的日曆",

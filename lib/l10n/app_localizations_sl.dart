@@ -1541,6 +1541,24 @@ class AppLocalizationsSl extends AppLocalizations {
   String get reminderDayBefore => '1 day before';
 
   @override
+  String get markReminderHandled => 'Mark handled';
+
+  @override
+  String get restoreReminder => 'Restore reminder';
+
+  @override
+  String get reminderHandled => 'Reminder marked handled';
+
+  @override
+  String get reminderRestored => 'Reminder restored';
+
+  @override
+  String get reminderUpcoming => 'Upcoming';
+
+  @override
+  String get reminderOverdue => 'Overdue';
+
+  @override
   String get showWeekends => 'Show weekends';
 
   @override
@@ -1610,6 +1628,33 @@ class AppLocalizationsSl extends AppLocalizations {
   @override
   String importIcsPreviewPrompt(int count) {
     return 'Found $count events. Import as a new calendar or replace the active calendar?';
+  }
+
+  @override
+  String importedSchedulesWithWarnings(int count, int warningCount) {
+    return 'Imported $count schedules with $warningCount warnings';
+  }
+
+  @override
+  String get importWarningSkippedMissingStart =>
+      'Skipped an event without a start time.';
+
+  @override
+  String get importWarningSkippedUnsupportedStart =>
+      'Skipped an event with an unsupported start time.';
+
+  @override
+  String get importWarningAdjustedEnd =>
+      'Adjusted an event whose end time was not after its start.';
+
+  @override
+  String importWarningUnsupportedFields(Object fields) {
+    return 'Unsupported ICS fields were added to notes: $fields';
+  }
+
+  @override
+  String importWarningUnsupportedRRuleFrequency(Object frequency) {
+    return 'Ignored unsupported repeat frequency: $frequency';
   }
 
   @override

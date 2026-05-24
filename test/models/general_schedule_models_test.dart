@@ -248,6 +248,48 @@ void main() {
       expect(decoded.closeEventPopupOnOutsideTap, false);
     });
 
+    test('reminder acknowledgements round-trip with schema version 3', () {
+      final data = GeneralScheduleData(
+        activeScheduleId: 'sched1',
+        schedules: [
+          GeneralSchedule(id: 'sched1', name: 'My Schedule', events: const []),
+        ],
+        reminderAcknowledgements: const [
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'sched1|event1|2026-05-25T09:00:00.000',
+            updatedAtIso: '2026-05-25T08:55:00.000',
+          ),
+        ],
+      );
+
+      final json = data.toJson();
+      final decoded = GeneralScheduleData.fromJson(json);
+
+      expect(json['schemaVersion'], generalScheduleSchemaVersion);
+      expect(decoded.reminderAcknowledgements, hasLength(1));
+      expect(
+        decoded.reminderAcknowledgements.single.occurrenceKey,
+        'sched1|event1|2026-05-25T09:00:00.000',
+      );
+      expect(decoded.reminderAcknowledgements.single.isHandled, true);
+    });
+
+    test(
+      'schema version 2 data defaults to empty reminder acknowledgements',
+      () {
+        final decoded = GeneralScheduleData.fromJson({
+          'schemaVersion': 2,
+          'activeScheduleId': 'sched1',
+          'schedules': [
+            {'id': 'sched1', 'name': 'My Schedule', 'events': <Object>[]},
+          ],
+        });
+
+        expect(decoded.schedules.single.id, 'sched1');
+        expect(decoded.reminderAcknowledgements, isEmpty);
+      },
+    );
+
     test('missing activeScheduleId defaults to first schedule', () {
       final data = GeneralScheduleData(
         activeScheduleId: '',

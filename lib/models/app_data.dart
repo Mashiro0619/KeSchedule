@@ -67,8 +67,8 @@ class AppData {
     );
 
     // Detect legacy format: old flat keys exist and studentMode key is absent
-    final isLegacy = json.containsKey('timetables') &&
-        !json.containsKey('studentMode');
+    final isLegacy =
+        json.containsKey('timetables') && !json.containsKey('studentMode');
 
     final StudentModeData studentMode;
     final GeneralScheduleData generalMode;
@@ -109,10 +109,8 @@ class AppData {
       ),
       themeSeedColorValue:
           (json['themeSeedColorValue'] as num?)?.toInt() ??
-              defaultThemeSeedColorValue,
-      colorfulUiColorValues: decodeColorValueMap(
-        json['colorfulUiColorValues'],
-      ),
+          defaultThemeSeedColorValue,
+      colorfulUiColorValues: decodeColorValueMap(json['colorfulUiColorValues']),
       privacyPolicyAcceptedVersion:
           json['privacyPolicyAcceptedVersion'] as String?,
       privacyPolicyAcceptedAtIso: json['privacyPolicyAcceptedAtIso'] as String?,
@@ -149,19 +147,18 @@ class AppData {
           colorfulUiColorValues ?? this.colorfulUiColorValues,
       privacyPolicyAcceptedVersion:
           identical(privacyPolicyAcceptedVersion, _keepNullable)
-              ? this.privacyPolicyAcceptedVersion
-              : privacyPolicyAcceptedVersion as String?,
+          ? this.privacyPolicyAcceptedVersion
+          : privacyPolicyAcceptedVersion as String?,
       privacyPolicyAcceptedAtIso:
           identical(privacyPolicyAcceptedAtIso, _keepNullable)
-              ? this.privacyPolicyAcceptedAtIso
-              : privacyPolicyAcceptedAtIso as String?,
+          ? this.privacyPolicyAcceptedAtIso
+          : privacyPolicyAcceptedAtIso as String?,
       ignoredUpdateVersion: identical(ignoredUpdateVersion, _keepNullable)
           ? this.ignoredUpdateVersion
           : ignoredUpdateVersion as String?,
-      availableUpdateVersion:
-          identical(availableUpdateVersion, _keepNullable)
-              ? this.availableUpdateVersion
-              : availableUpdateVersion as String?,
+      availableUpdateVersion: identical(availableUpdateVersion, _keepNullable)
+          ? this.availableUpdateVersion
+          : availableUpdateVersion as String?,
     );
   }
 
@@ -332,7 +329,7 @@ class GeneralScheduleExportData {
   final List<GeneralSchedule> schedules;
 
   Map<String, dynamic> toJson() => {
-    'schemaVersion': 2,
+    'schemaVersion': generalScheduleSchemaVersion,
     'schedules': schedules.map((s) => s.toJson()).toList(),
   };
 

@@ -3337,6 +3337,108 @@ void main() {
       expect(find.text('#FFABCDEF'), findsNothing);
     });
 
+    testWidgets('general reminder strip can mark an occurrence handled', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      final start = now.add(const Duration(minutes: 5));
+      final end = start.add(const Duration(hours: 1));
+      final calendar = GeneralSchedule(
+        id: 'cal1',
+        name: 'Work',
+        events: [
+          GeneralEvent(
+            id: 'evt_reminder',
+            calendarId: 'cal1',
+            title: 'Reminder Event',
+            startDateTimeIso: start.toIso8601String(),
+            endDateTimeIso: end.toIso8601String(),
+            reminders: const [GeneralEventReminder(minutesBefore: 10)],
+          ),
+        ],
+      );
+      final provider = TimetableProvider(
+        storage: MemoryTimetableStorage(
+          initialData: _buildTestAppData().copyWith(
+            activeMode: AppMode.general,
+            generalMode: GeneralScheduleData(
+              activeScheduleId: calendar.id,
+              schedules: [calendar],
+              selectedDateIso: start.toIso8601String().split('T').first,
+            ),
+          ),
+        ),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<TimetableProvider>.value(
+          value: provider,
+          child: _buildLocalizedApp(
+            const GeneralScheduleHomeScreen(),
+            locale: const Locale('en'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Upcoming'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Mark handled'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Upcoming'), findsNothing);
+      expect(provider.generalReminderItems(now: now), isEmpty);
+    });
+
+    testWidgets('general list view exposes quick date jump controls', (
+      tester,
+    ) async {
+      final calendar = GeneralSchedule(
+        id: 'cal1',
+        name: 'Work',
+        events: [
+          GeneralEvent(
+            id: 'evt1',
+            calendarId: 'cal1',
+            title: 'List Event',
+            startDateTimeIso: '2026-05-18T09:00:00.000',
+            endDateTimeIso: '2026-05-18T10:00:00.000',
+          ),
+        ],
+      );
+      final provider = TimetableProvider(
+        storage: MemoryTimetableStorage(
+          initialData: _buildTestAppData().copyWith(
+            activeMode: AppMode.general,
+            generalMode: GeneralScheduleData(
+              activeScheduleId: calendar.id,
+              schedules: [calendar],
+              selectedDateIso: '2026-05-18',
+            ),
+          ),
+        ),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<TimetableProvider>.value(
+          value: provider,
+          child: _buildLocalizedApp(
+            const GeneralScheduleHomeScreen(),
+            locale: const Locale('en'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('List'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('Pick date'), findsOneWidget);
+    });
+
     testWidgets('general week view fits all visible days on narrow screens', (
       tester,
     ) async {

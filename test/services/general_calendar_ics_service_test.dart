@@ -64,6 +64,13 @@ END:VCALENDAR
     expect(event.endDateTimeIso, startsWith('2026-05-26'));
   });
 
+  test('malformed ICS without events fails clearly', () {
+    expect(
+      () => service.importSchedules('BEGIN:VCALENDAR\nEND:VCALENDAR'),
+      throwsFormatException,
+    );
+  });
+
   test('reports unsupported ICS fields as warnings and notes', () {
     const source = '''
 BEGIN:VCALENDAR
@@ -81,6 +88,11 @@ END:VCALENDAR
     final imported = service.importSchedules(source);
     final event = imported.schedules.single.events.single;
 
+    expect(
+      imported.warningItems.single.code,
+      GeneralCalendarIcsWarningCode.unsupportedFields,
+    );
+    expect(imported.warningItems.single.values, ['STATUS']);
     expect(imported.warnings.single, contains('STATUS'));
     expect(event.notes, contains('Unsupported ICS fields ignored: STATUS'));
   });

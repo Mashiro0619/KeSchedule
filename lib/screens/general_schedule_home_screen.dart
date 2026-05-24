@@ -170,7 +170,12 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                 _colorFilterValue = value;
               }),
             ),
-            _ReminderStrip(provider: provider, filter: filter),
+            _ReminderStrip(
+              provider: provider,
+              filter: filter,
+              onOccurrenceTap: (occurrence) =>
+                  _openDetails(context, provider, occurrence),
+            ),
             Expanded(
               child: ScrollConfiguration(
                 behavior: const MaterialScrollBehavior().copyWith(
@@ -197,6 +202,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                     provider: provider,
                     filter: filter,
                     onToday: () => _goToToday(provider),
+                    onPickDate: () => _pickDate(context, provider),
                     onOccurrenceTap: (occurrence) =>
                         _openDetails(context, provider, occurrence),
                   ),
@@ -291,9 +297,28 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
         dismissOnOutsideTap: canDismiss,
         child: GeneralEventDetailsSheet(
           occurrence: occurrence,
+          isReminderHandled: provider.isGeneralReminderHandled(occurrence),
           onEdit: () {
             Navigator.of(sheetContext).pop();
             _openEditor(context, provider, event: occurrence.event);
+          },
+          onDismissReminder: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            final message = AppLocalizations.of(context).reminderHandled;
+            await provider.dismissGeneralReminder(occurrence);
+            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+            if (mounted) {
+              messenger.showSnackBar(SnackBar(content: Text(message)));
+            }
+          },
+          onRestoreReminder: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            final message = AppLocalizations.of(context).reminderRestored;
+            await provider.restoreGeneralReminder(occurrence);
+            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+            if (mounted) {
+              messenger.showSnackBar(SnackBar(content: Text(message)));
+            }
           },
           onDuplicate: () async {
             final messenger = ScaffoldMessenger.of(context);
@@ -474,22 +499,25 @@ class _GeneralOccurrenceFilter {
 
   bool get isActive => query.trim().isNotEmpty || colorValue != null;
 
+  GeneralOccurrenceQuery toQuery({
+    required DateTime startInclusive,
+    required DateTime endExclusive,
+    bool onlyVisibleCalendars = true,
+  }) {
+    return GeneralOccurrenceQuery(
+      startInclusive: startInclusive,
+      endExclusive: endExclusive,
+      onlyVisibleCalendars: onlyVisibleCalendars,
+      searchQuery: query,
+      colorValue: colorValue,
+    );
+  }
+
   bool matches(GeneralEventOccurrence occurrence) {
-    if (colorValue != null &&
-        (occurrence.event.colorValue ?? occurrence.calendar.colorValue) !=
-            colorValue) {
-      return false;
-    }
-    final normalizedQuery = query.trim().toLowerCase();
-    if (normalizedQuery.isEmpty) {
-      return true;
-    }
-    return [
-      occurrence.event.title,
-      occurrence.event.location,
-      occurrence.event.notes,
-      occurrence.calendar.name,
-    ].any((value) => value.toLowerCase().contains(normalizedQuery));
+    return toQuery(
+      startInclusive: occurrence.start,
+      endExclusive: occurrence.end,
+    ).matches(occurrence);
   }
 }
 
@@ -514,13 +542,12 @@ class _WeekCalendarView extends StatelessWidget {
   Widget build(BuildContext context) {
     final weekStart = startOfWeekMonday(date);
     final days = _visibleWeekDays(weekStart, provider.generalShowWeekends);
-    final occurrences = provider
-        .generalOccurrencesForRange(
-          startInclusive: weekStart,
-          endExclusive: weekStart.add(const Duration(days: 7)),
-        )
-        .where(filter.matches)
-        .toList();
+    final occurrences = provider.generalOccurrencesForQuery(
+      filter.toQuery(
+        startInclusive: weekStart,
+        endExclusive: weekStart.add(const Duration(days: 7)),
+      ),
+    );
     return _CalendarTimeline(
       days: days,
       selectedDate: date,
@@ -553,13 +580,12 @@ class _DayCalendarView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final day = normalizeDateOnly(date);
-    final occurrences = provider
-        .generalOccurrencesForRange(
-          startInclusive: day,
-          endExclusive: day.add(const Duration(days: 1)),
-        )
-        .where(filter.matches)
-        .toList();
+    final occurrences = provider.generalOccurrencesForQuery(
+      filter.toQuery(
+        startInclusive: day,
+        endExclusive: day.add(const Duration(days: 1)),
+      ),
+    );
     return _CalendarTimeline(
       days: [day],
       selectedDate: day,
@@ -918,6 +944,7 @@ class _ListCalendarView extends StatelessWidget {
     required this.provider,
     required this.filter,
     required this.onToday,
+    required this.onPickDate,
     required this.onOccurrenceTap,
   });
 
@@ -925,18 +952,18 @@ class _ListCalendarView extends StatelessWidget {
   final TimetableProvider provider;
   final _GeneralOccurrenceFilter filter;
   final VoidCallback onToday;
+  final VoidCallback onPickDate;
   final ValueChanged<GeneralEventOccurrence> onOccurrenceTap;
 
   @override
   Widget build(BuildContext context) {
     final start = normalizeDateOnly(date);
-    final occurrences = provider
-        .generalOccurrencesForRange(
-          startInclusive: start,
-          endExclusive: start.add(const Duration(days: 180)),
-        )
-        .where(filter.matches)
-        .toList();
+    final occurrences = provider.generalOccurrencesForQuery(
+      filter.toQuery(
+        startInclusive: start,
+        endExclusive: start.add(const Duration(days: 180)),
+      ),
+    );
     if (occurrences.isEmpty) {
       return _EmptyListState(onToday: onToday, filtered: filter.isActive);
     }
@@ -948,9 +975,12 @@ class _ListCalendarView extends StatelessWidget {
     final entries = groups.entries.toList();
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 88),
-      itemCount: entries.length,
+      itemCount: entries.length + 1,
       itemBuilder: (context, index) {
-        final group = entries[index];
+        if (index == 0) {
+          return _ListJumpBar(onToday: onToday, onPickDate: onPickDate);
+        }
+        final group = entries[index - 1];
         final date = DateTime.parse(group.key);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -974,31 +1004,64 @@ class _ListCalendarView extends StatelessWidget {
   }
 }
 
+class _ListJumpBar extends StatelessWidget {
+  const _ListJumpBar({required this.onToday, required this.onPickDate});
+
+  final VoidCallback onToday;
+  final VoidCallback onPickDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 2),
+      child: Row(
+        children: [
+          OutlinedButton.icon(
+            onPressed: onToday,
+            icon: const Icon(Icons.today_outlined),
+            label: Text(l10n.today),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: onPickDate,
+            icon: const Icon(Icons.event_outlined),
+            label: Text(l10n.pickDate),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ReminderStrip extends StatelessWidget {
-  const _ReminderStrip({required this.provider, required this.filter});
+  const _ReminderStrip({
+    required this.provider,
+    required this.filter,
+    required this.onOccurrenceTap,
+  });
 
   final TimetableProvider provider;
   final _GeneralOccurrenceFilter filter;
+  final ValueChanged<GeneralEventOccurrence> onOccurrenceTap;
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final upcoming = provider
-        .generalOccurrencesForRange(
-          startInclusive: now,
-          endExclusive: now.add(const Duration(hours: 24)),
-        )
-        .where(filter.matches)
-        .where((occurrence) => _isInReminderWindow(occurrence, now))
+    final reminderFilter = filter.toQuery(
+      startInclusive: now.subtract(const Duration(hours: 24)),
+      endExclusive: now.add(const Duration(hours: 24)),
+    );
+    final items = provider.generalReminderItems(
+      now: now,
+      occurrenceFilter: reminderFilter,
+    );
+    final upcoming = items
+        .where((item) => item.status == GeneralReminderStatus.upcoming)
         .take(3)
         .toList();
-    final overdue = provider
-        .generalOccurrencesForRange(
-          startInclusive: now.subtract(const Duration(hours: 24)),
-          endExclusive: now,
-        )
-        .where(filter.matches)
-        .where((occurrence) => occurrence.end.isBefore(now))
+    final overdue = items
+        .where((item) => item.status == GeneralReminderStatus.overdue)
         .take(3)
         .toList();
     if (upcoming.isEmpty && overdue.isEmpty) {
@@ -1007,22 +1070,26 @@ class _ReminderStrip extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return SizedBox(
-      height: 44,
+      height: 54,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         children: [
-          if (upcoming.isNotEmpty)
-            _StatusPill(
-              icon: Icons.notifications_active_outlined,
-              label: l10n.upcomingEventsCount(upcoming.length),
+          for (final item in upcoming)
+            _ReminderItemPill(
+              item: item,
+              statusLabel: l10n.reminderUpcoming,
               color: theme.colorScheme.primary,
+              onTap: () => onOccurrenceTap(item.occurrence),
+              onDismiss: () => provider.dismissGeneralReminder(item.occurrence),
             ),
-          if (overdue.isNotEmpty)
-            _StatusPill(
-              icon: Icons.pending_actions_outlined,
-              label: l10n.overdueEventsCount(overdue.length),
+          for (final item in overdue)
+            _ReminderItemPill(
+              item: item,
+              statusLabel: l10n.reminderOverdue,
               color: theme.colorScheme.error,
+              onTap: () => onOccurrenceTap(item.occurrence),
+              onDismiss: () => provider.dismissGeneralReminder(item.occurrence),
             ),
         ],
       ),
@@ -1030,33 +1097,70 @@ class _ReminderStrip extends StatelessWidget {
   }
 }
 
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({
-    required this.icon,
-    required this.label,
+class _ReminderItemPill extends StatelessWidget {
+  const _ReminderItemPill({
+    required this.item,
+    required this.statusLabel,
     required this.color,
+    required this.onTap,
+    required this.onDismiss,
   });
 
-  final IconData icon;
-  final String label;
+  final GeneralReminderItem item;
+  final String statusLabel;
   final Color color;
+  final VoidCallback onTap;
+  final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: color.withAlpha(24),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withAlpha(96)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: color)),
-        ],
+    final l10n = AppLocalizations.of(context);
+    return Semantics(
+      button: true,
+      label: '${item.occurrence.event.title}, $statusLabel',
+      child: Container(
+        width: 210,
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: color.withAlpha(24),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withAlpha(96)),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 12, right: 2),
+            child: Row(
+              children: [
+                Icon(
+                  item.status == GeneralReminderStatus.upcoming
+                      ? Icons.notifications_active_outlined
+                      : Icons.pending_actions_outlined,
+                  size: 16,
+                  color: color,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '$statusLabel · ${item.occurrence.event.title}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: color),
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.markReminderHandled,
+                  iconSize: 18,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onDismiss,
+                  icon: const Icon(Icons.check_circle_outline),
+                  color: color,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1726,21 +1830,6 @@ bool _occurrenceIntersectsDay(GeneralEventOccurrence occurrence, DateTime day) {
   final start = normalizeDateOnly(day);
   final end = start.add(const Duration(days: 1));
   return occurrence.end.isAfter(start) && occurrence.start.isBefore(end);
-}
-
-bool _isInReminderWindow(GeneralEventOccurrence occurrence, DateTime now) {
-  if (!now.isBefore(occurrence.start)) {
-    return false;
-  }
-  for (final reminder in occurrence.event.reminders) {
-    final reminderAt = occurrence.start.subtract(
-      Duration(minutes: reminder.minutesBefore),
-    );
-    if (!now.isBefore(reminderAt)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 int _nowMinutes() {

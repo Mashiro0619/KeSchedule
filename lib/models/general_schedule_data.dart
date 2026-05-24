@@ -5,6 +5,43 @@ import 'general_schedule.dart';
 const generalViewWeek = 'week';
 const generalViewDay = 'day';
 const generalViewList = 'list';
+const generalScheduleSchemaVersion = 3;
+
+class GeneralReminderAcknowledgement {
+  const GeneralReminderAcknowledgement({
+    required this.occurrenceKey,
+    this.isHandled = true,
+    required this.updatedAtIso,
+  });
+
+  final String occurrenceKey;
+  final bool isHandled;
+  final String updatedAtIso;
+
+  Map<String, dynamic> toJson() => {
+    'occurrenceKey': occurrenceKey,
+    'isHandled': isHandled,
+    'updatedAt': updatedAtIso,
+  };
+
+  factory GeneralReminderAcknowledgement.fromJson(Map<String, dynamic> json) {
+    return GeneralReminderAcknowledgement(
+      occurrenceKey: json['occurrenceKey'] as String? ?? '',
+      isHandled: json['isHandled'] as bool? ?? true,
+      updatedAtIso: json['updatedAt'] as String? ?? '',
+    );
+  }
+
+  GeneralReminderAcknowledgement normalized() {
+    return GeneralReminderAcknowledgement(
+      occurrenceKey: occurrenceKey.trim(),
+      isHandled: isHandled,
+      updatedAtIso: updatedAtIso.trim().isEmpty
+          ? DateTime.now().toIso8601String()
+          : updatedAtIso,
+    );
+  }
+}
 
 String normalizeGeneralView(String? value) {
   switch (value) {
@@ -28,6 +65,7 @@ class GeneralScheduleData {
     this.dayEndHour = 23,
     this.timeGridMinutes = 60,
     this.closeEventPopupOnOutsideTap = true,
+    this.reminderAcknowledgements = const [],
   });
 
   final String activeScheduleId;
@@ -39,6 +77,7 @@ class GeneralScheduleData {
   final int dayEndHour;
   final int timeGridMinutes;
   final bool closeEventPopupOnOutsideTap;
+  final List<GeneralReminderAcknowledgement> reminderAcknowledgements;
 
   List<GeneralSchedule> get visibleSchedules =>
       schedules.where((s) => s.isVisible).toList()..sort((a, b) {
@@ -66,7 +105,7 @@ class GeneralScheduleData {
   }
 
   Map<String, dynamic> toJson() => {
-    'schemaVersion': 2,
+    'schemaVersion': generalScheduleSchemaVersion,
     'activeScheduleId': activeScheduleId,
     'schedules': schedules.map((s) => s.toJson()).toList(),
     if (selectedDateIso != null) 'selectedDateIso': selectedDateIso,
@@ -76,6 +115,9 @@ class GeneralScheduleData {
     'dayEndHour': dayEndHour,
     'timeGridMinutes': timeGridMinutes,
     'closeEventPopupOnOutsideTap': closeEventPopupOnOutsideTap,
+    'reminderAcknowledgements': reminderAcknowledgements
+        .map((item) => item.toJson())
+        .toList(),
   };
 
   factory GeneralScheduleData.fromJson(
@@ -127,6 +169,15 @@ class GeneralScheduleData {
       ),
       closeEventPopupOnOutsideTap:
           json['closeEventPopupOnOutsideTap'] as bool? ?? true,
+      reminderAcknowledgements:
+          (json['reminderAcknowledgements'] as List<dynamic>? ??
+                  const <dynamic>[])
+              .map(
+                (item) => GeneralReminderAcknowledgement.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ),
+              )
+              .toList(),
     ).normalized();
   }
 
@@ -149,6 +200,7 @@ class GeneralScheduleData {
     int? dayEndHour,
     int? timeGridMinutes,
     bool? closeEventPopupOnOutsideTap,
+    List<GeneralReminderAcknowledgement>? reminderAcknowledgements,
   }) {
     return GeneralScheduleData(
       activeScheduleId: activeScheduleId ?? this.activeScheduleId,
@@ -163,6 +215,8 @@ class GeneralScheduleData {
       timeGridMinutes: timeGridMinutes ?? this.timeGridMinutes,
       closeEventPopupOnOutsideTap:
           closeEventPopupOnOutsideTap ?? this.closeEventPopupOnOutsideTap,
+      reminderAcknowledgements:
+          reminderAcknowledgements ?? this.reminderAcknowledgements,
     ).normalized();
   }
 
@@ -206,6 +260,14 @@ class GeneralScheduleData {
         : normalizedSchedules.first.id;
     final start = dayStartHour.clamp(0, 23).toInt();
     final end = dayEndHour.clamp(start + 1, 24).toInt();
+    final acknowledgementsByKey = <String, GeneralReminderAcknowledgement>{};
+    for (final acknowledgement in reminderAcknowledgements) {
+      final normalized = acknowledgement.normalized();
+      if (normalized.occurrenceKey.isEmpty) {
+        continue;
+      }
+      acknowledgementsByKey[normalized.occurrenceKey] = normalized;
+    }
     return GeneralScheduleData(
       activeScheduleId: activeId,
       schedules: normalizedSchedules,
@@ -216,6 +278,8 @@ class GeneralScheduleData {
       dayEndHour: end,
       timeGridMinutes: _normalizeGridMinutes(timeGridMinutes),
       closeEventPopupOnOutsideTap: closeEventPopupOnOutsideTap,
+      reminderAcknowledgements: acknowledgementsByKey.values.toList()
+        ..sort((a, b) => a.occurrenceKey.compareTo(b.occurrenceKey)),
     );
   }
 

@@ -20,7 +20,55 @@ class GeneralEventOccurrence {
   String get exceptionDateIso =>
       normalizeDateOnly(start).toIso8601String().split('T').first;
 
+  String get occurrenceKey =>
+      '${calendar.id}|${event.id}|${start.toIso8601String()}';
+
   bool get isAllDay => event.isAllDay;
+}
+
+enum GeneralReminderStatus { upcoming, overdue }
+
+class GeneralReminderItem {
+  const GeneralReminderItem({required this.occurrence, required this.status});
+
+  final GeneralEventOccurrence occurrence;
+  final GeneralReminderStatus status;
+}
+
+class GeneralOccurrenceQuery {
+  const GeneralOccurrenceQuery({
+    required this.startInclusive,
+    required this.endExclusive,
+    this.onlyVisibleCalendars = true,
+    this.searchQuery = '',
+    this.colorValue,
+  });
+
+  final DateTime startInclusive;
+  final DateTime endExclusive;
+  final bool onlyVisibleCalendars;
+  final String searchQuery;
+  final int? colorValue;
+
+  bool get hasFilter => searchQuery.trim().isNotEmpty || colorValue != null;
+
+  bool matches(GeneralEventOccurrence occurrence) {
+    if (colorValue != null &&
+        (occurrence.event.colorValue ?? occurrence.calendar.colorValue) !=
+            colorValue) {
+      return false;
+    }
+    final normalizedQuery = searchQuery.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return true;
+    }
+    return [
+      occurrence.event.title,
+      occurrence.event.location,
+      occurrence.event.notes,
+      occurrence.calendar.name,
+    ].any((value) => value.toLowerCase().contains(normalizedQuery));
+  }
 }
 
 List<GeneralEventOccurrence> expandGeneralOccurrences({

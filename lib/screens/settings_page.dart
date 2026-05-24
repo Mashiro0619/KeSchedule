@@ -14,6 +14,7 @@ import '../l10n/app_localizations.dart';
 import '../models/timetable_models.dart';
 import '../providers/timetable_provider.dart';
 import '../services/export_service.dart';
+import '../services/general_calendar_ics_service.dart';
 import '../services/update_service.dart';
 import '../widgets/period_time_set_picker_dialog.dart';
 import 'general_display_settings_page.dart';
@@ -1465,14 +1466,14 @@ class _SettingsPageState extends State<SettingsPage> {
         }
       }
 
-      final count = await provider.importSelectedGeneralSchedulesJson(
+      final result = await provider.importSelectedGeneralSchedulesJson(
         content,
         scheduleIds: selectedIds,
         mode: mode,
       );
       if (feedbackContext.mounted) {
         ScaffoldMessenger.of(feedbackContext).showSnackBar(
-          SnackBar(content: Text(l10n.importedSchedulesCount(count))),
+          SnackBar(content: Text(_formatGeneralImportResult(result, l10n))),
         );
       }
       return true;
@@ -1552,20 +1553,13 @@ class _SettingsPageState extends State<SettingsPage> {
           mode = GeneralScheduleImportMode.replaceActive;
         }
       }
-      final count = await provider.importGeneralSchedulesIcs(
+      final result = await provider.importGeneralSchedulesIcs(
         content,
         mode: mode,
       );
       if (feedbackContext.mounted) {
-        final warnings = preview.warnings.take(2).join(' ');
         ScaffoldMessenger.of(feedbackContext).showSnackBar(
-          SnackBar(
-            content: Text(
-              warnings.isEmpty
-                  ? l10n.importedSchedulesCount(count)
-                  : '${l10n.importedSchedulesCount(count)} $warnings',
-            ),
-          ),
+          SnackBar(content: Text(_formatGeneralImportResult(result, l10n))),
         );
       }
       return true;
@@ -1696,6 +1690,40 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (_) {
       if (mounted) _showMessage(l10n.saveFailedRetry);
     }
+  }
+
+  String _formatGeneralImportResult(
+    GeneralScheduleImportResult result,
+    AppLocalizations l10n,
+  ) {
+    if (!result.hasWarnings) {
+      return l10n.importedSchedulesCount(result.importedCount);
+    }
+    final warningText = result.icsWarnings
+        .map((warning) => _formatIcsWarning(warning, l10n))
+        .take(2)
+        .join(' ');
+    return '${l10n.importedSchedulesWithWarnings(result.importedCount, result.icsWarnings.length)} $warningText';
+  }
+
+  String _formatIcsWarning(
+    GeneralCalendarIcsImportWarning warning,
+    AppLocalizations l10n,
+  ) {
+    return switch (warning.code) {
+      GeneralCalendarIcsWarningCode.missingDtStart =>
+        l10n.importWarningSkippedMissingStart,
+      GeneralCalendarIcsWarningCode.unsupportedDtStart =>
+        l10n.importWarningSkippedUnsupportedStart,
+      GeneralCalendarIcsWarningCode.adjustedEnd =>
+        l10n.importWarningAdjustedEnd,
+      GeneralCalendarIcsWarningCode.unsupportedFields =>
+        l10n.importWarningUnsupportedFields(warning.values.join(', ')),
+      GeneralCalendarIcsWarningCode.unsupportedRRuleFrequency =>
+        l10n.importWarningUnsupportedRRuleFrequency(
+          warning.values.isEmpty ? '' : warning.values.first,
+        ),
+    };
   }
 
   Widget _buildAdaptiveBottomSheet(

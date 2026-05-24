@@ -30,6 +30,20 @@ const _colorfulCoursePalette = <int>[
   0xFF90A4AE,
 ];
 
+class GeneralScheduleImportResult {
+  const GeneralScheduleImportResult({
+    required this.importedCount,
+    required this.scheduleNames,
+    this.icsWarnings = const [],
+  });
+
+  final int importedCount;
+  final List<String> scheduleNames;
+  final List<GeneralCalendarIcsImportWarning> icsWarnings;
+
+  bool get hasWarnings => icsWarnings.isNotEmpty;
+}
+
 enum AppImportMode { replaceAll, addAll }
 
 String resolveFirstLaunchLocaleCode(Locale? locale) {
@@ -308,6 +322,11 @@ class TimetableProvider extends ChangeNotifier {
               events: schedule.events.where((e) => e.id != eventId).toList(),
             ),
         ],
+        reminderAcknowledgements: mode.reminderAcknowledgements
+            .where(
+              (item) => !_reminderKeyContainsEvent(item.occurrenceKey, eventId),
+            )
+            .toList(),
       ),
     );
     await _saveAndNotify();
@@ -372,12 +391,24 @@ class TimetableProvider extends ChangeNotifier {
     required DateTime endExclusive,
     bool onlyVisibleCalendars = true,
   }) {
+    return generalOccurrencesForQuery(
+      GeneralOccurrenceQuery(
+        startInclusive: startInclusive,
+        endExclusive: endExclusive,
+        onlyVisibleCalendars: onlyVisibleCalendars,
+      ),
+    );
+  }
+
+  List<GeneralEventOccurrence> generalOccurrencesForQuery(
+    GeneralOccurrenceQuery query,
+  ) {
     return expandGeneralOccurrences(
       calendars: _appData.generalMode.schedules,
-      startInclusive: startInclusive,
-      endExclusive: endExclusive,
-      onlyVisibleCalendars: onlyVisibleCalendars,
-    );
+      startInclusive: query.startInclusive,
+      endExclusive: query.endExclusive,
+      onlyVisibleCalendars: query.onlyVisibleCalendars,
+    ).where(query.matches).toList();
   }
 
   List<GeneralEventOccurrence> upcomingGeneralOccurrences({
@@ -385,10 +416,97 @@ class TimetableProvider extends ChangeNotifier {
     Duration horizon = const Duration(days: 7),
   }) {
     final anchor = now ?? DateTime.now();
-    return generalOccurrencesForRange(
-      startInclusive: anchor,
-      endExclusive: anchor.add(horizon),
+    return generalOccurrencesForQuery(
+      GeneralOccurrenceQuery(
+        startInclusive: anchor,
+        endExclusive: anchor.add(horizon),
+      ),
     );
+  }
+
+  bool isGeneralReminderHandled(GeneralEventOccurrence occurrence) {
+    final key = occurrence.occurrenceKey;
+    return _appData.generalMode.reminderAcknowledgements.any(
+      (item) => item.occurrenceKey == key && item.isHandled,
+    );
+  }
+
+  Future<void> dismissGeneralReminder(GeneralEventOccurrence occurrence) async {
+    final mode = _appData.generalMode;
+    final key = occurrence.occurrenceKey;
+    final acknowledgement = GeneralReminderAcknowledgement(
+      occurrenceKey: key,
+      updatedAtIso: DateTime.now().toIso8601String(),
+    );
+    _appData = _appData.copyWith(
+      generalMode: mode.copyWith(
+        reminderAcknowledgements: [
+          ...mode.reminderAcknowledgements.where(
+            (item) => item.occurrenceKey != key,
+          ),
+          acknowledgement,
+        ],
+      ),
+    );
+    await _saveAndNotify();
+  }
+
+  Future<void> restoreGeneralReminder(GeneralEventOccurrence occurrence) async {
+    final mode = _appData.generalMode;
+    _appData = _appData.copyWith(
+      generalMode: mode.copyWith(
+        reminderAcknowledgements: mode.reminderAcknowledgements
+            .where((item) => item.occurrenceKey != occurrence.occurrenceKey)
+            .toList(),
+      ),
+    );
+    await _saveAndNotify();
+  }
+
+  List<GeneralReminderItem> generalReminderItems({
+    DateTime? now,
+    Duration upcomingHorizon = const Duration(hours: 24),
+    Duration overdueWindow = const Duration(hours: 24),
+    GeneralOccurrenceQuery? occurrenceFilter,
+  }) {
+    final anchor = now ?? DateTime.now();
+    final upcoming =
+        generalOccurrencesForRange(
+              startInclusive: anchor,
+              endExclusive: anchor.add(upcomingHorizon),
+            )
+            .where(
+              (occurrence) => occurrenceFilter?.matches(occurrence) ?? true,
+            )
+            .where((occurrence) => !isGeneralReminderHandled(occurrence))
+            .where((occurrence) => _isInReminderWindow(occurrence, anchor))
+            .map(
+              (occurrence) => GeneralReminderItem(
+                occurrence: occurrence,
+                status: GeneralReminderStatus.upcoming,
+              ),
+            );
+    final overdue =
+        generalOccurrencesForRange(
+              startInclusive: anchor.subtract(overdueWindow),
+              endExclusive: anchor,
+            )
+            .where(
+              (occurrence) => occurrenceFilter?.matches(occurrence) ?? true,
+            )
+            .where((occurrence) => !isGeneralReminderHandled(occurrence))
+            .where((occurrence) => occurrence.end.isBefore(anchor))
+            .map(
+              (occurrence) => GeneralReminderItem(
+                occurrence: occurrence,
+                status: GeneralReminderStatus.overdue,
+              ),
+            );
+    return [...upcoming, ...overdue]..sort((a, b) {
+      final statusCompare = a.status.index.compareTo(b.status.index);
+      if (statusCompare != 0) return statusCompare;
+      return a.occurrence.start.compareTo(b.occurrence.start);
+    });
   }
 
   // ── General schedule import / export ──
@@ -450,7 +568,7 @@ class TimetableProvider extends ChangeNotifier {
     return decoded.schedules;
   }
 
-  Future<int> importSelectedGeneralSchedulesJson(
+  Future<GeneralScheduleImportResult> importSelectedGeneralSchedulesJson(
     String source, {
     required List<String> scheduleIds,
     required GeneralScheduleImportMode mode,
@@ -488,7 +606,10 @@ class TimetableProvider extends ChangeNotifier {
         generalMode: _appData.generalMode.withSchedule(replaced),
       );
       await _saveAndNotify();
-      return 1;
+      return GeneralScheduleImportResult(
+        importedCount: 1,
+        scheduleNames: [replaced.name],
+      );
     }
 
     final existingIds = _appData.generalMode.schedules.map((s) => s.id).toSet();
@@ -510,10 +631,13 @@ class TimetableProvider extends ChangeNotifier {
       ),
     );
     await _saveAndNotify();
-    return appended.length;
+    return GeneralScheduleImportResult(
+      importedCount: appended.length,
+      scheduleNames: appended.map((schedule) => schedule.name).toList(),
+    );
   }
 
-  Future<int> importGeneralSchedulesIcs(
+  Future<GeneralScheduleImportResult> importGeneralSchedulesIcs(
     String source, {
     required GeneralScheduleImportMode mode,
   }) async {
@@ -536,7 +660,11 @@ class TimetableProvider extends ChangeNotifier {
         generalMode: _appData.generalMode.withSchedule(replaced),
       );
       await _saveAndNotify();
-      return 1;
+      return GeneralScheduleImportResult(
+        importedCount: 1,
+        scheduleNames: [replaced.name],
+        icsWarnings: imported.warningItems,
+      );
     }
 
     final existingIds = _appData.generalMode.schedules.map((s) => s.id).toSet();
@@ -556,7 +684,11 @@ class TimetableProvider extends ChangeNotifier {
       ),
     );
     await _saveAndNotify();
-    return appended.length;
+    return GeneralScheduleImportResult(
+      importedCount: appended.length,
+      scheduleNames: appended.map((schedule) => schedule.name).toList(),
+      icsWarnings: imported.warningItems,
+    );
   }
 
   String _nextImportedScheduleId(Set<String> existingIds) {
@@ -581,6 +713,26 @@ class TimetableProvider extends ChangeNotifier {
       candidate = 'evt_$stamp';
     }
     return candidate;
+  }
+
+  bool _reminderKeyContainsEvent(String occurrenceKey, String eventId) {
+    final parts = occurrenceKey.split('|');
+    return parts.length >= 2 && parts[1] == eventId;
+  }
+
+  bool _isInReminderWindow(GeneralEventOccurrence occurrence, DateTime now) {
+    if (!now.isBefore(occurrence.start)) {
+      return false;
+    }
+    for (final reminder in occurrence.event.reminders) {
+      final reminderAt = occurrence.start.subtract(
+        Duration(minutes: reminder.minutesBefore),
+      );
+      if (!now.isBefore(reminderAt)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // ── Privacy policy (remote-version driven) ──
