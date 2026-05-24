@@ -12,6 +12,7 @@ import 'package:sked/models/school_import_models.dart';
 import 'package:sked/models/timetable_models.dart';
 import 'package:sked/providers/timetable_provider.dart';
 import 'package:sked/screens/home_screen.dart';
+import 'package:sked/screens/general_schedule_home_screen.dart';
 import 'package:sked/screens/school_html_import_page.dart';
 import 'package:sked/screens/school_import_parser_settings_page.dart';
 import 'package:sked/screens/settings_page.dart';
@@ -3216,6 +3217,116 @@ void main() {
       await tester.tap(find.text('取消'));
       await tester.pumpAndSettle();
       await future;
+    });
+
+    testWidgets('通用模式主页支持搜索过滤事件', (tester) async {
+      final calendar = GeneralSchedule(
+        id: 'cal1',
+        name: 'Work',
+        events: [
+          GeneralEvent(
+            id: 'evt1',
+            calendarId: 'cal1',
+            title: 'Dentist',
+            startDateTimeIso: '2026-05-18T09:00:00.000',
+            endDateTimeIso: '2026-05-18T10:00:00.000',
+          ),
+          GeneralEvent(
+            id: 'evt2',
+            calendarId: 'cal1',
+            title: 'Review',
+            startDateTimeIso: '2026-05-18T11:00:00.000',
+            endDateTimeIso: '2026-05-18T12:00:00.000',
+          ),
+        ],
+      );
+      final provider = TimetableProvider(
+        storage: MemoryTimetableStorage(
+          initialData: _buildTestAppData().copyWith(
+            activeMode: AppMode.general,
+            generalMode: GeneralScheduleData(
+              activeScheduleId: calendar.id,
+              schedules: [calendar],
+              selectedDateIso: '2026-05-18',
+            ),
+          ),
+        ),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<TimetableProvider>.value(
+          value: provider,
+          child: _buildLocalizedApp(
+            const GeneralScheduleHomeScreen(),
+            locale: const Locale('en'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dentist'), findsOneWidget);
+      expect(find.text('Review'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField).first, 'dentist');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dentist'), findsOneWidget);
+      expect(find.text('Review'), findsNothing);
+    });
+
+    testWidgets('general week view fits all visible days on narrow screens', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      const calendar = GeneralSchedule(id: 'cal1', name: 'Work', events: []);
+      final provider = TimetableProvider(
+        storage: MemoryTimetableStorage(
+          initialData: _buildTestAppData().copyWith(
+            activeMode: AppMode.general,
+            generalMode: const GeneralScheduleData(
+              activeScheduleId: 'cal1',
+              schedules: [calendar],
+              selectedDateIso: '2026-05-18',
+            ),
+          ),
+        ),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<TimetableProvider>.value(
+          value: provider,
+          child: _buildLocalizedApp(
+            const GeneralScheduleHomeScreen(),
+            locale: const Locale('en'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final label in const [
+        'Mon',
+        'Tue',
+        'Wed',
+        'Thu',
+        'Fri',
+        'Sat',
+        'Sun',
+      ]) {
+        expect(find.text(label), findsOneWidget);
+      }
+      final sundayRight = tester.getBottomRight(find.text('Sun')).dx;
+      expect(sundayRight, lessThanOrEqualTo(390));
+
+      final horizontalScrollViews = tester
+          .widgetList<SingleChildScrollView>(find.byType(SingleChildScrollView))
+          .where((widget) => widget.scrollDirection == Axis.horizontal);
+      expect(horizontalScrollViews, isEmpty);
     });
 
     testWidgets('没有课表时显示新建和导入引导', (tester) async {

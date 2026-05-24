@@ -21,7 +21,10 @@ class GeneralScheduleHomeScreen extends StatefulWidget {
 }
 
 class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
+  final _searchController = TextEditingController();
   String? _view;
+  String _searchQuery = '';
+  int? _colorFilterValue;
   bool _initializedView = false;
 
   @override
@@ -34,11 +37,21 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final provider = context.watch<TimetableProvider>();
     final l10n = AppLocalizations.of(context);
     final selectedDate = provider.selectedGeneralDate;
     final view = normalizeGeneralView(_view ?? provider.generalDefaultView);
+    final filter = _GeneralOccurrenceFilter(
+      query: _searchQuery,
+      colorValue: _colorFilterValue,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -138,7 +151,22 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                 ],
               ),
             ),
-            _ReminderStrip(provider: provider),
+            _FilterBar(
+              controller: _searchController,
+              colorValue: _colorFilterValue,
+              colorOptions: _availableFilterColors(provider.generalSchedules),
+              onSearchChanged: (value) => setState(() {
+                _searchQuery = value;
+              }),
+              onClearSearch: () => setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+              }),
+              onColorChanged: (value) => setState(() {
+                _colorFilterValue = value;
+              }),
+            ),
+            _ReminderStrip(provider: provider, filter: filter),
             Expanded(
               child: ScrollConfiguration(
                 behavior: const MaterialScrollBehavior().copyWith(
@@ -154,6 +182,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                   generalViewDay => _DayCalendarView(
                     date: selectedDate,
                     provider: provider,
+                    filter: filter,
                     onEmptySlotTap: (date) =>
                         _openEditor(context, provider, initialDate: date),
                     onOccurrenceTap: (occurrence) =>
@@ -162,6 +191,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                   generalViewList => _ListCalendarView(
                     date: selectedDate,
                     provider: provider,
+                    filter: filter,
                     onToday: () => _goToToday(provider),
                     onOccurrenceTap: (occurrence) =>
                         _openDetails(context, provider, occurrence),
@@ -169,6 +199,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                   _ => _WeekCalendarView(
                     date: selectedDate,
                     provider: provider,
+                    filter: filter,
                     onDaySelected: provider.setSelectedGeneralDate,
                     onEmptySlotTap: (date) =>
                         _openEditor(context, provider, initialDate: date),
@@ -260,6 +291,16 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
             Navigator.of(sheetContext).pop();
             _openEditor(context, provider, event: occurrence.event);
           },
+          onDuplicate: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            await provider.duplicateGeneralOccurrence(occurrence);
+            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+            if (mounted) {
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Event duplicated')),
+              );
+            }
+          },
           onDeleteThis: () async {
             await provider.deleteGeneralOccurrence(occurrence);
             if (sheetContext.mounted) Navigator.of(sheetContext).pop();
@@ -345,10 +386,114 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
   }
 }
 
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({
+    required this.controller,
+    required this.colorValue,
+    required this.colorOptions,
+    required this.onSearchChanged,
+    required this.onClearSearch,
+    required this.onColorChanged,
+  });
+
+  final TextEditingController controller;
+  final int? colorValue;
+  final List<int> colorOptions;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onClearSearch;
+  final ValueChanged<int?> onColorChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onSearchChanged,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Search events',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: controller.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear search',
+                        onPressed: onClearSearch,
+                        icon: const Icon(Icons.clear),
+                      ),
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          PopupMenuButton<int>(
+            tooltip: 'Filter by color',
+            icon: Icon(
+              colorValue == null ? Icons.filter_alt_outlined : Icons.filter_alt,
+            ),
+            onSelected: (value) => onColorChanged(value < 0 ? null : value),
+            itemBuilder: (context) => [
+              const PopupMenuItem<int>(value: -1, child: Text('All colors')),
+              for (final option in colorOptions)
+                PopupMenuItem<int>(
+                  value: option,
+                  child: Row(
+                    children: [
+                      _ColorDot(color: Color(option)),
+                      const SizedBox(width: 10),
+                      Text(
+                        '#${option.toRadixString(16).padLeft(8, '0').toUpperCase()}',
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GeneralOccurrenceFilter {
+  const _GeneralOccurrenceFilter({
+    required this.query,
+    required this.colorValue,
+  });
+
+  final String query;
+  final int? colorValue;
+
+  bool get isActive => query.trim().isNotEmpty || colorValue != null;
+
+  bool matches(GeneralEventOccurrence occurrence) {
+    if (colorValue != null &&
+        (occurrence.event.colorValue ?? occurrence.calendar.colorValue) !=
+            colorValue) {
+      return false;
+    }
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return true;
+    }
+    return [
+      occurrence.event.title,
+      occurrence.event.location,
+      occurrence.event.notes,
+      occurrence.calendar.name,
+    ].any((value) => value.toLowerCase().contains(normalizedQuery));
+  }
+}
+
 class _WeekCalendarView extends StatelessWidget {
   const _WeekCalendarView({
     required this.date,
     required this.provider,
+    required this.filter,
     required this.onDaySelected,
     required this.onEmptySlotTap,
     required this.onOccurrenceTap,
@@ -356,6 +501,7 @@ class _WeekCalendarView extends StatelessWidget {
 
   final DateTime date;
   final TimetableProvider provider;
+  final _GeneralOccurrenceFilter filter;
   final ValueChanged<DateTime> onDaySelected;
   final ValueChanged<DateTime> onEmptySlotTap;
   final ValueChanged<GeneralEventOccurrence> onOccurrenceTap;
@@ -364,10 +510,13 @@ class _WeekCalendarView extends StatelessWidget {
   Widget build(BuildContext context) {
     final weekStart = startOfWeekMonday(date);
     final days = _visibleWeekDays(weekStart, provider.generalShowWeekends);
-    final occurrences = provider.generalOccurrencesForRange(
-      startInclusive: weekStart,
-      endExclusive: weekStart.add(const Duration(days: 7)),
-    );
+    final occurrences = provider
+        .generalOccurrencesForRange(
+          startInclusive: weekStart,
+          endExclusive: weekStart.add(const Duration(days: 7)),
+        )
+        .where(filter.matches)
+        .toList();
     return _CalendarTimeline(
       days: days,
       selectedDate: date,
@@ -386,22 +535,27 @@ class _DayCalendarView extends StatelessWidget {
   const _DayCalendarView({
     required this.date,
     required this.provider,
+    required this.filter,
     required this.onEmptySlotTap,
     required this.onOccurrenceTap,
   });
 
   final DateTime date;
   final TimetableProvider provider;
+  final _GeneralOccurrenceFilter filter;
   final ValueChanged<DateTime> onEmptySlotTap;
   final ValueChanged<GeneralEventOccurrence> onOccurrenceTap;
 
   @override
   Widget build(BuildContext context) {
     final day = normalizeDateOnly(date);
-    final occurrences = provider.generalOccurrencesForRange(
-      startInclusive: day,
-      endExclusive: day.add(const Duration(days: 1)),
-    );
+    final occurrences = provider
+        .generalOccurrencesForRange(
+          startInclusive: day,
+          endExclusive: day.add(const Duration(days: 1)),
+        )
+        .where(filter.matches)
+        .toList();
     return _CalendarTimeline(
       days: [day],
       selectedDate: day,
@@ -429,8 +583,6 @@ class _CalendarTimeline extends StatelessWidget {
     required this.onOccurrenceTap,
   });
 
-  static const double _timeColumnWidth = 52;
-  static const double _minDayWidth = 124;
   static const double _headerHeight = 56;
   static const double _allDayHeight = 74;
   static const double _hourHeight = 72;
@@ -457,40 +609,40 @@ class _CalendarTimeline extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableDayWidth =
-            (constraints.maxWidth - _timeColumnWidth) / days.length;
-        final dayWidth = math.max(_minDayWidth, availableDayWidth);
-        final contentWidth = _timeColumnWidth + dayWidth * days.length;
+        final metrics = _TimelineMetrics.fromWidth(
+          constraints.maxWidth,
+          dayCount: days.length,
+        );
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: contentWidth,
-            child: Column(
-              children: [
-                SizedBox(
-                  height: _headerHeight,
-                  child: Row(
-                    children: [
-                      const SizedBox(width: _timeColumnWidth),
-                      for (final day in days)
-                        _DayHeader(
-                          date: day,
-                          width: dayWidth,
-                          selected: _sameDay(day, selectedDate),
-                          onTap: () => onDaySelected(day),
-                        ),
-                    ],
-                  ),
+        return SizedBox(
+          width: metrics.totalWidth,
+          child: Column(
+            children: [
+              SizedBox(
+                height: _headerHeight,
+                child: Row(
+                  children: [
+                    SizedBox(width: metrics.timeColumnWidth),
+                    for (final day in days)
+                      _DayHeader(
+                        date: day,
+                        width: metrics.dayWidth,
+                        selected: _sameDay(day, selectedDate),
+                        onTap: () => onDaySelected(day),
+                      ),
+                  ],
                 ),
-                SizedBox(
-                  height: _allDayHeight,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(
-                        width: _timeColumnWidth,
-                        child: Center(
+              ),
+              SizedBox(
+                height: _allDayHeight,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: metrics.timeColumnWidth,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
                           child: Text(
                             'All-day',
                             style: Theme.of(context).textTheme.labelSmall,
@@ -498,93 +650,94 @@ class _CalendarTimeline extends StatelessWidget {
                           ),
                         ),
                       ),
-                      for (final day in days)
-                        _AllDayColumn(
-                          date: day,
-                          width: dayWidth,
-                          occurrences: _allDayOccurrencesFor(day),
-                          onTap: onOccurrenceTap,
-                        ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: SizedBox(
-                      height: contentHeight,
-                      child: Stack(
-                        children: [
-                          _GridBackground(
-                            timeColumnWidth: _timeColumnWidth,
-                            dayWidth: dayWidth,
-                            dayCount: days.length,
-                            startHour: startHour,
-                            endHour: endHour,
-                            gridMinutes: gridMinutes,
-                            hourHeight: _hourHeight,
-                          ),
-                          for (var index = 0; index < days.length; index++)
-                            Positioned(
-                              left: _timeColumnWidth + index * dayWidth,
-                              top: 0,
-                              width: dayWidth,
-                              height: contentHeight,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                onTapDown: (details) {
-                                  final minutes =
-                                      _snapMinutes(
-                                            startMinutes +
-                                                (details.localPosition.dy /
-                                                        minuteHeight)
-                                                    .round(),
-                                            gridMinutes,
-                                          )
-                                          .clamp(startMinutes, endMinutes - 15)
-                                          .toInt();
-                                  final day = days[index];
-                                  onEmptySlotTap(
-                                    DateTime(
-                                      day.year,
-                                      day.month,
-                                      day.day,
-                                      minutes ~/ 60,
-                                      minutes % 60,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          for (var index = 0; index < days.length; index++)
-                            ..._timedOccurrenceCards(
-                              context: context,
-                              day: days[index],
-                              left: _timeColumnWidth + index * dayWidth,
-                              width: dayWidth,
-                              startMinutes: startMinutes,
-                              endMinutes: endMinutes,
-                              minuteHeight: minuteHeight,
-                            ),
-                          for (var index = 0; index < days.length; index++)
-                            if (_sameDay(days[index], DateTime.now()) &&
-                                _nowMinutes() >= startMinutes &&
-                                _nowMinutes() <= endMinutes)
-                              Positioned(
-                                left: _timeColumnWidth + index * dayWidth,
-                                top:
-                                    (_nowMinutes() - startMinutes) *
-                                    minuteHeight,
-                                width: dayWidth,
-                                child: const _NowLine(),
-                              ),
-                        ],
+                    ),
+                    for (final day in days)
+                      _AllDayColumn(
+                        date: day,
+                        width: metrics.dayWidth,
+                        occurrences: _allDayOccurrencesFor(day),
+                        onTap: onOccurrenceTap,
                       ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: SizedBox(
+                    height: contentHeight,
+                    child: Stack(
+                      children: [
+                        _GridBackground(
+                          timeColumnWidth: metrics.timeColumnWidth,
+                          dayWidth: metrics.dayWidth,
+                          dayCount: days.length,
+                          startHour: startHour,
+                          endHour: endHour,
+                          gridMinutes: gridMinutes,
+                          hourHeight: _hourHeight,
+                        ),
+                        for (var index = 0; index < days.length; index++)
+                          Positioned(
+                            left:
+                                metrics.timeColumnWidth +
+                                index * metrics.dayWidth,
+                            top: 0,
+                            width: metrics.dayWidth,
+                            height: contentHeight,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.translucent,
+                              onTapDown: (details) {
+                                final minutes = _snapMinutes(
+                                  startMinutes +
+                                      (details.localPosition.dy / minuteHeight)
+                                          .round(),
+                                  gridMinutes,
+                                ).clamp(startMinutes, endMinutes - 15).toInt();
+                                final day = days[index];
+                                onEmptySlotTap(
+                                  DateTime(
+                                    day.year,
+                                    day.month,
+                                    day.day,
+                                    minutes ~/ 60,
+                                    minutes % 60,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        for (var index = 0; index < days.length; index++)
+                          ..._timedOccurrenceCards(
+                            context: context,
+                            day: days[index],
+                            left:
+                                metrics.timeColumnWidth +
+                                index * metrics.dayWidth,
+                            width: metrics.dayWidth,
+                            startMinutes: startMinutes,
+                            endMinutes: endMinutes,
+                            minuteHeight: minuteHeight,
+                          ),
+                        for (var index = 0; index < days.length; index++)
+                          if (_sameDay(days[index], DateTime.now()) &&
+                              _nowMinutes() >= startMinutes &&
+                              _nowMinutes() <= endMinutes)
+                            Positioned(
+                              left:
+                                  metrics.timeColumnWidth +
+                                  index * metrics.dayWidth,
+                              top:
+                                  (_nowMinutes() - startMinutes) * minuteHeight,
+                              width: metrics.dayWidth,
+                              child: const _NowLine(),
+                            ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -609,13 +762,14 @@ class _CalendarTimeline extends StatelessWidget {
   }) sync* {
     final dayStart = normalizeDateOnly(day);
     final dayEnd = dayStart.add(const Duration(days: 1));
-    final visible = occurrences.where((occurrence) {
+    final segments = <_TimedOccurrenceSegment>[];
+    for (final occurrence in occurrences) {
       if (occurrence.isAllDay || !_sameDay(occurrence.start, occurrence.end)) {
-        return false;
+        continue;
       }
-      return _occurrenceIntersectsDay(occurrence, day);
-    }).toList();
-    for (final occurrence in visible) {
+      if (!_occurrenceIntersectsDay(occurrence, day)) {
+        continue;
+      }
       final segmentStart = occurrence.start.isBefore(dayStart)
           ? dayStart
           : occurrence.start;
@@ -626,47 +780,160 @@ class _CalendarTimeline extends StatelessWidget {
       final rawEnd = segmentEnd.hour * 60 + segmentEnd.minute;
       final topMinutes = rawStart.clamp(startMinutes, endMinutes).toInt();
       final bottomMinutes = rawEnd.clamp(startMinutes, endMinutes).toInt();
-      final height = math.max(28, (bottomMinutes - topMinutes) * minuteHeight);
       if (bottomMinutes <= startMinutes || topMinutes >= endMinutes) {
         continue;
       }
+      segments.add(
+        _TimedOccurrenceSegment(
+          occurrence: occurrence,
+          startMinutes: topMinutes,
+          endMinutes: bottomMinutes,
+        ),
+      );
+    }
+    final layouts = _layoutTimedOccurrenceSegments(segments);
+    for (final layout in layouts) {
+      final height = math.max(
+        28,
+        (layout.endMinutes - layout.startMinutes) * minuteHeight,
+      );
+      final laneGap = layout.laneCount > 1 ? 2.0 : 0.0;
+      final availableWidth = width - 8 - laneGap * (layout.laneCount - 1);
+      final laneWidth = math.max(1.0, availableWidth / layout.laneCount);
       yield Positioned(
-        left: left + 4,
-        top: (topMinutes - startMinutes) * minuteHeight + 2,
-        width: width - 8,
+        left: left + 4 + layout.lane * (laneWidth + laneGap),
+        top: (layout.startMinutes - startMinutes) * minuteHeight + 2,
+        width: laneWidth,
         height: height - 4,
         child: _OccurrenceCard(
-          occurrence: occurrence,
-          dense: height < 46,
-          onTap: () => onOccurrenceTap(occurrence),
+          occurrence: layout.occurrence,
+          dense: height < 46 || laneWidth < 72,
+          onTap: () => onOccurrenceTap(layout.occurrence),
         ),
       );
     }
   }
 }
 
+class _TimelineMetrics {
+  const _TimelineMetrics({
+    required this.totalWidth,
+    required this.timeColumnWidth,
+    required this.dayWidth,
+  });
+
+  final double totalWidth;
+  final double timeColumnWidth;
+  final double dayWidth;
+
+  factory _TimelineMetrics.fromWidth(double width, {required int dayCount}) {
+    final safeWidth = width.isFinite && width > 0 ? width : 360.0;
+    final timeColumnWidth = safeWidth < 600
+        ? 34.0
+        : safeWidth < 840
+        ? 42.0
+        : 52.0;
+    final availableDaysWidth = math.max(safeWidth - timeColumnWidth, 0.0);
+    final effectiveDayCount = math.max(dayCount, 1);
+    return _TimelineMetrics(
+      totalWidth: safeWidth,
+      timeColumnWidth: timeColumnWidth,
+      dayWidth: availableDaysWidth / effectiveDayCount,
+    );
+  }
+}
+
+class _TimedOccurrenceSegment {
+  _TimedOccurrenceSegment({
+    required this.occurrence,
+    required this.startMinutes,
+    required this.endMinutes,
+  });
+
+  final GeneralEventOccurrence occurrence;
+  final int startMinutes;
+  final int endMinutes;
+  int lane = 0;
+  int laneCount = 1;
+}
+
+List<_TimedOccurrenceSegment> _layoutTimedOccurrenceSegments(
+  List<_TimedOccurrenceSegment> segments,
+) {
+  if (segments.isEmpty) {
+    return segments;
+  }
+  final sorted = [...segments]
+    ..sort((a, b) {
+      final startCompare = a.startMinutes.compareTo(b.startMinutes);
+      if (startCompare != 0) return startCompare;
+      return a.endMinutes.compareTo(b.endMinutes);
+    });
+
+  final groups = <List<_TimedOccurrenceSegment>>[];
+  var currentGroup = <_TimedOccurrenceSegment>[];
+  var currentGroupEnd = -1;
+  for (final segment in sorted) {
+    if (currentGroup.isEmpty || segment.startMinutes < currentGroupEnd) {
+      currentGroup.add(segment);
+      currentGroupEnd = math.max(currentGroupEnd, segment.endMinutes);
+    } else {
+      groups.add(currentGroup);
+      currentGroup = [segment];
+      currentGroupEnd = segment.endMinutes;
+    }
+  }
+  if (currentGroup.isNotEmpty) {
+    groups.add(currentGroup);
+  }
+
+  for (final group in groups) {
+    final laneEnds = <int>[];
+    for (final segment in group) {
+      var lane = laneEnds.indexWhere((end) => end <= segment.startMinutes);
+      if (lane < 0) {
+        lane = laneEnds.length;
+        laneEnds.add(segment.endMinutes);
+      } else {
+        laneEnds[lane] = segment.endMinutes;
+      }
+      segment.lane = lane;
+    }
+    for (final segment in group) {
+      segment.laneCount = laneEnds.length;
+    }
+  }
+
+  return sorted;
+}
+
 class _ListCalendarView extends StatelessWidget {
   const _ListCalendarView({
     required this.date,
     required this.provider,
+    required this.filter,
     required this.onToday,
     required this.onOccurrenceTap,
   });
 
   final DateTime date;
   final TimetableProvider provider;
+  final _GeneralOccurrenceFilter filter;
   final VoidCallback onToday;
   final ValueChanged<GeneralEventOccurrence> onOccurrenceTap;
 
   @override
   Widget build(BuildContext context) {
     final start = normalizeDateOnly(date);
-    final occurrences = provider.generalOccurrencesForRange(
-      startInclusive: start,
-      endExclusive: start.add(const Duration(days: 180)),
-    );
+    final occurrences = provider
+        .generalOccurrencesForRange(
+          startInclusive: start,
+          endExclusive: start.add(const Duration(days: 180)),
+        )
+        .where(filter.matches)
+        .toList();
     if (occurrences.isEmpty) {
-      return _EmptyListState(onToday: onToday);
+      return _EmptyListState(onToday: onToday, filtered: filter.isActive);
     }
     final groups = <String, List<GeneralEventOccurrence>>{};
     for (final occurrence in occurrences) {
@@ -703,9 +970,10 @@ class _ListCalendarView extends StatelessWidget {
 }
 
 class _ReminderStrip extends StatelessWidget {
-  const _ReminderStrip({required this.provider});
+  const _ReminderStrip({required this.provider, required this.filter});
 
   final TimetableProvider provider;
+  final _GeneralOccurrenceFilter filter;
 
   @override
   Widget build(BuildContext context) {
@@ -715,6 +983,7 @@ class _ReminderStrip extends StatelessWidget {
           startInclusive: now,
           endExclusive: now.add(const Duration(hours: 24)),
         )
+        .where(filter.matches)
         .where(_hasReminder)
         .take(3)
         .toList();
@@ -723,6 +992,7 @@ class _ReminderStrip extends StatelessWidget {
           startInclusive: now.subtract(const Duration(hours: 24)),
           endExclusive: now,
         )
+        .where(filter.matches)
         .where((occurrence) => occurrence.end.isBefore(now))
         .take(3)
         .toList();
@@ -1132,9 +1402,10 @@ class _ListOccurrenceTile extends StatelessWidget {
 }
 
 class _EmptyListState extends StatelessWidget {
-  const _EmptyListState({required this.onToday});
+  const _EmptyListState({required this.onToday, required this.filtered});
 
   final VoidCallback onToday;
+  final bool filtered;
 
   @override
   Widget build(BuildContext context) {
@@ -1151,7 +1422,10 @@ class _EmptyListState extends StatelessWidget {
               color: theme.colorScheme.primary,
             ),
             const SizedBox(height: 12),
-            Text('No upcoming events', style: theme.textTheme.titleMedium),
+            Text(
+              filtered ? 'No matching events' : 'No upcoming events',
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onToday,
@@ -1346,6 +1620,20 @@ List<DateTime> _visibleWeekDays(DateTime weekStart, bool showWeekends) {
     for (var i = 0; i < 7; i++)
       if (showWeekends || i < 5) weekStart.add(Duration(days: i)),
   ];
+}
+
+List<int> _availableFilterColors(List<GeneralSchedule> schedules) {
+  final values = <int>{};
+  for (final schedule in schedules) {
+    values.add(schedule.colorValue);
+    for (final event in schedule.events) {
+      final colorValue = event.colorValue;
+      if (colorValue != null) {
+        values.add(colorValue);
+      }
+    }
+  }
+  return values.toList()..sort();
 }
 
 String _yearLabel(DateTime date, String view) {

@@ -389,5 +389,127 @@ void main() {
       expect(occurrence.start.hour, 9);
       expect(occurrence.end.hour, 10);
     });
+
+    test('expands daily recurrence with count', () {
+      final event = GeneralEvent(
+        id: 'daily',
+        calendarId: 'sched1',
+        title: 'Daily',
+        startDateTimeIso: '2026-05-20T09:00:00.000',
+        endDateTimeIso: '2026-05-20T09:30:00.000',
+        recurrenceRule: const GeneralEventRecurrenceRule(
+          type: GeneralEventRecurrence.daily,
+          unit: GeneralEventRecurrenceUnit.day,
+          count: 3,
+        ),
+      );
+      final schedule = GeneralSchedule(
+        id: 'sched1',
+        name: 'Work',
+        events: [event],
+      );
+
+      final occurrences = expandGeneralEventOccurrences(
+        calendar: schedule,
+        event: event,
+        startInclusive: DateTime(2026, 5, 20),
+        endExclusive: DateTime(2026, 5, 25),
+      );
+
+      expect(occurrences.map((item) => item.start.day), [20, 21, 22]);
+    });
+
+    test('expands monthly recurrence from month end safely', () {
+      final event = GeneralEvent(
+        id: 'monthly',
+        calendarId: 'sched1',
+        title: 'Monthly',
+        startDateTimeIso: '2026-01-31T09:00:00.000',
+        endDateTimeIso: '2026-01-31T10:00:00.000',
+        recurrenceRule: const GeneralEventRecurrenceRule(
+          type: GeneralEventRecurrence.monthly,
+          unit: GeneralEventRecurrenceUnit.month,
+          count: 3,
+        ),
+      );
+      final schedule = GeneralSchedule(
+        id: 'sched1',
+        name: 'Work',
+        events: [event],
+      );
+
+      final occurrences = expandGeneralEventOccurrences(
+        calendar: schedule,
+        event: event,
+        startInclusive: DateTime(2026, 1, 1),
+        endExclusive: DateTime(2026, 4, 1),
+      );
+
+      expect(occurrences.map((item) => [item.start.month, item.start.day]), [
+        [1, 31],
+        [2, 28],
+        [3, 31],
+      ]);
+    });
+
+    test('expands custom interval recurrence and skips exceptions', () {
+      final event = GeneralEvent(
+        id: 'custom',
+        calendarId: 'sched1',
+        title: 'Custom',
+        startDateTimeIso: '2026-05-20T09:00:00.000',
+        endDateTimeIso: '2026-05-20T10:00:00.000',
+        recurrenceRule: const GeneralEventRecurrenceRule(
+          type: GeneralEventRecurrence.custom,
+          unit: GeneralEventRecurrenceUnit.day,
+          interval: 2,
+          count: 4,
+        ),
+        recurrenceExceptionDateIso: const ['2026-05-22'],
+      );
+      final schedule = GeneralSchedule(
+        id: 'sched1',
+        name: 'Work',
+        events: [event],
+      );
+
+      final occurrences = expandGeneralEventOccurrences(
+        calendar: schedule,
+        event: event,
+        startInclusive: DateTime(2026, 5, 20),
+        endExclusive: DateTime(2026, 5, 30),
+      );
+
+      expect(occurrences.map((item) => item.start.day), [20, 24, 26]);
+    });
+
+    test('far future recurrence query starts near visible range', () {
+      final event = GeneralEvent(
+        id: 'future',
+        calendarId: 'sched1',
+        title: 'Future',
+        startDateTimeIso: '2020-01-01T09:00:00.000',
+        endDateTimeIso: '2020-01-01T10:00:00.000',
+        recurrenceRule: const GeneralEventRecurrenceRule(
+          type: GeneralEventRecurrence.daily,
+          unit: GeneralEventRecurrenceUnit.day,
+        ),
+      );
+      final schedule = GeneralSchedule(
+        id: 'sched1',
+        name: 'Work',
+        events: [event],
+      );
+
+      final occurrences = expandGeneralEventOccurrences(
+        calendar: schedule,
+        event: event,
+        startInclusive: DateTime(2026, 5, 20),
+        endExclusive: DateTime(2026, 5, 22),
+      );
+
+      expect(occurrences, hasLength(2));
+      expect(occurrences.first.start, DateTime(2026, 5, 20, 9));
+    });
   });
 }

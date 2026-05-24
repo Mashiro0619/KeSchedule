@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -30,13 +33,19 @@ enum _DataAction {
 }
 
 enum _GeneralDataAction {
-  importSchedulesJson,
-  importSchedulesIcs,
+  importSchedulesJsonFile,
+  importSchedulesJsonText,
+  importSchedulesIcsFile,
+  importSchedulesIcsText,
   exportSchedulesJsonShare,
   exportSchedulesJsonSave,
+  exportSchedulesJsonText,
   exportSchedulesIcsShare,
   exportSchedulesIcsSave,
+  exportSchedulesIcsText,
 }
+
+enum _ExportFormat { json, ics }
 
 enum UpdateCheckSource { manual, startup }
 
@@ -1153,21 +1162,39 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.file_download_outlined),
-                  title: Text('${l10n.importGeneralSchedules} JSON'),
+                  title: const Text('Import JSON file'),
                   subtitle: Text(l10n.importGeneralSchedulesDesc),
                   onTap: () => Navigator.of(
                     sheetContext,
-                  ).pop(_GeneralDataAction.importSchedulesJson),
+                  ).pop(_GeneralDataAction.importSchedulesJsonFile),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.paste_outlined),
+                  title: const Text('Paste JSON'),
+                  subtitle: const Text('Import calendars from copied JSON'),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_GeneralDataAction.importSchedulesJsonText),
                 ),
                 ListTile(
                   leading: const Icon(Icons.calendar_month_outlined),
-                  title: const Text('Import ICS'),
+                  title: const Text('Import ICS file'),
                   subtitle: const Text(
                     'Read events from an .ics calendar file',
                   ),
                   onTap: () => Navigator.of(
                     sheetContext,
-                  ).pop(_GeneralDataAction.importSchedulesIcs),
+                  ).pop(_GeneralDataAction.importSchedulesIcsFile),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.event_note_outlined),
+                  title: const Text('Paste ICS'),
+                  subtitle: const Text(
+                    'Import events from copied calendar text',
+                  ),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_GeneralDataAction.importSchedulesIcsText),
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -1187,6 +1214,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ).pop(_GeneralDataAction.exportSchedulesJsonSave),
                 ),
                 ListTile(
+                  leading: const Icon(Icons.text_snippet_outlined),
+                  title: const Text('Copy JSON'),
+                  subtitle: const Text('Copy selected calendars as JSON text'),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_GeneralDataAction.exportSchedulesJsonText),
+                ),
+                ListTile(
                   leading: const Icon(Icons.ios_share_outlined),
                   title: const Text('Share ICS'),
                   subtitle: const Text('Share selected calendars as .ics'),
@@ -1202,6 +1237,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     sheetContext,
                   ).pop(_GeneralDataAction.exportSchedulesIcsSave),
                 ),
+                ListTile(
+                  leading: const Icon(Icons.event_note_outlined),
+                  title: const Text('Copy ICS'),
+                  subtitle: const Text('Copy selected calendars as ICS text'),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_GeneralDataAction.exportSchedulesIcsText),
+                ),
               ],
             ),
           ),
@@ -1210,18 +1253,32 @@ class _SettingsPageState extends State<SettingsPage> {
     );
     if (action == null || !mounted) return;
     switch (action) {
-      case _GeneralDataAction.importSchedulesJson:
-        await _importGeneralSchedules(provider);
-      case _GeneralDataAction.importSchedulesIcs:
-        await _importGeneralSchedulesIcs(provider);
+      case _GeneralDataAction.importSchedulesJsonFile:
+        await _importGeneralSchedulesJsonFile(provider);
+      case _GeneralDataAction.importSchedulesJsonText:
+        await _importGeneralSchedulesJsonText(provider);
+      case _GeneralDataAction.importSchedulesIcsFile:
+        await _importGeneralSchedulesIcsFile(provider);
+      case _GeneralDataAction.importSchedulesIcsText:
+        await _importGeneralSchedulesIcsText(provider);
       case _GeneralDataAction.exportSchedulesJsonShare:
         await _exportGeneralSchedules(provider, share: true);
       case _GeneralDataAction.exportSchedulesJsonSave:
         await _exportGeneralSchedules(provider, share: false);
+      case _GeneralDataAction.exportSchedulesJsonText:
+        await _exportGeneralSchedulesAsText(
+          provider,
+          format: _ExportFormat.json,
+        );
       case _GeneralDataAction.exportSchedulesIcsShare:
         await _exportGeneralSchedulesIcs(provider, share: true);
       case _GeneralDataAction.exportSchedulesIcsSave:
         await _exportGeneralSchedulesIcs(provider, share: false);
+      case _GeneralDataAction.exportSchedulesIcsText:
+        await _exportGeneralSchedulesAsText(
+          provider,
+          format: _ExportFormat.ics,
+        );
     }
   }
 
@@ -1335,78 +1392,110 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> _importGeneralSchedules(TimetableProvider provider) async {
+  Future<void> _importGeneralSchedulesJsonFile(
+    TimetableProvider provider,
+  ) async {
+    final source = await _pickTextFile(allowedExtensions: const ['json']);
+    if (source == null || !mounted) return;
+    await _importGeneralSchedulesJsonSource(provider, source, context);
+  }
+
+  Future<void> _importGeneralSchedulesJsonText(
+    TimetableProvider provider,
+  ) async {
     final l10n = AppLocalizations.of(context);
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TextImportPage(
           title: l10n.importGeneralSchedules,
           onSubmit: (context, content) async {
-            try {
-              final preview = provider.previewImportGeneralSchedules(content);
-              if (!context.mounted) return false;
-              final selectedIds = await _pickGeneralScheduleIds(
-                schedules: preview,
-                title: l10n.selectSchedulesToImport,
-                confirmText: l10n.save,
-              );
-              if (selectedIds == null || selectedIds.isEmpty) return false;
-
-              var mode = GeneralScheduleImportMode.addAsNew;
-              if (selectedIds.length == 1 &&
-                  provider.activeGeneralScheduleOrNull != null &&
-                  context.mounted) {
-                final choice = await showDialog<String>(
-                  context: context,
-                  builder: (ctx) {
-                    return AlertDialog(
-                      title: Text(l10n.dataImportExport),
-                      content: Text(l10n.replaceActiveSchedulePrompt),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop('new'),
-                          child: Text(l10n.addAsNewSchedule),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.of(ctx).pop('replace'),
-                          child: Text(l10n.save),
-                        ),
-                      ],
-                    );
-                  },
-                );
-                if (choice == 'replace') {
-                  mode = GeneralScheduleImportMode.replaceActive;
-                }
-              }
-
-              final count = await provider.importSelectedGeneralSchedulesJson(
-                content,
-                scheduleIds: selectedIds,
-                mode: mode,
-              );
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.importedSchedulesCount(count))),
-                );
-              }
-              return true;
-            } on FormatException catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(e.message)));
-              }
-              return false;
-            }
+            return _importGeneralSchedulesJsonSource(
+              provider,
+              content,
+              context,
+            );
           },
         ),
       ),
     );
   }
 
-  Future<void> _importGeneralSchedulesIcs(TimetableProvider provider) async {
+  Future<bool> _importGeneralSchedulesJsonSource(
+    TimetableProvider provider,
+    String content,
+    BuildContext feedbackContext,
+  ) async {
     final l10n = AppLocalizations.of(context);
+    try {
+      final preview = provider.previewImportGeneralSchedules(content);
+      if (!feedbackContext.mounted) return false;
+      final selectedIds = await _pickGeneralScheduleIds(
+        schedules: preview,
+        title: l10n.selectSchedulesToImport,
+        confirmText: l10n.save,
+      );
+      if (selectedIds == null || selectedIds.isEmpty) return false;
+
+      var mode = GeneralScheduleImportMode.addAsNew;
+      if (selectedIds.length == 1 &&
+          provider.activeGeneralScheduleOrNull != null &&
+          feedbackContext.mounted) {
+        final choice = await showDialog<String>(
+          context: feedbackContext,
+          builder: (ctx) {
+            return AlertDialog(
+              title: Text(l10n.dataImportExport),
+              content: Text(l10n.replaceActiveSchedulePrompt),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop('new'),
+                  child: Text(l10n.addAsNewSchedule),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop('replace'),
+                  child: Text(l10n.save),
+                ),
+              ],
+            );
+          },
+        );
+        if (choice == 'replace') {
+          mode = GeneralScheduleImportMode.replaceActive;
+        }
+      }
+
+      final count = await provider.importSelectedGeneralSchedulesJson(
+        content,
+        scheduleIds: selectedIds,
+        mode: mode,
+      );
+      if (feedbackContext.mounted) {
+        ScaffoldMessenger.of(feedbackContext).showSnackBar(
+          SnackBar(content: Text(l10n.importedSchedulesCount(count))),
+        );
+      }
+      return true;
+    } on FormatException catch (e) {
+      if (feedbackContext.mounted) {
+        ScaffoldMessenger.of(
+          feedbackContext,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+      return false;
+    }
+  }
+
+  Future<void> _importGeneralSchedulesIcsFile(
+    TimetableProvider provider,
+  ) async {
+    final source = await _pickTextFile(allowedExtensions: const ['ics']);
+    if (source == null || !mounted) return;
+    await _importGeneralSchedulesIcsSource(provider, source, context);
+  }
+
+  Future<void> _importGeneralSchedulesIcsText(
+    TimetableProvider provider,
+  ) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TextImportPage(
@@ -1414,69 +1503,100 @@ class _SettingsPageState extends State<SettingsPage> {
           labelText: 'ICS content',
           hintText: 'Paste BEGIN:VCALENDAR content here',
           onSubmit: (context, content) async {
-            try {
-              final preview = provider.previewImportGeneralSchedulesIcs(
-                content,
-              );
-              if (!context.mounted) return false;
-              var mode = GeneralScheduleImportMode.addAsNew;
-              if (preview.schedules.length == 1 &&
-                  provider.activeGeneralScheduleOrNull != null &&
-                  context.mounted) {
-                final choice = await showDialog<String>(
-                  context: context,
-                  builder: (ctx) {
-                    return AlertDialog(
-                      title: const Text('Import ICS'),
-                      content: Text(
-                        'Found ${preview.schedules.first.events.length} events. Import as a new calendar or replace the active calendar?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop('new'),
-                          child: Text(l10n.addAsNewSchedule),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.of(ctx).pop('replace'),
-                          child: Text(l10n.save),
-                        ),
-                      ],
-                    );
-                  },
-                );
-                if (choice == 'replace') {
-                  mode = GeneralScheduleImportMode.replaceActive;
-                }
-              }
-              final count = await provider.importGeneralSchedulesIcs(
-                content,
-                mode: mode,
-              );
-              if (context.mounted) {
-                final warnings = preview.warnings.take(2).join(' ');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      warnings.isEmpty
-                          ? l10n.importedSchedulesCount(count)
-                          : '${l10n.importedSchedulesCount(count)} $warnings',
-                    ),
-                  ),
-                );
-              }
-              return true;
-            } on FormatException catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(e.message)));
-              }
-              return false;
-            }
+            return _importGeneralSchedulesIcsSource(provider, content, context);
           },
         ),
       ),
     );
+  }
+
+  Future<bool> _importGeneralSchedulesIcsSource(
+    TimetableProvider provider,
+    String content,
+    BuildContext feedbackContext,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final preview = provider.previewImportGeneralSchedulesIcs(content);
+      if (!feedbackContext.mounted) return false;
+      var mode = GeneralScheduleImportMode.addAsNew;
+      if (preview.schedules.length == 1 &&
+          provider.activeGeneralScheduleOrNull != null &&
+          feedbackContext.mounted) {
+        final choice = await showDialog<String>(
+          context: feedbackContext,
+          builder: (ctx) {
+            return AlertDialog(
+              title: const Text('Import ICS'),
+              content: Text(
+                'Found ${preview.schedules.first.events.length} events. Import as a new calendar or replace the active calendar?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop('new'),
+                  child: Text(l10n.addAsNewSchedule),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop('replace'),
+                  child: Text(l10n.save),
+                ),
+              ],
+            );
+          },
+        );
+        if (choice == 'replace') {
+          mode = GeneralScheduleImportMode.replaceActive;
+        }
+      }
+      final count = await provider.importGeneralSchedulesIcs(
+        content,
+        mode: mode,
+      );
+      if (feedbackContext.mounted) {
+        final warnings = preview.warnings.take(2).join(' ');
+        ScaffoldMessenger.of(feedbackContext).showSnackBar(
+          SnackBar(
+            content: Text(
+              warnings.isEmpty
+                  ? l10n.importedSchedulesCount(count)
+                  : '${l10n.importedSchedulesCount(count)} $warnings',
+            ),
+          ),
+        );
+      }
+      return true;
+    } on FormatException catch (e) {
+      if (feedbackContext.mounted) {
+        ScaffoldMessenger.of(
+          feedbackContext,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+      return false;
+    }
+  }
+
+  Future<String?> _pickTextFile({
+    required List<String> allowedExtensions,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: allowedExtensions,
+        withData: true,
+      );
+      final file = result?.files.single;
+      final bytes = file?.bytes;
+      if (file == null || bytes == null) {
+        return null;
+      }
+      return utf8.decode(bytes);
+    } catch (_) {
+      if (mounted) {
+        _showMessage(l10n.importFailedCheckContent);
+      }
+      return null;
+    }
   }
 
   Future<void> _exportGeneralSchedules(
@@ -1500,6 +1620,39 @@ class _SettingsPageState extends State<SettingsPage> {
       } else {
         await _saveJsonToFile(fileName, content);
       }
+    } on FormatException catch (e) {
+      if (mounted) _showMessage(e.message);
+    } catch (_) {
+      if (mounted) _showMessage(l10n.saveFailedRetry);
+    }
+  }
+
+  Future<void> _exportGeneralSchedulesAsText(
+    TimetableProvider provider, {
+    required _ExportFormat format,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    final activeId = provider.activeGeneralScheduleOrNull?.id;
+    final selectedIds = await _pickGeneralScheduleIds(
+      schedules: provider.generalSchedules,
+      title: format == _ExportFormat.ics
+          ? 'Select calendars to copy as ICS'
+          : l10n.selectSchedulesToExport,
+      confirmText: l10n.copyText,
+      initialSelectedIds: activeId == null ? const [] : [activeId],
+    );
+    if (selectedIds == null || selectedIds.isEmpty || !mounted) return;
+    try {
+      final content = format == _ExportFormat.ics
+          ? provider.exportSelectedGeneralSchedulesIcs(selectedIds)
+          : provider.exportSelectedGeneralSchedulesJson(selectedIds);
+      await showTextExportDialog(
+        context,
+        title: format == _ExportFormat.ics
+            ? 'Export ICS text'
+            : 'Export JSON text',
+        content: content,
+      );
     } on FormatException catch (e) {
       if (mounted) _showMessage(e.message);
     } catch (_) {

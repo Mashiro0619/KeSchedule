@@ -270,12 +270,31 @@ String _escapeText(String value) {
 }
 
 String _unescapeText(String value) {
-  return value
-      .replaceAll(r'\n', '\n')
-      .replaceAll(r'\N', '\n')
-      .replaceAll(r'\,', ',')
-      .replaceAll(r'\;', ';')
-      .replaceAll(r'\\', '\\');
+  final buffer = StringBuffer();
+  for (var index = 0; index < value.length; index++) {
+    final char = value[index];
+    if (char != '\\' || index == value.length - 1) {
+      buffer.write(char);
+      continue;
+    }
+    final next = value[++index];
+    switch (next) {
+      case 'n':
+      case 'N':
+        buffer.write('\n');
+      case ',':
+        buffer.write(',');
+      case ';':
+        buffer.write(';');
+      case '\\':
+        buffer.write('\\');
+      default:
+        buffer
+          ..write('\\')
+          ..write(next);
+    }
+  }
+  return buffer.toString();
 }
 
 String _formatDate(DateTime value) {

@@ -313,6 +313,25 @@ class TimetableProvider extends ChangeNotifier {
     await _saveAndNotify();
   }
 
+  Future<GeneralEvent> duplicateGeneralOccurrence(
+    GeneralEventOccurrence occurrence,
+  ) async {
+    final now = DateTime.now().toIso8601String();
+    final duplicated = occurrence.event.copyWith(
+      id: _nextGeneralEventId(),
+      calendarId: occurrence.calendar.id,
+      title: '${occurrence.event.title} copy',
+      startDateTimeIso: occurrence.start.toIso8601String(),
+      endDateTimeIso: occurrence.end.toIso8601String(),
+      recurrenceRule: const GeneralEventRecurrenceRule(),
+      recurrenceExceptionDateIso: const [],
+      createdAtIso: now,
+      updatedAtIso: now,
+    );
+    await saveGeneralEvent(duplicated);
+    return duplicated;
+  }
+
   Future<void> deleteGeneralOccurrence(
     GeneralEventOccurrence occurrence,
   ) async {
@@ -546,6 +565,20 @@ class TimetableProvider extends ChangeNotifier {
     while (existingIds.contains(candidate)) {
       stamp += 1;
       candidate = 'schedule_import_$stamp';
+    }
+    return candidate;
+  }
+
+  String _nextGeneralEventId() {
+    final existingIds = _appData.generalMode.schedules
+        .expand((schedule) => schedule.events)
+        .map((event) => event.id)
+        .toSet();
+    var stamp = DateTime.now().microsecondsSinceEpoch;
+    var candidate = 'evt_$stamp';
+    while (existingIds.contains(candidate)) {
+      stamp += 1;
+      candidate = 'evt_$stamp';
     }
     return candidate;
   }

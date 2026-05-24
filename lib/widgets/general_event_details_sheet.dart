@@ -8,6 +8,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
     super.key,
     required this.occurrence,
     this.onEdit,
+    this.onDuplicate,
     this.onDeleteThis,
     this.onDeleteFuture,
     this.onDeleteAll,
@@ -15,6 +16,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
 
   final GeneralEventOccurrence occurrence;
   final VoidCallback? onEdit;
+  final VoidCallback? onDuplicate;
   final VoidCallback? onDeleteThis;
   final VoidCallback? onDeleteFuture;
   final VoidCallback? onDeleteAll;
@@ -133,6 +135,12 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                     onPressed: onEdit,
                     icon: const Icon(Icons.edit_outlined),
                     label: Text(l10n.editEvent),
+                  ),
+                if (onDuplicate != null)
+                  FilledButton.icon(
+                    onPressed: onDuplicate,
+                    icon: const Icon(Icons.content_copy_outlined),
+                    label: const Text('Duplicate'),
                   ),
               ],
             ),

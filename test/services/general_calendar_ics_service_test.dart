@@ -23,7 +23,7 @@ void main() {
             count: 3,
           ),
           location: 'Room A',
-          notes: 'Line one\nLine two',
+          notes: r'Path C:\Temp, keep; literal \n',
         ),
       ],
     );
@@ -36,7 +36,7 @@ void main() {
     expect(ics, contains('RRULE:FREQ=WEEKLY;COUNT=3'));
     expect(event.title, 'Planning, Review');
     expect(event.location, 'Room A');
-    expect(event.notes, contains('Line one'));
+    expect(event.notes, contains(r'Path C:\Temp, keep; literal \n'));
     expect(event.notes, contains('Calendar: Work'));
     expect(event.recurrenceRule.type, GeneralEventRecurrence.weekly);
     expect(event.recurrenceRule.count, 3);
