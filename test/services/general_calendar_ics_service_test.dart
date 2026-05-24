@@ -67,7 +67,13 @@ END:VCALENDAR
   test('malformed ICS without events fails clearly', () {
     expect(
       () => service.importSchedules('BEGIN:VCALENDAR\nEND:VCALENDAR'),
-      throwsFormatException,
+      throwsA(
+        isA<GeneralCalendarIcsImportException>().having(
+          (error) => error.code,
+          'code',
+          GeneralCalendarIcsImportErrorCode.noEvents,
+        ),
+      ),
     );
   });
 
@@ -95,5 +101,33 @@ END:VCALENDAR
     expect(imported.warningItems.single.values, ['STATUS']);
     expect(imported.warnings.single, contains('STATUS'));
     expect(event.notes, contains('Unsupported ICS fields ignored: STATUS'));
+  });
+
+  test('reports unsupported RRULE parts instead of silently mapping them', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:rrule-parts
+SUMMARY:Busy
+DTSTART:20260525T090000
+DTEND:20260525T100000
+RRULE:FREQ=WEEKLY;BYDAY=MO,WE;COUNT=4
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+    final warning = imported.warningItems.singleWhere(
+      (item) => item.code == GeneralCalendarIcsWarningCode.unsupportedFields,
+    );
+
+    expect(event.recurrenceRule.isRepeating, false);
+    expect(warning.values, contains('RRULE:BYDAY=MO,WE'));
+    expect(
+      event.notes,
+      contains('Unsupported RRULE parts ignored: BYDAY=MO,WE'),
+    );
   });
 }

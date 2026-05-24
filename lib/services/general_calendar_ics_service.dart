@@ -8,6 +8,32 @@ enum GeneralCalendarIcsWarningCode {
   unsupportedRRuleFrequency,
 }
 
+enum GeneralCalendarIcsImportErrorCode { noEvents, noImportableEvents }
+
+class GeneralCalendarIcsImportException implements FormatException {
+  const GeneralCalendarIcsImportException(this.code);
+
+  final GeneralCalendarIcsImportErrorCode code;
+
+  @override
+  String get message {
+    return switch (code) {
+      GeneralCalendarIcsImportErrorCode.noEvents => 'No VEVENT entries found.',
+      GeneralCalendarIcsImportErrorCode.noImportableEvents =>
+        'No importable events found.',
+    };
+  }
+
+  @override
+  int? get offset => null;
+
+  @override
+  Object? get source => null;
+
+  @override
+  String toString() => 'FormatException: $message';
+}
+
 class GeneralCalendarIcsImportWarning {
   const GeneralCalendarIcsImportWarning({
     required this.code,
@@ -95,7 +121,9 @@ class GeneralCalendarIcsService {
       }
     }
     if (blocks.isEmpty) {
-      throw const FormatException('No VEVENT entries found.');
+      throw const GeneralCalendarIcsImportException(
+        GeneralCalendarIcsImportErrorCode.noEvents,
+      );
     }
 
     final schedule = createDefaultGeneralSchedule(
@@ -113,7 +141,9 @@ class GeneralCalendarIcsService {
       }
     }
     if (events.isEmpty) {
-      throw const FormatException('No importable events found.');
+      throw const GeneralCalendarIcsImportException(
+        GeneralCalendarIcsImportErrorCode.noImportableEvents,
+      );
     }
     events.sort((a, b) => a.startDateTimeIso.compareTo(b.startDateTimeIso));
     return GeneralCalendarIcsImportResult(
@@ -218,12 +248,24 @@ class GeneralCalendarIcsService {
     final now = DateTime.now().toIso8601String();
     final title = fields['SUMMARY']?.value.trim();
     final description = fields['DESCRIPTION']?.value.trim() ?? '';
-    final unsupported = _unsupportedFields(fields.keys);
+    final unsupportedFields = _unsupportedFields(fields.keys);
+    final unsupportedRRuleParts = <String>[];
+    final recurrenceRule = _parseRRule(
+      fields['RRULE']?.value,
+      warnings,
+      unsupportedParts: unsupportedRRuleParts,
+    );
     final notes = [
       if (description.isNotEmpty) description,
-      if (unsupported.isNotEmpty)
-        'Unsupported ICS fields ignored: ${unsupported.join(', ')}',
+      if (unsupportedFields.isNotEmpty)
+        'Unsupported ICS fields ignored: ${unsupportedFields.join(', ')}',
+      if (unsupportedRRuleParts.isNotEmpty)
+        'Unsupported RRULE parts ignored: ${unsupportedRRuleParts.join(', ')}',
     ].join('\n\n');
+    final unsupported = [
+      ...unsupportedFields,
+      for (final part in unsupportedRRuleParts) 'RRULE:$part',
+    ]..sort();
     if (unsupported.isNotEmpty) {
       warnings.add(
         GeneralCalendarIcsImportWarning(
@@ -240,7 +282,7 @@ class GeneralCalendarIcsService {
       startDateTimeIso: start.toIso8601String(),
       endDateTimeIso: end.toIso8601String(),
       isAllDay: isAllDay,
-      recurrenceRule: _parseRRule(fields['RRULE']?.value, warnings),
+      recurrenceRule: recurrenceRule,
       location: fields['LOCATION']?.value.trim() ?? '',
       notes: notes,
       createdAtIso: now,
@@ -435,8 +477,9 @@ String? _exportRRule(GeneralEventRecurrenceRule rule) {
 
 GeneralEventRecurrenceRule _parseRRule(
   String? value,
-  List<GeneralCalendarIcsImportWarning> warnings,
-) {
+  List<GeneralCalendarIcsImportWarning> warnings, {
+  List<String>? unsupportedParts,
+}) {
   if (value == null || value.trim().isEmpty) {
     return const GeneralEventRecurrenceRule();
   }
@@ -448,10 +491,34 @@ GeneralEventRecurrenceRule _parseRRule(
         .substring(separator + 1)
         .toUpperCase();
   }
+  const supportedParts = {'FREQ', 'INTERVAL', 'COUNT', 'UNTIL'};
+  final unsupported =
+      parts.keys
+          .where((key) => !supportedParts.contains(key))
+          .map((key) => '$key=${parts[key]}')
+          .toList()
+        ..sort();
+  if (unsupported.isNotEmpty) {
+    unsupportedParts?.addAll(unsupported);
+    return const GeneralEventRecurrenceRule();
+  }
   final freq = parts['FREQ'];
-  final interval = int.tryParse(parts['INTERVAL'] ?? '') ?? 1;
-  final count = int.tryParse(parts['COUNT'] ?? '');
-  final until = parts['UNTIL'] == null ? null : _parseDate(parts['UNTIL']!);
+  final unsupportedValues = <String>[];
+  final rawInterval = parts['INTERVAL'];
+  final interval = rawInterval == null ? 1 : int.tryParse(rawInterval) ?? -1;
+  if (interval < 1) {
+    unsupportedValues.add('INTERVAL=$rawInterval');
+  }
+  final rawCount = parts['COUNT'];
+  final count = rawCount == null ? null : int.tryParse(rawCount);
+  if (rawCount != null && (count == null || count < 1)) {
+    unsupportedValues.add('COUNT=$rawCount');
+  }
+  final rawUntil = parts['UNTIL'];
+  final until = rawUntil == null ? null : _parseDate(rawUntil);
+  if (rawUntil != null && until == null) {
+    unsupportedValues.add('UNTIL=$rawUntil');
+  }
   final unit = switch (freq) {
     'DAILY' => GeneralEventRecurrenceUnit.day,
     'WEEKLY' => GeneralEventRecurrenceUnit.week,
@@ -465,6 +532,15 @@ GeneralEventRecurrenceRule _parseRRule(
         values: [freq ?? ''],
       ),
     );
+    if (freq != null && freq.isNotEmpty) {
+      unsupportedValues.add('FREQ=$freq');
+    }
+  }
+  if (unsupportedValues.isNotEmpty) {
+    unsupportedParts?.addAll(unsupportedValues..sort());
+    return const GeneralEventRecurrenceRule();
+  }
+  if (unit == null) {
     return const GeneralEventRecurrenceRule();
   }
   final type = interval <= 1

@@ -248,6 +248,12 @@ class TimetableProvider extends ChangeNotifier {
       generalMode: mode.copyWith(
         activeScheduleId: nextActiveId,
         schedules: remaining,
+        reminderAcknowledgements: mode.reminderAcknowledgements
+            .where(
+              (item) =>
+                  !_reminderKeyContainsSchedule(item.occurrenceKey, scheduleId),
+            )
+            .toList(),
       ),
     );
     await _saveAndNotify();
@@ -364,6 +370,15 @@ class TimetableProvider extends ChangeNotifier {
     await saveGeneralEvent(
       event.copyWith(recurrenceExceptionDateIso: exceptions.toList()..sort()),
     );
+    final mode = _appData.generalMode;
+    _appData = _appData.copyWith(
+      generalMode: mode.copyWith(
+        reminderAcknowledgements: mode.reminderAcknowledgements
+            .where((item) => item.occurrenceKey != occurrence.occurrenceKey)
+            .toList(),
+      ),
+    );
+    await _saveAndNotify();
   }
 
   Future<void> deleteFutureGeneralOccurrences(
@@ -384,6 +399,21 @@ class TimetableProvider extends ChangeNotifier {
         recurrenceRule: event.recurrenceRule.copyWith(untilDateIso: until),
       ),
     );
+    final mode = _appData.generalMode;
+    _appData = _appData.copyWith(
+      generalMode: mode.copyWith(
+        reminderAcknowledgements: mode.reminderAcknowledgements
+            .where(
+              (item) => !_reminderKeyMatchesEventAtOrAfter(
+                item.occurrenceKey,
+                event.id,
+                occurrence.start,
+              ),
+            )
+            .toList(),
+      ),
+    );
+    await _saveAndNotify();
   }
 
   List<GeneralEventOccurrence> generalOccurrencesForRange({
@@ -552,7 +582,7 @@ class TimetableProvider extends ChangeNotifier {
   GeneralCalendarIcsImportResult previewImportGeneralSchedulesIcs(
     String source,
   ) {
-    return _generalIcsService.importSchedules(source);
+    return _importGeneralSchedulesIcsSource(source);
   }
 
   List<GeneralSchedule> previewImportGeneralSchedules(String source) {
@@ -602,9 +632,21 @@ class TimetableProvider extends ChangeNotifier {
         );
       }
       final replaced = selected.first.copyWith(id: current.id);
-      _appData = _appData.copyWith(
-        generalMode: _appData.generalMode.withSchedule(replaced),
-      );
+      final nextMode = _appData.generalMode
+          .copyWith(
+            reminderAcknowledgements: _appData
+                .generalMode
+                .reminderAcknowledgements
+                .where(
+                  (item) => !_reminderKeyContainsSchedule(
+                    item.occurrenceKey,
+                    current.id,
+                  ),
+                )
+                .toList(),
+          )
+          .withSchedule(replaced);
+      _appData = _appData.copyWith(generalMode: nextMode);
       await _saveAndNotify();
       return GeneralScheduleImportResult(
         importedCount: 1,
@@ -641,7 +683,7 @@ class TimetableProvider extends ChangeNotifier {
     String source, {
     required GeneralScheduleImportMode mode,
   }) async {
-    final imported = _generalIcsService.importSchedules(source);
+    final imported = _importGeneralSchedulesIcsSource(source);
     if (imported.schedules.isEmpty) {
       throw FormatException(
         noSchedulesInImportMessage(localeCode: _appData.localeCode),
@@ -656,9 +698,21 @@ class TimetableProvider extends ChangeNotifier {
         );
       }
       final replaced = imported.schedules.first.copyWith(id: current.id);
-      _appData = _appData.copyWith(
-        generalMode: _appData.generalMode.withSchedule(replaced),
-      );
+      final nextMode = _appData.generalMode
+          .copyWith(
+            reminderAcknowledgements: _appData
+                .generalMode
+                .reminderAcknowledgements
+                .where(
+                  (item) => !_reminderKeyContainsSchedule(
+                    item.occurrenceKey,
+                    current.id,
+                  ),
+                )
+                .toList(),
+          )
+          .withSchedule(replaced);
+      _appData = _appData.copyWith(generalMode: nextMode);
       await _saveAndNotify();
       return GeneralScheduleImportResult(
         importedCount: 1,
@@ -701,6 +755,24 @@ class TimetableProvider extends ChangeNotifier {
     return candidate;
   }
 
+  GeneralCalendarIcsImportResult _importGeneralSchedulesIcsSource(
+    String source,
+  ) {
+    try {
+      return _generalIcsService.importSchedules(source);
+    } on GeneralCalendarIcsImportException catch (error) {
+      throw FormatException(_generalIcsImportErrorMessage(error.code));
+    }
+  }
+
+  String _generalIcsImportErrorMessage(GeneralCalendarIcsImportErrorCode code) {
+    return switch (code) {
+      GeneralCalendarIcsImportErrorCode.noEvents ||
+      GeneralCalendarIcsImportErrorCode.noImportableEvents =>
+        noSchedulesInImportMessage(localeCode: _appData.localeCode),
+    };
+  }
+
   String _nextGeneralEventId() {
     final existingIds = _appData.generalMode.schedules
         .expand((schedule) => schedule.events)
@@ -715,9 +787,27 @@ class TimetableProvider extends ChangeNotifier {
     return candidate;
   }
 
+  bool _reminderKeyContainsSchedule(String occurrenceKey, String scheduleId) {
+    final parts = occurrenceKey.split('|');
+    return parts.isNotEmpty && parts.first == scheduleId;
+  }
+
   bool _reminderKeyContainsEvent(String occurrenceKey, String eventId) {
     final parts = occurrenceKey.split('|');
     return parts.length >= 2 && parts[1] == eventId;
+  }
+
+  bool _reminderKeyMatchesEventAtOrAfter(
+    String occurrenceKey,
+    String eventId,
+    DateTime startInclusive,
+  ) {
+    final parts = occurrenceKey.split('|');
+    if (parts.length < 3 || parts[1] != eventId) {
+      return false;
+    }
+    final start = DateTime.tryParse(parts[2]);
+    return start != null && !start.isBefore(startInclusive);
   }
 
   bool _isInReminderWindow(GeneralEventOccurrence occurrence, DateTime now) {

@@ -232,6 +232,186 @@ void main() {
     },
   );
 
+  test('deleting a calendar removes its handled reminder records', () async {
+    final schedule = GeneralSchedule(
+      id: 'cal1',
+      name: 'Work',
+      events: [
+        GeneralEvent(
+          id: 'event1',
+          calendarId: 'cal1',
+          title: 'Reminder event',
+          startDateTimeIso: '2026-05-25T09:00:00.000',
+          endDateTimeIso: '2026-05-25T10:00:00.000',
+        ),
+      ],
+    );
+    final storage = _MemoryTimetableStorage(
+      buildInitialAppData(buildDefaultPeriodTimes()).copyWith(
+        generalMode: GeneralScheduleData(
+          activeScheduleId: 'cal1',
+          schedules: [schedule],
+          reminderAcknowledgements: const [
+            GeneralReminderAcknowledgement(
+              occurrenceKey: 'cal1|event1|2026-05-25T09:00:00.000',
+              updatedAtIso: '2026-05-25T08:55:00.000',
+            ),
+          ],
+        ),
+      ),
+    );
+    final provider = TimetableProvider(
+      storage: storage,
+      systemLocaleCodeResolver: () => defaultLocaleCode,
+    );
+
+    await provider.load();
+    await provider.deleteGeneralSchedule('cal1');
+
+    expect(storage.data!.generalMode.reminderAcknowledgements, isEmpty);
+    expect(provider.generalSchedules, hasLength(1));
+  });
+
+  test(
+    'replacing active calendar clears old handled reminder records',
+    () async {
+      final active = GeneralSchedule(
+        id: 'active',
+        name: 'Active',
+        events: [
+          GeneralEvent(
+            id: 'event1',
+            calendarId: 'active',
+            title: 'Old event',
+            startDateTimeIso: '2026-05-25T09:00:00.000',
+            endDateTimeIso: '2026-05-25T10:00:00.000',
+            reminders: const [GeneralEventReminder(minutesBefore: 10)],
+          ),
+        ],
+      );
+      final storage = _MemoryTimetableStorage(
+        buildInitialAppData(buildDefaultPeriodTimes()).copyWith(
+          generalMode: GeneralScheduleData(
+            activeScheduleId: 'active',
+            schedules: [active],
+            reminderAcknowledgements: const [
+              GeneralReminderAcknowledgement(
+                occurrenceKey: 'active|event1|2026-05-25T09:00:00.000',
+                updatedAtIso: '2026-05-25T08:55:00.000',
+              ),
+            ],
+          ),
+        ),
+      );
+      final provider = TimetableProvider(
+        storage: storage,
+        systemLocaleCodeResolver: () => defaultLocaleCode,
+      );
+      final source = encodeGeneralScheduleDataEnvelope(
+        GeneralScheduleExportData(
+          schedules: [
+            GeneralSchedule(
+              id: 'replacement',
+              name: 'Replacement',
+              events: [
+                GeneralEvent(
+                  id: 'event1',
+                  calendarId: 'replacement',
+                  title: 'Replacement event',
+                  startDateTimeIso: '2026-05-25T09:00:00.000',
+                  endDateTimeIso: '2026-05-25T10:00:00.000',
+                  reminders: const [GeneralEventReminder(minutesBefore: 10)],
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      await provider.load();
+      await provider.importSelectedGeneralSchedulesJson(
+        source,
+        scheduleIds: const ['replacement'],
+        mode: GeneralScheduleImportMode.replaceActive,
+      );
+
+      final items = provider.generalReminderItems(
+        now: DateTime(2026, 5, 25, 8, 55),
+      );
+      expect(storage.data!.generalMode.reminderAcknowledgements, isEmpty);
+      expect(items, hasLength(1));
+      expect(items.single.occurrence.event.title, 'Replacement event');
+    },
+  );
+
+  test(
+    'deleting future recurrence clears future handled reminder records',
+    () async {
+      final schedule = GeneralSchedule(
+        id: 'cal1',
+        name: 'Work',
+        events: [
+          GeneralEvent(
+            id: 'repeat1',
+            calendarId: 'cal1',
+            title: 'Weekly',
+            startDateTimeIso: '2026-05-18T09:00:00.000',
+            endDateTimeIso: '2026-05-18T10:00:00.000',
+            recurrenceRule: const GeneralEventRecurrenceRule(
+              type: GeneralEventRecurrence.weekly,
+              unit: GeneralEventRecurrenceUnit.week,
+              count: 4,
+            ),
+            reminders: const [GeneralEventReminder(minutesBefore: 10)],
+          ),
+        ],
+      );
+      final storage = _MemoryTimetableStorage(
+        buildInitialAppData(buildDefaultPeriodTimes()).copyWith(
+          generalMode: GeneralScheduleData(
+            activeScheduleId: 'cal1',
+            schedules: [schedule],
+            reminderAcknowledgements: const [
+              GeneralReminderAcknowledgement(
+                occurrenceKey: 'cal1|repeat1|2026-05-18T09:00:00.000',
+                updatedAtIso: '2026-05-18T08:55:00.000',
+              ),
+              GeneralReminderAcknowledgement(
+                occurrenceKey: 'cal1|repeat1|2026-05-25T09:00:00.000',
+                updatedAtIso: '2026-05-25T08:55:00.000',
+              ),
+              GeneralReminderAcknowledgement(
+                occurrenceKey: 'cal1|repeat1|2026-06-01T09:00:00.000',
+                updatedAtIso: '2026-06-01T08:55:00.000',
+              ),
+            ],
+          ),
+        ),
+      );
+      final provider = TimetableProvider(
+        storage: storage,
+        systemLocaleCodeResolver: () => defaultLocaleCode,
+      );
+
+      await provider.load();
+      final occurrence = provider
+          .generalOccurrencesForRange(
+            startInclusive: DateTime(2026, 5, 25),
+            endExclusive: DateTime(2026, 5, 26),
+          )
+          .single;
+
+      await provider.deleteFutureGeneralOccurrences(occurrence);
+
+      expect(
+        storage.data!.generalMode.reminderAcknowledgements.map(
+          (item) => item.occurrenceKey,
+        ),
+        ['cal1|repeat1|2026-05-18T09:00:00.000'],
+      );
+    },
+  );
+
   test(
     'general JSON import returns structured result for selected calendars',
     () async {
@@ -373,6 +553,35 @@ END:VCALENDAR
       expect(
         result.icsWarnings.single.code,
         GeneralCalendarIcsWarningCode.unsupportedFields,
+      );
+    },
+  );
+
+  test(
+    'general ICS import failures are localized by provider locale',
+    () async {
+      final provider = TimetableProvider(
+        storage: _MemoryTimetableStorage(
+          buildInitialAppData(
+            buildDefaultPeriodTimes(),
+          ).copyWith(localeCode: 'zh'),
+        ),
+        systemLocaleCodeResolver: () => 'zh',
+      );
+
+      await provider.load();
+
+      expect(
+        () => provider.previewImportGeneralSchedulesIcs(
+          'BEGIN:VCALENDAR\nEND:VCALENDAR',
+        ),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            '导入文件没有日程。',
+          ),
+        ),
       );
     },
   );
