@@ -56,11 +56,13 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
   void initState() {
     super.initState();
     final initial = widget.initialCourse;
-    final defaultStartMinutes = widget.initialStartMinutes ??
+    final defaultStartMinutes =
+        widget.initialStartMinutes ??
         (widget.periodTimes.isNotEmpty
             ? widget.periodTimes.first.startMinutes
             : 8 * 60);
-    final defaultEndMinutes = widget.initialEndMinutes ??
+    final defaultEndMinutes =
+        widget.initialEndMinutes ??
         (widget.periodTimes.length > 1
             ? widget.periodTimes[1].endMinutes
             : widget.periodTimes.isNotEmpty
@@ -91,15 +93,17 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       initial?.startMinutes ?? defaultStartMinutes,
     );
     _endTime = _timeOfDayFromMinutes(initial?.endMinutes ?? defaultEndMinutes);
-    _selectedPeriods = initial?.periods.isNotEmpty == true
-        ? List<int>.from(initial!.periods)
-        : widget.initialPeriods != null
-        ? List<int>.from(widget.initialPeriods!)
-        : matchPeriodsForTimeRange(
-            widget.periodTimes,
-            initial?.startMinutes ?? defaultStartMinutes,
-            initial?.endMinutes ?? defaultEndMinutes,
-          );
+    _selectedPeriods = _normalizeSelectedPeriods(
+      initial?.periods.isNotEmpty == true
+          ? initial!.periods
+          : widget.initialPeriods != null
+          ? widget.initialPeriods!
+          : matchPeriodsForTimeRange(
+              widget.periodTimes,
+              initial?.startMinutes ?? defaultStartMinutes,
+              initial?.endMinutes ?? defaultEndMinutes,
+            ),
+    );
   }
 
   @override
@@ -342,9 +346,10 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
         );
       },
     );
-    if (result != null) {
-      setState(() => _selectedDayOfWeek = result);
+    if (!mounted || result == null) {
+      return;
     }
+    setState(() => _selectedDayOfWeek = result);
   }
 
   Future<void> _pickSemesterWeeks() async {
@@ -455,7 +460,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
         );
       },
     );
-    if (result == null) {
+    if (!mounted || result == null) {
       return;
     }
     setState(() {
@@ -478,7 +483,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
         );
       },
     );
-    if (picked == null) {
+    if (!mounted || picked == null) {
       return;
     }
     setState(() {
@@ -547,19 +552,21 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
         );
       },
     );
-    if (result == null) {
+    if (!mounted || result == null) {
       return;
     }
     setState(() {
-      _selectedPeriods = result;
+      _selectedPeriods = _normalizeSelectedPeriods(result);
       if (_selectedPeriods.isNotEmpty) {
         final selectedTimes =
             widget.periodTimes
                 .where((item) => _selectedPeriods.contains(item.index))
                 .toList()
               ..sort((a, b) => a.index.compareTo(b.index));
-        _startTime = _timeOfDayFromMinutes(selectedTimes.first.startMinutes);
-        _endTime = _timeOfDayFromMinutes(selectedTimes.last.endMinutes);
+        if (selectedTimes.isNotEmpty) {
+          _startTime = _timeOfDayFromMinutes(selectedTimes.first.startMinutes);
+          _endTime = _timeOfDayFromMinutes(selectedTimes.last.endMinutes);
+        }
       }
     });
   }
@@ -571,9 +578,9 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       return;
     }
 
-    final periods = _selectedPeriods.isEmpty
-        ? _matchedPeriods
-        : _selectedPeriods;
+    final periods = _normalizeSelectedPeriods(
+      _selectedPeriods.isEmpty ? _matchedPeriods : _selectedPeriods,
+    );
     final course = CourseItem(
       id:
           widget.initialCourse?.id ??
@@ -587,7 +594,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       startMinutes: startMinutes,
       endMinutes: endMinutes,
       timeRange: buildTimeRange(startMinutes, endMinutes),
-      credit: double.tryParse(_creditController.text.trim()) ?? 0,
+      credit: _parseCredit(_creditController.text),
       remarks: _remarksController.text.trim(),
       customFields: _parseCustomFields(_customFieldsController.text),
     );
@@ -615,8 +622,28 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     return contiguous;
   }
 
+  List<int> _normalizeSelectedPeriods(Iterable<int> periods) {
+    final validIndices = widget.periodTimes.map((item) => item.index).toSet();
+    final normalized =
+        periods
+            .where((period) => period > 0)
+            .where(
+              (period) => validIndices.isEmpty || validIndices.contains(period),
+            )
+            .toSet()
+            .toList()
+          ..sort();
+    return normalized;
+  }
+
+  double _parseCredit(String value) {
+    final parsed = double.tryParse(value.trim());
+    return parsed == null || !parsed.isFinite ? 0 : parsed;
+  }
+
   TimeOfDay _timeOfDayFromMinutes(int minutes) {
-    return TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+    final normalized = normalizeMinuteOfDay(minutes);
+    return TimeOfDay(hour: normalized ~/ 60, minute: normalized % 60);
   }
 
   int _minutesFromTimeOfDay(TimeOfDay time) => (time.hour * 60) + time.minute;

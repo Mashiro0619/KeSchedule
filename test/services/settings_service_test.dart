@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sked/models/app_data.dart';
-import 'package:sked/models/student_mode_data.dart';
+import 'package:sked/models/timetable_models.dart';
 import 'package:sked/services/settings_service.dart';
 
 void main() {
@@ -12,7 +11,7 @@ void main() {
     test('replaces the parser settings subtree when any field differs', () {
       final data = base();
       final next = SchoolImportParserSettings(
-        source: 'custom',
+        source: schoolImportParserSourceCustomOpenAi,
         customBaseUrl: 'https://api.example.com',
         customApiKey: 'sk-secret',
         customModel: 'gpt-mini',
@@ -33,7 +32,7 @@ void main() {
       final initial = service.updateSchoolImportParserSettings(
         base(),
         SchoolImportParserSettings(
-          source: 'custom',
+          source: schoolImportParserSourceCustomOpenAi,
           customBaseUrl: 'a',
           customApiKey: 'b',
           customModel: 'c',
@@ -41,7 +40,7 @@ void main() {
         ),
       );
       final same = SchoolImportParserSettings(
-        source: 'custom',
+        source: schoolImportParserSourceCustomOpenAi,
         customBaseUrl: 'a',
         customApiKey: 'b',
         customModel: 'c',
@@ -51,6 +50,26 @@ void main() {
       final updated = service.updateSchoolImportParserSettings(initial, same);
 
       expect(identical(updated, initial), isTrue);
+    });
+
+    test('normalizes parser settings before saving them', () {
+      final updated = service.updateSchoolImportParserSettings(
+        base(),
+        SchoolImportParserSettings(
+          source: 'unknown',
+          customBaseUrl: ' https://api.example.com/v1 ',
+          customApiKey: ' sk-secret ',
+          customModel: ' gpt-mini ',
+          customPrompt: ' Return JSON. ',
+        ),
+      );
+
+      final settings = updated.studentMode.schoolImportParserSettings;
+      expect(settings.source, schoolImportParserSourceOfficial);
+      expect(settings.customBaseUrl, 'https://api.example.com/v1');
+      expect(settings.customApiKey, 'sk-secret');
+      expect(settings.customModel, 'gpt-mini');
+      expect(settings.customPrompt, 'Return JSON.');
     });
   });
 

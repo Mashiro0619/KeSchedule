@@ -20,10 +20,16 @@ class CoursePeriodTime {
   };
 
   factory CoursePeriodTime.fromJson(Map<String, dynamic> json) {
+    final range = _normalizeDecodedTimeRange(
+      rawStart: json['startMinutes'],
+      rawEnd: json['endMinutes'],
+      fallbackStart: 8 * 60,
+      fallbackEnd: (8 * 60) + 45,
+    );
     return CoursePeriodTime(
-      index: (json['index'] as num?)?.toInt() ?? 1,
-      startMinutes: (json['startMinutes'] as num?)?.toInt() ?? 8 * 60,
-      endMinutes: (json['endMinutes'] as num?)?.toInt() ?? (8 * 60) + 45,
+      index: _intValue(json['index']) ?? 1,
+      startMinutes: range.$1,
+      endMinutes: range.$2,
     );
   }
 
@@ -34,6 +40,67 @@ class CoursePeriodTime {
       endMinutes: endMinutes ?? this.endMinutes,
     );
   }
+}
+
+Map<String, dynamic>? _asStringKeyedMap(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  final result = <String, dynamic>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is String) {
+      result[key] = entry.value;
+    }
+  }
+  return result;
+}
+
+List<int> _intList(Object? value) {
+  if (value is! List) {
+    return const [];
+  }
+  return value.whereType<num>().map((item) => item.toInt()).toList();
+}
+
+List<dynamic> _listValue(Object? value) {
+  return value is List ? value : const <dynamic>[];
+}
+
+String _stringValue(Object? value, [String fallback = '']) {
+  return value is String ? value : fallback;
+}
+
+int? _intValue(Object? value) {
+  return value is num ? value.toInt() : null;
+}
+
+double? _doubleValue(Object? value) {
+  return value is num ? value.toDouble() : null;
+}
+
+(int, int) _normalizeDecodedTimeRange({
+  required Object? rawStart,
+  required Object? rawEnd,
+  required int fallbackStart,
+  required int fallbackEnd,
+  bool preserveUnknownZero = false,
+}) {
+  final rawStartValue = _intValue(rawStart);
+  final rawEndValue = _intValue(rawEnd);
+  final start = normalizeMinuteOfDay(rawStartValue, fallback: fallbackStart);
+  final end = normalizeMinuteOfDay(rawEndValue, fallback: fallbackEnd);
+  if (preserveUnknownZero && rawStartValue == 0 && rawEndValue == 0) {
+    return (start, end);
+  }
+  if (end > start) {
+    return (start, end);
+  }
+  final repairedEnd = normalizeMinuteOfDay(start + 45, fallback: fallbackEnd);
+  if (repairedEnd > start) {
+    return (start, repairedEnd);
+  }
+  return (fallbackStart, fallbackEnd);
 }
 
 class PeriodTimeSet {
@@ -58,16 +125,15 @@ class PeriodTimeSet {
     String localeCode = defaultLocaleCode,
   }) {
     return PeriodTimeSet(
-      id: json['id'] as String? ?? '',
-      name:
-          json['name'] as String? ??
-          periodTimeSetFallbackName(localeCode: localeCode),
-      periodTimes: (json['periodTimes'] as List<dynamic>? ?? const <dynamic>[])
-          .map(
-            (item) => CoursePeriodTime.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
+      id: _stringValue(json['id']),
+      name: _stringValue(
+        json['name'],
+        periodTimeSetFallbackName(localeCode: localeCode),
+      ),
+      periodTimes: _listValue(json['periodTimes'])
+          .map(_asStringKeyedMap)
+          .whereType<Map<String, dynamic>>()
+          .map(CoursePeriodTime.fromJson)
           .toList(),
     );
   }
@@ -86,12 +152,16 @@ class PeriodTimeSet {
 }
 
 int _decodeLegacyDayOfWeek(Map<String, dynamic> json) {
-  if (json['weekday'] is int) {
-    return json['weekday'] as int;
+  final weekday = _intValue(json['weekday']);
+  if (weekday != null) {
+    return weekday;
   }
-  if (json['weekdays'] is List<dynamic> &&
-      (json['weekdays'] as List<dynamic>).isNotEmpty) {
-    return ((json['weekdays'] as List<dynamic>).first as num).toInt();
+  final weekdays = _listValue(json['weekdays']);
+  if (weekdays.isNotEmpty) {
+    final firstNumber = weekdays.whereType<num>();
+    if (firstNumber.isNotEmpty) {
+      return firstNumber.first.toInt();
+    }
   }
   return 1;
 }
@@ -145,29 +215,30 @@ class CourseItem {
 
   factory CourseItem.fromJson(Map<String, dynamic> json) {
     final legacyDayOfWeek =
-        (json['dayOfWeek'] as num?)?.toInt() ?? _decodeLegacyDayOfWeek(json);
-    final semesterWeeks = json['semesterWeeks'] is List<dynamic>
-        ? (json['semesterWeeks'] as List<dynamic>)
-              .map((item) => (item as num).toInt())
-              .toList()
-        : const <int>[];
+        _intValue(json['dayOfWeek']) ?? _decodeLegacyDayOfWeek(json);
+    final semesterWeeks = _intList(json['semesterWeeks']);
+    final range = _normalizeDecodedTimeRange(
+      rawStart: json['startMinutes'],
+      rawEnd: json['endMinutes'],
+      fallbackStart: 8 * 60,
+      fallbackEnd: (8 * 60) + 45,
+      preserveUnknownZero: true,
+    );
     return CourseItem(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? '',
-      teacher: json['teacher'] as String? ?? '',
-      location: json['location'] as String? ?? '',
+      id: _stringValue(json['id']),
+      name: _stringValue(json['name']),
+      teacher: _stringValue(json['teacher']),
+      location: _stringValue(json['location']),
       dayOfWeek: normalizeDayOfWeek(legacyDayOfWeek),
       semesterWeeks: normalizeSemesterWeeks(semesterWeeks),
-      periods: (json['periods'] as List<dynamic>? ?? const <dynamic>[])
-          .map((item) => (item as num).toInt())
-          .toList(),
-      startMinutes: (json['startMinutes'] as num?)?.toInt() ?? 8 * 60,
-      endMinutes: (json['endMinutes'] as num?)?.toInt() ?? (8 * 60) + 45,
-      timeRange: json['timeRange'] as String? ?? '',
-      credit: (json['credit'] as num?)?.toDouble() ?? 0,
-      remarks: json['remarks'] as String? ?? '',
+      periods: _intList(json['periods']),
+      startMinutes: range.$1,
+      endMinutes: range.$2,
+      timeRange: _stringValue(json['timeRange']),
+      credit: _doubleValue(json['credit']) ?? 0,
+      remarks: _stringValue(json['remarks']),
       customFields: Map<String, dynamic>.from(
-        json['customFields'] as Map? ?? const {},
+        _asStringKeyedMap(json['customFields']) ?? const {},
       ),
     );
   }

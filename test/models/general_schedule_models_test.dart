@@ -200,6 +200,35 @@ void main() {
       expect(json['id'], 'evt7');
       expect(json.containsKey('recurrenceEndDate'), false);
     });
+
+    test('fromJson filters malformed reminders', () {
+      final event = GeneralEvent.fromJson({
+        'id': 'evt_reminders',
+        'title': 'Reminder',
+        'start': '2026-05-22T09:00:00.000',
+        'end': '2026-05-22T10:00:00.000',
+        'reminders': [
+          {'minutesBefore': 10},
+          'bad',
+          null,
+        ],
+      });
+
+      expect(event.reminders, hasLength(1));
+      expect(event.reminders.single.minutesBefore, 10);
+    });
+
+    test('normalized rejects invalid event dates instead of rolling', () {
+      final event = GeneralEvent(
+        id: 'bad_date',
+        title: 'Bad date',
+        startDateTimeIso: '9999-02-31T09:00:00',
+        endDateTimeIso: '9999-02-31T10:00:00',
+      ).normalized(fallbackCalendarId: 'cal');
+
+      expect(event.startDateTimeIso, isNot(startsWith('9999-03-03')));
+      expect(DateTime.parse(event.startDateTimeIso).year, isNot(9999));
+    });
   });
 
   group('GeneralSchedule', () {
@@ -284,6 +313,27 @@ void main() {
         expect(updated.events[2].calendarId, 'other');
       },
     );
+
+    test('fromJson filters malformed events', () {
+      final schedule = GeneralSchedule.fromJson({
+        'id': 'sched_bad_events',
+        'name': 'Work',
+        'events': [
+          {
+            'id': 'evt_valid',
+            'title': 'Valid',
+            'start': '2026-05-22T09:00:00.000',
+            'end': '2026-05-22T10:00:00.000',
+          },
+          'bad',
+          null,
+        ],
+      });
+
+      expect(schedule.events, hasLength(1));
+      expect(schedule.events.single.id, 'evt_valid');
+      expect(schedule.events.single.calendarId, 'sched_bad_events');
+    });
   });
 
   group('GeneralScheduleData', () {
@@ -394,6 +444,20 @@ void main() {
 
       expect(updated.activeScheduleId, 'sched1');
       expect(updated.selectedDateIso, '2026-05-29');
+    });
+
+    test('fromJson rejects invalid selected dates instead of rolling', () {
+      final decoded = GeneralScheduleData.fromJson({
+        'schemaVersion': generalScheduleSchemaVersion,
+        'activeScheduleId': 'sched1',
+        'selectedDateIso': '9999-02-31',
+        'schedules': [
+          {'id': 'sched1', 'name': 'My Schedule', 'events': <Object>[]},
+        ],
+      });
+
+      expect(decoded.selectedDateIso, isNot('9999-03-03'));
+      expect(decoded.selectedDate.year, isNot(9999));
     });
 
     test(
@@ -554,6 +618,40 @@ void main() {
       for (final schedule in normalized.schedules) {
         expect(schedule.events.single.calendarId, schedule.id);
       }
+    });
+
+    test('fromJson filters malformed schedules and acknowledgements', () {
+      final decoded = GeneralScheduleData.fromJson({
+        'schemaVersion': generalScheduleSchemaVersion,
+        'activeScheduleId': 'sched1',
+        'schedules': [
+          {
+            'id': 'sched1',
+            'name': 'Valid',
+            'events': [
+              {
+                'id': 'evt1',
+                'title': 'Event',
+                'start': '2026-05-22T09:00:00.000',
+                'end': '2026-05-22T10:00:00.000',
+              },
+              42,
+            ],
+          },
+          'bad',
+        ],
+        'reminderAcknowledgements': [
+          {
+            'occurrenceKey': 'sched1|evt1|2026-05-22T09:00:00.000',
+            'updatedAt': '2026-05-22T08:55:00.000',
+          },
+          'bad',
+        ],
+      });
+
+      expect(decoded.schedules, hasLength(1));
+      expect(decoded.schedules.single.events, hasLength(1));
+      expect(decoded.reminderAcknowledgements, hasLength(1));
     });
   });
 

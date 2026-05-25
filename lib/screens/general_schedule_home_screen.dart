@@ -240,15 +240,22 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
     BuildContext context,
     TimetableProvider provider,
   ) async {
+    final firstDate = DateTime(1970);
+    final lastDate = DateTime(2100);
     final picked = await showDatePicker(
       context: context,
-      initialDate: provider.selectedGeneralDate,
-      firstDate: DateTime(1970),
-      lastDate: DateTime(2100),
+      initialDate: _clampDate(
+        provider.selectedGeneralDate,
+        firstDate,
+        lastDate,
+      ),
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
-    if (picked != null) {
-      await provider.setSelectedGeneralDate(picked);
+    if (!mounted || picked == null) {
+      return;
     }
+    await provider.setSelectedGeneralDate(picked);
   }
 
   Future<void> _openEditor(
@@ -438,6 +445,16 @@ String _yearLabel(DateTime date, String view) {
 
 String _formatDate(DateTime date) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+}
+
+DateTime _clampDate(DateTime date, DateTime firstDate, DateTime lastDate) {
+  if (date.isBefore(firstDate)) {
+    return firstDate;
+  }
+  if (date.isAfter(lastDate)) {
+    return lastDate;
+  }
+  return date;
 }
 
 String _formatTime(DateTime date) {

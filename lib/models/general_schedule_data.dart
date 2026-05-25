@@ -7,6 +7,40 @@ const generalViewDay = 'day';
 const generalViewList = 'list';
 const generalScheduleSchemaVersion = 3;
 
+Map<String, dynamic>? _asStringKeyedMap(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  final result = <String, dynamic>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is String) {
+      result[key] = entry.value;
+    }
+  }
+  return result;
+}
+
+List<dynamic> _listValue(Object? value) {
+  return value is List ? value : const <dynamic>[];
+}
+
+String _stringValue(Object? value, [String fallback = '']) {
+  return value is String ? value : fallback;
+}
+
+String? _nullableStringValue(Object? value) {
+  return value is String ? value : null;
+}
+
+int? _intValue(Object? value) {
+  return value is num ? value.toInt() : null;
+}
+
+bool? _boolValue(Object? value) {
+  return value is bool ? value : null;
+}
+
 class GeneralReminderAcknowledgement {
   const GeneralReminderAcknowledgement({
     required this.occurrenceKey,
@@ -26,9 +60,9 @@ class GeneralReminderAcknowledgement {
 
   factory GeneralReminderAcknowledgement.fromJson(Map<String, dynamic> json) {
     return GeneralReminderAcknowledgement(
-      occurrenceKey: json['occurrenceKey'] as String? ?? '',
-      isHandled: json['isHandled'] as bool? ?? true,
-      updatedAtIso: json['updatedAt'] as String? ?? '',
+      occurrenceKey: _stringValue(json['occurrenceKey']),
+      isHandled: _boolValue(json['isHandled']) ?? true,
+      updatedAtIso: _stringValue(json['updatedAt']),
     );
   }
 
@@ -98,7 +132,7 @@ class GeneralScheduleData {
       schedules.isEmpty ? null : activeSchedule;
 
   DateTime get selectedDate {
-    final parsed = DateTime.tryParse(selectedDateIso ?? '');
+    final parsed = tryParseStrictIsoDate(selectedDateIso);
     return parsed == null
         ? normalizeDateOnly(DateTime.now())
         : normalizeDateOnly(parsed);
@@ -124,18 +158,16 @@ class GeneralScheduleData {
     Map<String, dynamic> json, {
     String? localeCode,
   }) {
-    final schemaVersion = (json['schemaVersion'] as num?)?.toInt() ?? 0;
+    final schemaVersion = _intValue(json['schemaVersion']) ?? 0;
     if (schemaVersion < 2) {
       return GeneralScheduleData.createDefault();
     }
 
     final schedules =
-        (json['schedules'] as List<dynamic>? ?? const <dynamic>[])
-            .map(
-              (s) => GeneralSchedule.fromJson(
-                Map<String, dynamic>.from(s as Map),
-              ).normalized(),
-            )
+        _listValue(json['schedules'])
+            .map(_asStringKeyedMap)
+            .whereType<Map<String, dynamic>>()
+            .map((s) => GeneralSchedule.fromJson(s).normalized())
             .toList()
           ..sort((a, b) {
             final order = a.sortOrder.compareTo(b.sortOrder);
@@ -144,7 +176,7 @@ class GeneralScheduleData {
     final withDefaults = schedules.isEmpty
         ? <GeneralSchedule>[createDefaultGeneralSchedule()]
         : schedules;
-    final activeId = json['activeScheduleId'] as String? ?? '';
+    final activeId = _stringValue(json['activeScheduleId']);
     final resolvedActiveId = withDefaults.any((s) => s.id == activeId)
         ? activeId
         : withDefaults.first.id;
@@ -155,29 +187,25 @@ class GeneralScheduleData {
         for (var i = 0; i < withDefaults.length; i++)
           withDefaults[i].copyWith(sortOrder: i),
       ],
-      selectedDateIso: _normalizeDateIso(json['selectedDateIso'] as String?),
-      defaultView: normalizeGeneralView(json['defaultView'] as String?),
-      showWeekends: json['showWeekends'] as bool? ?? true,
-      dayStartHour: ((json['dayStartHour'] as num?)?.toInt() ?? 6)
-          .clamp(0, 23)
-          .toInt(),
-      dayEndHour: ((json['dayEndHour'] as num?)?.toInt() ?? 23)
-          .clamp(1, 24)
-          .toInt(),
+      selectedDateIso: _normalizeDateIso(
+        _nullableStringValue(json['selectedDateIso']),
+      ),
+      defaultView: normalizeGeneralView(
+        _nullableStringValue(json['defaultView']),
+      ),
+      showWeekends: _boolValue(json['showWeekends']) ?? true,
+      dayStartHour: (_intValue(json['dayStartHour']) ?? 6).clamp(0, 23).toInt(),
+      dayEndHour: (_intValue(json['dayEndHour']) ?? 23).clamp(1, 24).toInt(),
       timeGridMinutes: _normalizeGridMinutes(
-        (json['timeGridMinutes'] as num?)?.toInt(),
+        _intValue(json['timeGridMinutes']),
       ),
       closeEventPopupOnOutsideTap:
-          json['closeEventPopupOnOutsideTap'] as bool? ?? true,
-      reminderAcknowledgements:
-          (json['reminderAcknowledgements'] as List<dynamic>? ??
-                  const <dynamic>[])
-              .map(
-                (item) => GeneralReminderAcknowledgement.fromJson(
-                  Map<String, dynamic>.from(item as Map),
-                ),
-              )
-              .toList(),
+          _boolValue(json['closeEventPopupOnOutsideTap']) ?? true,
+      reminderAcknowledgements: _listValue(json['reminderAcknowledgements'])
+          .map(_asStringKeyedMap)
+          .whereType<Map<String, dynamic>>()
+          .map(GeneralReminderAcknowledgement.fromJson)
+          .toList(),
     ).normalized();
   }
 
@@ -303,7 +331,7 @@ String _dateIso(DateTime date) =>
     normalizeDateOnly(date).toIso8601String().split('T').first;
 
 String? _normalizeDateIso(String? value) {
-  final parsed = DateTime.tryParse(value ?? '');
+  final parsed = tryParseStrictIsoDate(value);
   return parsed == null ? null : _dateIso(parsed);
 }
 

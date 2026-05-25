@@ -111,8 +111,8 @@ List<GeneralEventOccurrence> expandGeneralEventOccurrences({
   required DateTime startInclusive,
   required DateTime endExclusive,
 }) {
-  final eventStart = DateTime.tryParse(event.startDateTimeIso);
-  final eventEnd = DateTime.tryParse(event.endDateTimeIso);
+  final eventStart = tryParseStrictIsoDateTime(event.startDateTimeIso);
+  final eventEnd = tryParseStrictIsoDateTime(event.endDateTimeIso);
   if (eventStart == null ||
       eventEnd == null ||
       !endExclusive.isAfter(startInclusive)) {
@@ -210,8 +210,7 @@ bool _overlaps(
 }
 
 DateTime? _parseUntil(String? value) {
-  final parsed = DateTime.tryParse(value ?? '');
-  return parsed == null ? null : normalizeDateOnly(parsed);
+  return tryParseStrictIsoDate(value);
 }
 
 int _firstCandidateIndex({

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' show Locale, PlatformDispatcher;
 
@@ -41,8 +42,51 @@ bool prefersConfiguredUpdateSourceForLocale(Locale? locale) {
   return languageCode == 'zh';
 }
 
+String normalizeUpdateVersion(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return '';
+  }
+  final withoutPrefix = trimmed.startsWith('v') || trimmed.startsWith('V')
+      ? trimmed.substring(1)
+      : trimmed;
+  return withoutPrefix.split('+').first.split('-').first.trim();
+}
+
+int compareUpdateVersions(String a, String b) {
+  final aParts = _versionParts(a);
+  final bParts = _versionParts(b);
+  final maxLength = aParts.length > bParts.length
+      ? aParts.length
+      : bParts.length;
+  for (var index = 0; index < maxLength; index++) {
+    final left = index < aParts.length ? aParts[index] : 0;
+    final right = index < bParts.length ? bParts[index] : 0;
+    if (left != right) {
+      return left.compareTo(right);
+    }
+  }
+  return 0;
+}
+
+List<int> _versionParts(String value) {
+  return normalizeUpdateVersion(value)
+      .split('.')
+      .map((item) => int.tryParse(item) ?? _leadingNumber(item))
+      .toList();
+}
+
+int _leadingNumber(String value) {
+  final match = RegExp(r'^\d+').firstMatch(value.trim());
+  return match == null ? 0 : int.parse(match.group(0)!);
+}
+
 class UpdateService {
-  const UpdateService({http.Client? client}) : _client = client;
+  const UpdateService({
+    http.Client? client,
+    Duration requestTimeout = const Duration(seconds: 10),
+  }) : _client = client,
+       _requestTimeout = requestTimeout;
 
   static const _githubLatestApi =
       'https://api.github.com/repos/Mashiro0619/KeSchedule/releases/latest';
@@ -50,6 +94,7 @@ class UpdateService {
       'https://github.com/Mashiro0619/KeSchedule/releases/latest';
 
   final http.Client? _client;
+  final Duration _requestTimeout;
 
   Future<UpdateCheckResult> checkForUpdates({Locale? preferredLocale}) async {
     final localVersion = await _getLocalVersion();
@@ -62,7 +107,7 @@ class UpdateService {
       releaseUrl: remoteInfo.releaseUrl,
       officialWebsiteUrl: AppConfig.officialWebsiteUrl,
       updateContent: remoteInfo.updateContent,
-      hasUpdate: _compareVersions(remoteInfo.version, localVersion) > 0,
+      hasUpdate: compareUpdateVersions(remoteInfo.version, localVersion) > 0,
     );
   }
 
@@ -114,19 +159,23 @@ class UpdateService {
   }
 
   Future<_RemoteUpdateInfo> _getCustomUpdateInfo(http.Client client) async {
-    final response = await client.get(Uri.parse(AppConfig.updateVersionUrl));
+    final response = await client
+        .get(Uri.parse(AppConfig.updateVersionUrl))
+        .timeout(_requestTimeout);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw http.ClientException(
         'Unable to fetch custom update info.',
         Uri.parse(AppConfig.updateVersionUrl),
       );
     }
-    final responseText = utf8.decode(response.bodyBytes);
+    final responseText = utf8.decode(response.bodyBytes, allowMalformed: true);
     final decoded = jsonDecode(responseText);
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Invalid custom update response.');
     }
-    final version = _normalizeVersion(decoded['version']?.toString() ?? '');
+    final version = normalizeUpdateVersion(
+      decoded['version']?.toString() ?? '',
+    );
     if (version.isEmpty) {
       throw const FormatException('Custom update version is empty.');
     }
@@ -137,20 +186,26 @@ class UpdateService {
     );
   }
 
-  Future<_RemoteUpdateInfo> _getGithubLatestReleaseInfo(http.Client client) async {
-    final response = await client.get(
-      Uri.parse(_githubLatestApi),
-      headers: const {'Accept': 'application/vnd.github+json'},
-    );
+  Future<_RemoteUpdateInfo> _getGithubLatestReleaseInfo(
+    http.Client client,
+  ) async {
+    final response = await client
+        .get(
+          Uri.parse(_githubLatestApi),
+          headers: const {'Accept': 'application/vnd.github+json'},
+        )
+        .timeout(_requestTimeout);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw const FormatException('Unable to fetch latest release version.');
     }
-    final decoded = jsonDecode(response.body);
+    final decoded = jsonDecode(
+      utf8.decode(response.bodyBytes, allowMalformed: true),
+    );
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Invalid latest release response.');
     }
     final tagName = decoded['tag_name']?.toString() ?? '';
-    final version = _normalizeVersion(tagName);
+    final version = normalizeUpdateVersion(tagName);
     if (version.isEmpty) {
       throw const FormatException('Latest release version is empty.');
     }
@@ -161,36 +216,5 @@ class UpdateService {
           : latestReleaseUrl,
       updateContent: decoded['body']?.toString().trim() ?? '',
     );
-  }
-
-  String _normalizeVersion(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      return '';
-    }
-    final withoutPrefix = trimmed.startsWith('v') || trimmed.startsWith('V')
-        ? trimmed.substring(1)
-        : trimmed;
-    return withoutPrefix.split('+').first.trim();
-  }
-
-  int _compareVersions(String a, String b) {
-    final aParts = _normalizeVersion(a)
-        .split('.')
-        .map((item) => int.tryParse(item) ?? 0)
-        .toList();
-    final bParts = _normalizeVersion(b)
-        .split('.')
-        .map((item) => int.tryParse(item) ?? 0)
-        .toList();
-    final maxLength = aParts.length > bParts.length ? aParts.length : bParts.length;
-    for (var index = 0; index < maxLength; index++) {
-      final left = index < aParts.length ? aParts[index] : 0;
-      final right = index < bParts.length ? bParts[index] : 0;
-      if (left != right) {
-        return left.compareTo(right);
-      }
-    }
-    return 0;
   }
 }

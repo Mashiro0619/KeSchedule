@@ -30,7 +30,8 @@ void main() {
     );
   }
 
-  File mainFile() => File('${tempDir.path}${Platform.pathSeparator}Sked_data.json');
+  File mainFile() =>
+      File('${tempDir.path}${Platform.pathSeparator}Sked_data.json');
   File backupFile() =>
       File('${tempDir.path}${Platform.pathSeparator}Sked_data.json.bak');
   File tempFile() =>
@@ -96,10 +97,28 @@ void main() {
 
       expect(result.data, isNotNull);
       expect(result.data!.activeMode, equals(AppMode.student));
-      expect(
-        result.recoveryStatus,
-        equals(RecoveryStatus.restoredFromBackup),
-      );
+      expect(result.recoveryStatus, equals(RecoveryStatus.restoredFromBackup));
+
+      final secondLoad = await storage.load();
+      expect(secondLoad.data, isNotNull);
+      expect(secondLoad.data!.activeMode, equals(AppMode.student));
+      expect(secondLoad.recoveryStatus, equals(RecoveryStatus.none));
+    });
+
+    test('falls back to .bak when main file is not valid UTF-8', () async {
+      final v1 = buildAppData(AppMode.student);
+      final v2 = buildAppData(AppMode.general);
+
+      await storage.save(v1);
+      await storage.save(v2);
+
+      await mainFile().writeAsBytes([0xff, 0xfe, 0xfd]);
+
+      final result = await storage.load();
+
+      expect(result.data, isNotNull);
+      expect(result.data!.activeMode, equals(AppMode.student));
+      expect(result.recoveryStatus, equals(RecoveryStatus.restoredFromBackup));
     });
 
     test(

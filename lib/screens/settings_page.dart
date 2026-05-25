@@ -652,7 +652,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final availableUpdateVersion = provider.availableUpdateVersion;
     if (availableUpdateVersion != null &&
         availableUpdateVersion.isNotEmpty &&
-        _compareVersions(availableUpdateVersion, currentVersion) <= 0) {
+        compareUpdateVersions(availableUpdateVersion, currentVersion) <= 0) {
       await provider.updateAvailableUpdateVersion(null);
     }
   }
@@ -669,38 +669,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (_currentVersion.isEmpty) {
       return true;
     }
-    return _compareVersions(version, _currentVersion) > 0;
-  }
-
-  int _compareVersions(String a, String b) {
-    final aParts = _normalizeVersion(
-      a,
-    ).split('.').map((item) => int.tryParse(item) ?? 0).toList();
-    final bParts = _normalizeVersion(
-      b,
-    ).split('.').map((item) => int.tryParse(item) ?? 0).toList();
-    final maxLength = aParts.length > bParts.length
-        ? aParts.length
-        : bParts.length;
-    for (var index = 0; index < maxLength; index++) {
-      final left = index < aParts.length ? aParts[index] : 0;
-      final right = index < bParts.length ? bParts[index] : 0;
-      if (left != right) {
-        return left.compareTo(right);
-      }
-    }
-    return 0;
-  }
-
-  String _normalizeVersion(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      return '';
-    }
-    final withoutPrefix = trimmed.startsWith('v') || trimmed.startsWith('V')
-        ? trimmed.substring(1)
-        : trimmed;
-    return withoutPrefix.split('+').first.trim();
+    return compareUpdateVersions(version, _currentVersion) > 0;
   }
 
   Future<void> _openGithubRepo() async {
@@ -1593,7 +1562,11 @@ class _SettingsPageState extends State<SettingsPage> {
         allowedExtensions: allowedExtensions,
         withData: true,
       );
-      final file = result?.files.single;
+      if (!mounted) {
+        return null;
+      }
+      final files = result?.files ?? const <PlatformFile>[];
+      final file = files.isEmpty ? null : files.first;
       final bytes = file?.bytes;
       if (file == null || bytes == null) {
         return null;

@@ -28,6 +28,7 @@ import 'package:sked/widgets/timetable_grid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -4395,6 +4396,38 @@ void main() {
       expect(decoded.data['key'], 'value');
       expect(decoded.data['num'], 42);
     });
+
+    test('ImportExportEnvelope accepts legacy KeSchedule schemas', () {
+      final source = ImportExportEnvelope(
+        schema: 'KeSchedule-period-times',
+        version: importExportVersion,
+        data: {
+          'periodTimes': [
+            {'index': 7, 'startMinutes': 600, 'endMinutes': 645},
+          ],
+        },
+      ).encode();
+
+      final decoded = decodePeriodTimesEnvelope(source);
+
+      expect(decoded, hasLength(1));
+      expect(decoded.single.index, 7);
+      expect(decoded.single.startMinutes, 600);
+    });
+
+    test(
+      'bundled default period times asset uses a supported schema',
+      () async {
+        TestWidgetsFlutterBinding.ensureInitialized();
+        final source = await rootBundle.loadString(defaultPeriodTimesAssetPath);
+
+        final decoded = decodePeriodTimesEnvelope(source);
+
+        expect(decoded, hasLength(13));
+        expect(decoded.first.startMinutes, 480);
+        expect(decoded.last.endMinutes, 1250);
+      },
+    );
 
     test('ImportExportEnvelope schema 错误时会抛异常', () {
       final envelope = ImportExportEnvelope(

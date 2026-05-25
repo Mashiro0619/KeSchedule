@@ -37,7 +37,7 @@ class SchoolImportContentSanitizer {
 
   // Full list of HTML event handlers and display attributes to strip.
   static final RegExp _attributePattern = RegExp(
-    r'''\s(?:style|class|id|tabindex|role|target|rel|href|src|alt|title|type|width|height|align|valign|bgcolor|border|cellpadding|cellspacing|colspan|rowspan|scope|headers|summary|lang|dir|hidden|disabled|readonly|checked|selected|placeholder|formaction|srcdoc|onclick|ondblclick|onchange|oninput|onload|onerror|onfocus|onblur|onmousedown|onmouseup|onmousemove|onmouseenter|onmouseleave|onmouseover|onmouseout|onkeydown|onkeyup|onkeypress|onscroll|onwheel|ontouchstart|ontouchmove|ontouchend|oncontextmenu|onselect|onselectstart|oncut|oncopy|onpaste|ondrag|ondragstart|ondragend|ondrop|onanimationstart|onanimationend|ontransitionend|onpointerdown|onpointerup|onpointermove|onreset|onsubmit|onsearch|ontoggle|onbeforeinput|onformdata|data-[\w:-]+|aria-[\w-]+)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)''',
+    r'''\s(?:style|class|id|tabindex|role|target|rel|href|src|alt|title|type|width|height|align|valign|bgcolor|border|cellpadding|cellspacing|scope|headers|summary|lang|dir|hidden|disabled|readonly|checked|selected|placeholder|formaction|srcdoc|onclick|ondblclick|onchange|oninput|onload|onerror|onfocus|onblur|onmousedown|onmouseup|onmousemove|onmouseenter|onmouseleave|onmouseover|onmouseout|onkeydown|onkeyup|onkeypress|onscroll|onwheel|ontouchstart|ontouchmove|ontouchend|oncontextmenu|onselect|onselectstart|oncut|oncopy|onpaste|ondrag|ondragstart|ondragend|ondrop|onanimationstart|onanimationend|ontransitionend|onpointerdown|onpointerup|onpointermove|onreset|onsubmit|onsearch|ontoggle|onbeforeinput|onformdata|data-[\w:-]+|aria-[\w-]+)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)''',
     caseSensitive: false,
   );
 
@@ -51,9 +51,18 @@ class SchoolImportContentSanitizer {
     cleaned = cleaned.replaceAll(RegExp(r'<!--[\s\S]*?-->'), '');
 
     // 3. Convert <br>, <hr>, <p> to space (preserve text separation).
-    cleaned = cleaned.replaceAll(RegExp(r'<\s*br\s*\/?\s*>', caseSensitive: false), ' ');
-    cleaned = cleaned.replaceAll(RegExp(r'<\s*hr\s*\/?\s*>', caseSensitive: false), ' ');
-    cleaned = cleaned.replaceAll(RegExp(r'<\s*\/?\s*p\s*>', caseSensitive: false), ' ');
+    cleaned = cleaned.replaceAll(
+      RegExp(r'<\s*br\s*\/?\s*>', caseSensitive: false),
+      ' ',
+    );
+    cleaned = cleaned.replaceAll(
+      RegExp(r'<\s*hr\s*\/?\s*>', caseSensitive: false),
+      ' ',
+    );
+    cleaned = cleaned.replaceAll(
+      RegExp(r'<\s*\/?\s*p\s*>', caseSensitive: false),
+      ' ',
+    );
 
     // 4. Remove void/inline replacement tags entirely.
     cleaned = cleaned.replaceAll(_voidTagRe, '');

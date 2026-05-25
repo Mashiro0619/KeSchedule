@@ -37,20 +37,9 @@ class TimetableJsonImportService {
   ) {
     final envelope = ImportExportEnvelope.decode(source);
     final candidates = provider.previewImportTimetables(source);
-    final hasBundledPeriodTimeSets = switch (envelope.schema) {
-      timetableDataSchema =>
-        (envelope.data['periodTimeSets'] as List<dynamic>? ?? const <dynamic>[])
-            .isNotEmpty ||
-        (envelope.data.containsKey('config') &&
-            envelope.data.containsKey('courses')),
-      appDataSchema =>
-        (envelope.data['periodTimeSets'] as List<dynamic>? ?? const <dynamic>[])
-            .isNotEmpty,
-      _ => false,
-    };
     return TimetableJsonImportPreview(
       candidates: candidates,
-      hasBundledPeriodTimeSets: hasBundledPeriodTimeSets,
+      hasBundledPeriodTimeSets: _hasBundledPeriodTimeSets(envelope),
     );
   }
 
@@ -66,4 +55,35 @@ class TimetableJsonImportService {
       targetPeriodTimeSetId: request.targetPeriodTimeSetId,
     );
   }
+}
+
+bool _hasBundledPeriodTimeSets(ImportExportEnvelope envelope) {
+  if (isImportExportSchema(envelope.schema, timetableDataSchema)) {
+    return _hasPeriodTimeSetList(envelope.data['periodTimeSets']) ||
+        _hasLegacyTimetablePeriodConfig(envelope.data) ||
+        _hasLegacyTimetablePeriodConfig(envelope.data['timetable']);
+  }
+  if (isImportExportSchema(envelope.schema, appDataSchema)) {
+    final studentMode = envelope.data['studentMode'];
+    return _hasPeriodTimeSetList(envelope.data['periodTimeSets']) ||
+        (studentMode is Map &&
+            _hasPeriodTimeSetList(studentMode['periodTimeSets']));
+  }
+  return false;
+}
+
+bool _hasPeriodTimeSetList(Object? value) {
+  return value is List<dynamic> && value.isNotEmpty;
+}
+
+bool _hasLegacyTimetablePeriodConfig(Object? value) {
+  if (value is! Map) {
+    return false;
+  }
+  final config = value['config'];
+  if (config is! Map) {
+    return false;
+  }
+  return _hasPeriodTimeSetList(config['periodTimes']) ||
+      config['dailyPeriods'] is num;
 }

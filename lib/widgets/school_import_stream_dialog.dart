@@ -6,11 +6,27 @@ import 'package:flutter/material.dart';
 import '../models/school_import_models.dart';
 import '../services/school_import_api.dart';
 
+Map<String, dynamic>? _tryDecodeJsonObject(String source) {
+  try {
+    final decoded = jsonDecode(source);
+    if (decoded is! Map) {
+      return null;
+    }
+    final result = <String, dynamic>{};
+    for (final entry in decoded.entries) {
+      final key = entry.key;
+      if (key is String) {
+        result[key] = entry.value;
+      }
+    }
+    return result;
+  } catch (_) {
+    return null;
+  }
+}
+
 class SchoolImportStreamDialog extends StatefulWidget {
-  const SchoolImportStreamDialog({
-    super.key,
-    required this.stream,
-  });
+  const SchoolImportStreamDialog({super.key, required this.stream});
 
   final Stream<SchoolImportStreamEvent> stream;
 
@@ -93,11 +109,9 @@ class _SchoolImportStreamDialogState extends State<SchoolImportStreamDialog> {
       return;
     }
 
-    final Map<String, dynamic> json;
-    try {
-      json = Map<String, dynamic>.from(jsonDecode(rawText) as Map);
-    } catch (e) {
-      setState(() => _error = 'JSON 格式无效: $e');
+    final json = _tryDecodeJsonObject(rawText);
+    if (json == null) {
+      setState(() => _error = 'JSON 格式无效');
       return;
     }
 

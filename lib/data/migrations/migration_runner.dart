@@ -35,7 +35,7 @@ class MigrationRunner {
       );
     }
 
-    var working = Map<String, dynamic>.from(input);
+    var working = _deepCopyMap(input);
     var version = currentVersion;
 
     while (version < targetVersion) {
@@ -46,7 +46,13 @@ class MigrationRunner {
           'to $targetVersion.',
         );
       }
-      working = Map<String, dynamic>.from(next.apply(working));
+      if (next.to != version + 1) {
+        throw MigrationException(
+          'Invalid migration registered from schemaVersion $version '
+          'to ${next.to}; migrations must advance exactly one version.',
+        );
+      }
+      working = _deepCopyMap(next.apply(_deepCopyMap(working)));
       version = next.to;
     }
 
@@ -66,5 +72,25 @@ class MigrationRunner {
     if (raw is int) return raw;
     if (raw is num) return raw.toInt();
     return 1;
+  }
+
+  static Map<String, dynamic> _deepCopyMap(Map<String, dynamic> source) {
+    return {
+      for (final entry in source.entries)
+        entry.key: _deepCopyValue(entry.value),
+    };
+  }
+
+  static Object? _deepCopyValue(Object? value) {
+    if (value is Map) {
+      return {
+        for (final entry in value.entries)
+          entry.key.toString(): _deepCopyValue(entry.value),
+      };
+    }
+    if (value is List) {
+      return [for (final item in value) _deepCopyValue(item)];
+    }
+    return value;
   }
 }

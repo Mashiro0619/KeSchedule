@@ -46,27 +46,20 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
   int? _repeatCount;
   int? _colorValue;
   late List<int> _reminders;
+  late List<GeneralSchedule> _calendarOptions;
 
   final _formKey = GlobalKey<FormState>();
 
   bool get _isEditing => widget.initialEvent != null;
 
-  List<GeneralSchedule> get _calendars => widget.calendars.isEmpty
-      ? [
-          createDefaultGeneralSchedule(
-            name: 'My calendar',
-            colorValue: defaultGeneralCalendarColorValue,
-          ),
-        ]
-      : widget.calendars;
-
   @override
   void initState() {
     super.initState();
+    _calendarOptions = _buildCalendarOptions();
     final event = widget.initialEvent;
     final initial = widget.initialDate ?? DateTime.now();
     final startDt = event != null
-        ? DateTime.tryParse(event.startDateTimeIso) ?? initial
+        ? tryParseStrictIsoDateTime(event.startDateTimeIso) ?? initial
         : DateTime(
             initial.year,
             initial.month,
@@ -75,7 +68,7 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
             initial.minute,
           );
     final endDt = event != null
-        ? DateTime.tryParse(event.endDateTimeIso) ??
+        ? tryParseStrictIsoDateTime(event.endDateTimeIso) ??
               startDt.add(const Duration(hours: 1))
         : startDt.add(const Duration(hours: 1));
     var displayEndDt = event?.isAllDay == true
@@ -104,10 +97,23 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
     _interval = rule.normalizedInterval;
     _untilDate = rule.untilDateIso == null
         ? null
-        : DateTime.tryParse(rule.untilDateIso!);
+        : tryParseStrictIsoDate(rule.untilDateIso!);
     _colorValue = event?.colorValue;
     _reminders =
         event?.reminders.map((item) => item.minutesBefore).toList() ?? const [];
+  }
+
+  @override
+  void didUpdateWidget(covariant GeneralEventEditorSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.calendars == widget.calendars &&
+        oldWidget.activeCalendarId == widget.activeCalendarId) {
+      return;
+    }
+    _calendarOptions = _buildCalendarOptions();
+    if (!_calendarOptions.any((calendar) => calendar.id == _calendarId)) {
+      _calendarId = _resolveCalendarId(widget.initialEvent?.calendarId);
+    }
   }
 
   @override
@@ -119,16 +125,29 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
     super.dispose();
   }
 
+  List<GeneralSchedule> _buildCalendarOptions() {
+    if (widget.calendars.isNotEmpty) {
+      return List<GeneralSchedule>.unmodifiable(widget.calendars);
+    }
+    return [
+      createDefaultGeneralSchedule(
+        name: 'My calendar',
+        colorValue: defaultGeneralCalendarColorValue,
+      ),
+    ];
+  }
+
   String _resolveCalendarId(String? eventCalendarId) {
-    final ids = _calendars.map((item) => item.id).toSet();
-    if (eventCalendarId != null && ids.contains(eventCalendarId)) {
-      return eventCalendarId;
+    final ids = _calendarOptions.map((item) => item.id).toSet();
+    final normalizedEventCalendarId = eventCalendarId?.trim() ?? '';
+    if (ids.contains(normalizedEventCalendarId)) {
+      return normalizedEventCalendarId;
     }
     final active = widget.activeCalendarId;
     if (active != null && ids.contains(active)) {
       return active;
     }
-    return _calendars.first.id;
+    return _calendarOptions.first.id;
   }
 
   DateTime _buildStartDateTime() {
@@ -265,16 +284,10 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                       prefixIcon: const Icon(Icons.calendar_month_outlined),
                     ),
                     items: [
-                      for (final calendar in _calendars)
+                      for (final calendar in _calendarOptions)
                         DropdownMenuItem(
                           value: calendar.id,
-                          child: Row(
-                            children: [
-                              _ColorDot(color: Color(calendar.colorValue)),
-                              const SizedBox(width: 8),
-                              Flexible(child: Text(calendar.name)),
-                            ],
-                          ),
+                          child: _CalendarDropdownItem(calendar: calendar),
                         ),
                     ],
                     onChanged: (value) {
@@ -302,20 +315,22 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                     showTime: !_isAllDay,
                     onPickDate: () async {
                       final picked = await _pickDate(context, _startDate);
-                      if (picked != null) {
-                        setState(() {
-                          _startDate = picked;
-                          if (_endDate.isBefore(_startDate)) {
-                            _endDate = _startDate;
-                          }
-                        });
+                      if (!mounted || picked == null) {
+                        return;
                       }
+                      setState(() {
+                        _startDate = picked;
+                        if (_endDate.isBefore(_startDate)) {
+                          _endDate = _startDate;
+                        }
+                      });
                     },
                     onPickTime: () async {
                       final picked = await _pickTime(context, _startTime);
-                      if (picked != null) {
-                        setState(() => _startTime = picked);
+                      if (!mounted || picked == null) {
+                        return;
                       }
+                      setState(() => _startTime = picked);
                     },
                   ),
                   _DateTimeRow(
@@ -326,11 +341,17 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                     showTime: !_isAllDay,
                     onPickDate: () async {
                       final picked = await _pickDate(context, _endDate);
-                      if (picked != null) setState(() => _endDate = picked);
+                      if (!mounted || picked == null) {
+                        return;
+                      }
+                      setState(() => _endDate = picked);
                     },
                     onPickTime: () async {
                       final picked = await _pickTime(context, _endTime);
-                      if (picked != null) setState(() => _endTime = picked);
+                      if (!mounted || picked == null) {
+                        return;
+                      }
+                      setState(() => _endTime = picked);
                     },
                   ),
                   const SizedBox(height: 12),
@@ -385,9 +406,10 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                           _untilDate ??
                               _startDate.add(const Duration(days: 90)),
                         );
-                        if (picked != null) {
-                          setState(() => _untilDate = picked);
+                        if (!mounted || picked == null) {
+                          return;
                         }
+                        setState(() => _untilDate = picked);
                       },
                       onClearUntil: () => setState(() => _untilDate = null),
                     ),
@@ -728,6 +750,31 @@ class _ColorOption extends StatelessWidget {
   }
 }
 
+class _CalendarDropdownItem extends StatelessWidget {
+  const _CalendarDropdownItem({required this.calendar});
+
+  final GeneralSchedule calendar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ColorDot(color: Color(calendar.colorValue)),
+        const SizedBox(width: 8),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 240),
+          child: Text(
+            calendar.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ColorDot extends StatelessWidget {
   const _ColorDot({required this.color});
 
@@ -744,11 +791,18 @@ class _ColorDot extends StatelessWidget {
 }
 
 Future<DateTime?> _pickDate(BuildContext context, DateTime initialDate) {
+  final firstDate = DateTime(1970);
+  final lastDate = DateTime(2100);
+  final boundedInitialDate = initialDate.isBefore(firstDate)
+      ? firstDate
+      : initialDate.isAfter(lastDate)
+      ? lastDate
+      : initialDate;
   return showDatePicker(
     context: context,
-    initialDate: initialDate,
-    firstDate: DateTime(1970),
-    lastDate: DateTime(2100),
+    initialDate: boundedInitialDate,
+    firstDate: firstDate,
+    lastDate: lastDate,
   );
 }
 

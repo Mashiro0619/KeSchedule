@@ -1,5 +1,39 @@
 import '../utils/time_utils.dart';
 
+Map<String, dynamic>? _asStringKeyedMap(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  final result = <String, dynamic>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is String) {
+      result[key] = entry.value;
+    }
+  }
+  return result;
+}
+
+List<dynamic> _listValue(Object? value) {
+  return value is List ? value : const <dynamic>[];
+}
+
+String _stringValue(Object? value, [String fallback = '']) {
+  return value is String ? value : fallback;
+}
+
+String? _nullableStringValue(Object? value) {
+  return value is String ? value : null;
+}
+
+int? _intValue(Object? value) {
+  return value is num ? value.toInt() : null;
+}
+
+bool? _boolValue(Object? value) {
+  return value is bool ? value : null;
+}
+
 enum GeneralEventRecurrence {
   none('none'),
   daily('daily'),
@@ -43,7 +77,7 @@ class GeneralEventReminder {
 
   factory GeneralEventReminder.fromJson(Map<String, dynamic> json) {
     return GeneralEventReminder(
-      minutesBefore: (json['minutesBefore'] as num?)?.toInt() ?? 0,
+      minutesBefore: _intValue(json['minutesBefore']) ?? 0,
     );
   }
 }
@@ -76,21 +110,21 @@ class GeneralEventRecurrenceRule {
   };
 
   factory GeneralEventRecurrenceRule.fromJson(Map<String, dynamic> json) {
-    final type = parseGeneralEventRecurrence(json['type'] as String?);
+    final type = parseGeneralEventRecurrence(
+      _nullableStringValue(json['type']),
+    );
     final legacyUnit = switch (type) {
       GeneralEventRecurrence.daily => GeneralEventRecurrenceUnit.day,
       GeneralEventRecurrence.weekly => GeneralEventRecurrenceUnit.week,
       GeneralEventRecurrence.monthly => GeneralEventRecurrenceUnit.month,
-      _ => parseGeneralEventRecurrenceUnit(json['unit'] as String?),
+      _ => parseGeneralEventRecurrenceUnit(_nullableStringValue(json['unit'])),
     };
     return GeneralEventRecurrenceRule(
       type: type,
-      interval: ((json['interval'] as num?)?.toInt() ?? 1)
-          .clamp(1, 999)
-          .toInt(),
+      interval: (_intValue(json['interval']) ?? 1).clamp(1, 999).toInt(),
       unit: legacyUnit,
-      untilDateIso: json['untilDate'] as String?,
-      count: (json['count'] as num?)?.toInt(),
+      untilDateIso: _nullableStringValue(json['untilDate']),
+      count: _intValue(json['count']),
     );
   }
 
@@ -191,42 +225,37 @@ class GeneralEvent {
 
   factory GeneralEvent.fromJson(Map<String, dynamic> json) {
     final legacyRecurrence = parseGeneralEventRecurrence(
-      json['recurrence'] as String?,
+      _nullableStringValue(json['recurrence']),
     );
-    final ruleJson = json['recurrenceRule'] is Map
-        ? Map<String, dynamic>.from(json['recurrenceRule'] as Map)
-        : <String, dynamic>{
-            'type': legacyRecurrence.value,
-            if (json['recurrenceEndDate'] != null)
-              'untilDate': json['recurrenceEndDate'],
-          };
-    final remindersJson =
-        (json['reminders'] as List<dynamic>? ?? const <dynamic>[]);
+    final ruleJson =
+        _asStringKeyedMap(json['recurrenceRule']) ??
+        <String, dynamic>{
+          'type': legacyRecurrence.value,
+          if (json['recurrenceEndDate'] != null)
+            'untilDate': json['recurrenceEndDate'],
+        };
+    final remindersJson = _listValue(json['reminders']);
     return GeneralEvent(
-      id: json['id'] as String? ?? '',
-      calendarId: json['calendarId'] as String? ?? '',
-      title: json['title'] as String? ?? '',
-      startDateTimeIso: json['start'] as String? ?? '',
-      endDateTimeIso: json['end'] as String? ?? '',
-      isAllDay: json['isAllDay'] as bool? ?? false,
+      id: _stringValue(json['id']),
+      calendarId: _stringValue(json['calendarId']),
+      title: _stringValue(json['title']),
+      startDateTimeIso: _stringValue(json['start']),
+      endDateTimeIso: _stringValue(json['end']),
+      isAllDay: _boolValue(json['isAllDay']) ?? false,
       recurrenceRule: GeneralEventRecurrenceRule.fromJson(ruleJson),
-      recurrenceExceptionDateIso:
-          (json['recurrenceExceptionDates'] as List<dynamic>? ??
-                  const <dynamic>[])
-              .map((item) => item.toString())
-              .toList(),
-      location: json['location'] as String? ?? '',
-      notes: json['notes'] as String? ?? '',
-      colorValue: (json['colorValue'] as num?)?.toInt(),
+      recurrenceExceptionDateIso: _listValue(
+        json['recurrenceExceptionDates'],
+      ).where((item) => item != null).map((item) => item.toString()).toList(),
+      location: _stringValue(json['location']),
+      notes: _stringValue(json['notes']),
+      colorValue: _intValue(json['colorValue']),
       reminders: remindersJson
-          .map(
-            (item) => GeneralEventReminder.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
+          .map(_asStringKeyedMap)
+          .whereType<Map<String, dynamic>>()
+          .map(GeneralEventReminder.fromJson)
           .toList(),
-      createdAtIso: json['createdAt'] as String?,
-      updatedAtIso: json['updatedAt'] as String?,
+      createdAtIso: _nullableStringValue(json['createdAt']),
+      updatedAtIso: _nullableStringValue(json['updatedAt']),
     );
   }
 
@@ -289,9 +318,9 @@ class GeneralEvent {
   }
 
   GeneralEvent normalized({required String fallbackCalendarId}) {
-    final start = DateTime.tryParse(startDateTimeIso) ?? DateTime.now();
+    final start = tryParseStrictIsoDateTime(startDateTimeIso) ?? DateTime.now();
     var end =
-        DateTime.tryParse(endDateTimeIso) ??
+        tryParseStrictIsoDateTime(endDateTimeIso) ??
         start.add(const Duration(hours: 1));
     if (!end.isAfter(start)) {
       end = isAllDay
@@ -312,7 +341,7 @@ class GeneralEvent {
 }
 
 String _normalizeDateIso(String value) {
-  final parsed = DateTime.tryParse(value);
+  final parsed = tryParseStrictIsoDate(value);
   if (parsed == null) return value;
   return normalizeDateOnly(parsed).toIso8601String().split('T').first;
 }

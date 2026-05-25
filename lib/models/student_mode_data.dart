@@ -5,6 +5,59 @@ import '../utils/time_utils.dart';
 import 'course_item.dart';
 import 'timetable_data.dart';
 
+Map<String, dynamic>? _asStringKeyedMap(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  final result = <String, dynamic>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is String) {
+      result[key] = entry.value;
+    }
+  }
+  return result;
+}
+
+Map<String, String> _decodeStringMap(Object? value) {
+  if (value is! Map) {
+    return const {};
+  }
+  final result = <String, String>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    final item = entry.value;
+    if (key is String && item is String) {
+      result[key] = item;
+    }
+  }
+  return result;
+}
+
+int? _tryDecodeInt(Object? value) {
+  return value is num ? value.toInt() : null;
+}
+
+double? _tryDecodeDouble(Object? value) {
+  return value is num ? value.toDouble() : null;
+}
+
+bool? _tryDecodeBool(Object? value) {
+  return value is bool ? value : null;
+}
+
+String _stringValue(Object? value, [String fallback = '']) {
+  return value is String ? value : fallback;
+}
+
+String? _nullableStringValue(Object? value) {
+  return value is String ? value : null;
+}
+
+List<dynamic> _listValue(Object? value) {
+  return value is List ? value : const <dynamic>[];
+}
+
 class SchoolImportParserSettings {
   const SchoolImportParserSettings({
     this.source = defaultSchoolImportParserSource,
@@ -30,11 +83,13 @@ class SchoolImportParserSettings {
 
   factory SchoolImportParserSettings.fromJson(Map<String, dynamic> json) {
     return SchoolImportParserSettings(
-      source: normalizeSchoolImportParserSource(json['source'] as String?),
-      customBaseUrl: (json['customBaseUrl'] as String? ?? '').trim(),
-      customApiKey: (json['customApiKey'] as String? ?? '').trim(),
-      customModel: (json['customModel'] as String? ?? '').trim(),
-      customPrompt: (json['customPrompt'] as String? ?? '').trim(),
+      source: normalizeSchoolImportParserSource(
+        _nullableStringValue(json['source']),
+      ),
+      customBaseUrl: _stringValue(json['customBaseUrl']).trim(),
+      customApiKey: _stringValue(json['customApiKey']).trim(),
+      customModel: _stringValue(json['customModel']).trim(),
+      customPrompt: _stringValue(json['customPrompt']).trim(),
     );
   }
 
@@ -82,9 +137,10 @@ String _nextGeneratedPeriodTimeSetId(Set<String> existingIds) {
 }
 
 List<CoursePeriodTime> _decodeLegacyPeriodTimes(Map<String, dynamic> json) {
-  return (json['periodTimes'] as List<dynamic>? ?? const <dynamic>[])
-      .map((item) =>
-          CoursePeriodTime.fromJson(Map<String, dynamic>.from(item as Map)))
+  return _listValue(json['periodTimes'])
+      .map(_asStringKeyedMap)
+      .whereType<Map<String, dynamic>>()
+      .map(CoursePeriodTime.fromJson)
       .toList();
 }
 
@@ -92,7 +148,7 @@ int _decodeLegacyDailyPeriods(
   Map<String, dynamic> json,
   List<CoursePeriodTime> legacyPeriodTimes,
 ) {
-  return ((json['dailyPeriods'] as num?)?.toInt() ??
+  return (_tryDecodeInt(json['dailyPeriods']) ??
           (legacyPeriodTimes.isEmpty ? 10 : legacyPeriodTimes.length))
       .clamp(1, 999);
 }
@@ -161,20 +217,18 @@ class StudentModeData {
     'liveCourseOutlineWidth': liveCourseOutlineWidth,
   };
 
-  factory StudentModeData.fromJson(Map<String, dynamic> json, {
+  factory StudentModeData.fromJson(
+    Map<String, dynamic> json, {
     String localeCode = defaultLocaleCode,
   }) {
-    final rawTimetables =
-        (json['timetables'] as List<dynamic>? ?? const <dynamic>[])
-            .map((item) => Map<String, dynamic>.from(item as Map))
-            .toList();
-    final rawPeriodTimeSets =
-        (json['periodTimeSets'] as List<dynamic>? ?? const <dynamic>[])
-            .map((item) => PeriodTimeSet.fromJson(
-                  Map<String, dynamic>.from(item as Map),
-                  localeCode: localeCode,
-                ))
-            .toList();
+    final rawTimetables = _listValue(
+      json['timetables'],
+    ).map(_asStringKeyedMap).whereType<Map<String, dynamic>>().toList();
+    final rawPeriodTimeSets = _listValue(json['periodTimeSets'])
+        .map(_asStringKeyedMap)
+        .whereType<Map<String, dynamic>>()
+        .map((item) => PeriodTimeSet.fromJson(item, localeCode: localeCode))
+        .toList();
     final normalizedSets = <PeriodTimeSet>[
       for (final item in rawPeriodTimeSets)
         _normalizePeriodTimeSet(item, localeCode: localeCode),
@@ -186,9 +240,7 @@ class StudentModeData {
     final timetables = <TimetableData>[];
 
     for (final rawTimetable in rawTimetables) {
-      final rawConfig = Map<String, dynamic>.from(
-        rawTimetable['config'] as Map? ?? const {},
-      );
+      final rawConfig = _asStringKeyedMap(rawTimetable['config']) ?? const {};
       var timetable = TimetableData.fromJson(
         rawTimetable,
         localeCode: localeCode,
@@ -224,9 +276,10 @@ class StudentModeData {
       timetables.add(timetable);
     }
 
+    final activeTimetableIdRaw = _stringValue(json['activeTimetableId']);
     final activeTimetableId =
-        timetables.any((item) => item.id == json['activeTimetableId'])
-        ? json['activeTimetableId'] as String
+        timetables.any((item) => item.id == activeTimetableIdRaw)
+        ? activeTimetableIdRaw
         : timetables.isEmpty
         ? ''
         : timetables.first.id;
@@ -235,48 +288,44 @@ class StudentModeData {
       activeTimetableId: activeTimetableId,
       timetables: timetables,
       periodTimeSets: normalizedSets,
-      conflictDisplayCourseIds: Map<String, String>.from(
-        json['conflictDisplayCourseIds'] as Map? ?? const {},
+      conflictDisplayCourseIds: _decodeStringMap(
+        json['conflictDisplayCourseIds'],
       ),
       closeCoursePopupOnOutsideTap:
-          json['closeCoursePopupOnOutsideTap'] as bool? ?? true,
+          _tryDecodeBool(json['closeCoursePopupOnOutsideTap']) ?? true,
       preserveTimetableGaps:
-          json['preserveTimetableGaps'] as bool? ?? false,
+          _tryDecodeBool(json['preserveTimetableGaps']) ?? false,
       showPastEndedCourses:
-          json['showPastEndedCourses'] as bool? ?? false,
-      showFutureCourses:
-          json['showFutureCourses'] as bool? ?? true,
+          _tryDecodeBool(json['showPastEndedCourses']) ?? false,
+      showFutureCourses: _tryDecodeBool(json['showFutureCourses']) ?? true,
       showTimetableGridLines:
-          json['showTimetableGridLines'] as bool? ?? true,
+          _tryDecodeBool(json['showTimetableGridLines']) ?? true,
       colorfulCourseTextColorMode: normalizeColorfulCourseTextColorMode(
-        json['colorfulCourseTextColorMode'] as String? ??
+        _nullableStringValue(json['colorfulCourseTextColorMode']) ??
             defaultColorfulCourseTextColorMode,
       ),
-      courseNameColorValues: decodeColorValueMap(
-        json['courseNameColorValues'],
-      ),
+      courseNameColorValues: decodeColorValueMap(json['courseNameColorValues']),
       schoolImportParserSettings: SchoolImportParserSettings.fromJson(
-        Map<String, dynamic>.from(
-          json['schoolImportParserSettings'] as Map? ?? const {},
-        ),
+        _asStringKeyedMap(json['schoolImportParserSettings']) ?? const {},
       ),
       liveCourseOutlineColorValue:
-          (json['liveCourseOutlineColorValue'] as num?)?.toInt() ??
-              defaultLiveCourseOutlineColorValue,
+          _tryDecodeInt(json['liveCourseOutlineColorValue']) ??
+          defaultLiveCourseOutlineColorValue,
       liveCourseOutlineEnabled:
-          json['liveCourseOutlineEnabled'] as bool? ??
-              defaultLiveCourseOutlineEnabled,
+          _tryDecodeBool(json['liveCourseOutlineEnabled']) ??
+          defaultLiveCourseOutlineEnabled,
       liveCourseOutlineFollowTheme:
-          json['liveCourseOutlineFollowTheme'] as bool? ??
-              defaultLiveCourseOutlineFollowTheme,
+          _tryDecodeBool(json['liveCourseOutlineFollowTheme']) ??
+          defaultLiveCourseOutlineFollowTheme,
       liveCourseOutlineCustomColorInitialized:
-          json['liveCourseOutlineCustomColorInitialized'] as bool? ??
-              defaultLiveCourseOutlineCustomColorInitialized,
+          _tryDecodeBool(json['liveCourseOutlineCustomColorInitialized']) ??
+          defaultLiveCourseOutlineCustomColorInitialized,
       liveCourseOutlineMode: normalizeLiveCourseOutlineMode(
-        json['liveCourseOutlineMode'] as String? ?? defaultLiveCourseOutlineMode,
+        _nullableStringValue(json['liveCourseOutlineMode']) ??
+            defaultLiveCourseOutlineMode,
       ),
       liveCourseOutlineWidth: normalizeLiveCourseOutlineWidth(
-        (json['liveCourseOutlineWidth'] as num?)?.toDouble(),
+        _tryDecodeDouble(json['liveCourseOutlineWidth']),
       ),
     );
   }
@@ -311,10 +360,8 @@ class StudentModeData {
           closeCoursePopupOnOutsideTap ?? this.closeCoursePopupOnOutsideTap,
       preserveTimetableGaps:
           preserveTimetableGaps ?? this.preserveTimetableGaps,
-      showPastEndedCourses:
-          showPastEndedCourses ?? this.showPastEndedCourses,
-      showFutureCourses:
-          showFutureCourses ?? this.showFutureCourses,
+      showPastEndedCourses: showPastEndedCourses ?? this.showPastEndedCourses,
+      showFutureCourses: showFutureCourses ?? this.showFutureCourses,
       showTimetableGridLines:
           showTimetableGridLines ?? this.showTimetableGridLines,
       colorfulCourseTextColorMode: normalizeColorfulCourseTextColorMode(
@@ -332,7 +379,7 @@ class StudentModeData {
           liveCourseOutlineFollowTheme ?? this.liveCourseOutlineFollowTheme,
       liveCourseOutlineCustomColorInitialized:
           liveCourseOutlineCustomColorInitialized ??
-              this.liveCourseOutlineCustomColorInitialized,
+          this.liveCourseOutlineCustomColorInitialized,
       liveCourseOutlineMode: normalizeLiveCourseOutlineMode(
         liveCourseOutlineMode ?? this.liveCourseOutlineMode,
       ),

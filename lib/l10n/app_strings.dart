@@ -19,6 +19,7 @@ abstract class AppStrings {
   String get importFileVersionUnsupportedMessage;
   String get noPeriodTimesInImportMessage;
   String get noPeriodTimeAvailableMessage;
+  String get noImportableTimetablesMessage;
   String get selectAtLeastOneTimetableMessage;
   String get noExportableTimetableMessage;
   String get replaceActiveRequiresSingleTimetableMessage;
@@ -66,7 +67,8 @@ class _GeneratedAppStrings implements AppStrings {
   }
 
   @override
-  String get importFileTypeMismatchMessage => _l10n.importFileTypeMismatchMessage;
+  String get importFileTypeMismatchMessage =>
+      _l10n.importFileTypeMismatchMessage;
 
   @override
   String get importFileVersionUnsupportedMessage =>
@@ -77,6 +79,9 @@ class _GeneratedAppStrings implements AppStrings {
 
   @override
   String get noPeriodTimeAvailableMessage => _l10n.noPeriodTimeAvailable;
+
+  @override
+  String get noImportableTimetablesMessage => _l10n.noImportableTimetables;
 
   @override
   String get selectAtLeastOneTimetableMessage =>
@@ -98,12 +103,10 @@ class _GeneratedAppStrings implements AppStrings {
       _l10n.selectAtLeastOneScheduleMessage;
 
   @override
-  String get noExportableScheduleMessage =>
-      _l10n.noExportableScheduleMessage;
+  String get noExportableScheduleMessage => _l10n.noExportableScheduleMessage;
 
   @override
-  String get noSchedulesInImportMessage =>
-      _l10n.noSchedulesInImportMessage;
+  String get noSchedulesInImportMessage => _l10n.noSchedulesInImportMessage;
 
   @override
   String get replaceActiveRequiresSingleScheduleMessage =>
@@ -114,8 +117,7 @@ class _GeneratedAppStrings implements AppStrings {
       _l10n.noActiveScheduleToReplaceMessage;
 
   @override
-  String get dataRestoredFromBackupNotice =>
-      _l10n.dataRestoredFromBackupNotice;
+  String get dataRestoredFromBackupNotice => _l10n.dataRestoredFromBackupNotice;
 
   @override
   String get dataBackupRestoreFailedNotice =>

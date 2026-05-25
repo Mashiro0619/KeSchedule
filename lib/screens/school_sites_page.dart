@@ -13,17 +13,9 @@ import '../services/school_site_service.dart';
 import 'school_html_import_page.dart';
 import 'school_web_import_page.dart';
 
-enum _SchoolSitesMenuAction {
-  toggleEditMode,
-  importJson,
-  shareJson,
-  saveJson,
-}
+enum _SchoolSitesMenuAction { toggleEditMode, importJson, shareJson, saveJson }
 
-enum _SchoolSiteItemAction {
-  edit,
-  delete,
-}
+enum _SchoolSiteItemAction { edit, delete }
 
 class SchoolSitesPage extends StatefulWidget {
   const SchoolSitesPage({super.key});
@@ -172,7 +164,9 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
         _sites = const [];
         _loading = false;
       });
-      _showMessage(AppLocalizations.of(context).schoolWebImportSchoolLoadFailed);
+      _showMessage(
+        AppLocalizations.of(context).schoolWebImportSchoolLoadFailed,
+      );
     }
   }
 
@@ -194,9 +188,9 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
   }
 
   Future<void> _openHtmlImport() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SchoolHtmlImportPage()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const SchoolHtmlImportPage()));
   }
 
   Future<void> _openWebImportForSite(SchoolSite site) async {
@@ -343,7 +337,11 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
       allowedExtensions: const ['json'],
       withData: true,
     );
-    final file = result?.files.single;
+    if (!mounted) {
+      return;
+    }
+    final files = result?.files ?? const <PlatformFile>[];
+    final file = files.isEmpty ? null : files.first;
     final bytes = file?.bytes;
     if (file == null || bytes == null) {
       return;
@@ -372,10 +370,7 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
       return;
     }
     await _exportService.shareFile(
-      ExportPayload(
-        fileName: l10n.schoolSitesJsonFileName,
-        content: content,
-      ),
+      ExportPayload(fileName: l10n.schoolSitesJsonFileName, content: content),
     );
   }
 
@@ -390,7 +385,9 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
 
     switch (result.status) {
       case ExportSaveStatus.saved:
-        _showMessage(l10n.savedToPath(result.path ?? l10n.schoolSitesJsonFileName));
+        _showMessage(
+          l10n.savedToPath(result.path ?? l10n.schoolSitesJsonFileName),
+        );
         return;
       case ExportSaveStatus.cancelled:
         _showMessage(l10n.saveCancelled);

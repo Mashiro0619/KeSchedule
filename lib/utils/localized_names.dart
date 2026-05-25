@@ -54,6 +54,10 @@ String noPeriodTimeAvailableMessage({String localeCode = defaultLocaleCode}) {
   return _stringsForLocale(localeCode).noPeriodTimeAvailableMessage;
 }
 
+String noImportableTimetablesMessage({String localeCode = defaultLocaleCode}) {
+  return _stringsForLocale(localeCode).noImportableTimetablesMessage;
+}
+
 String selectAtLeastOneTimetableMessage({
   String localeCode = defaultLocaleCode,
 }) {
@@ -67,8 +71,9 @@ String noExportableTimetableMessage({String localeCode = defaultLocaleCode}) {
 String replaceActiveRequiresSingleTimetableMessage({
   String localeCode = defaultLocaleCode,
 }) {
-  return _stringsForLocale(localeCode)
-      .replaceActiveRequiresSingleTimetableMessage;
+  return _stringsForLocale(
+    localeCode,
+  ).replaceActiveRequiresSingleTimetableMessage;
 }
 
 String noActiveTimetableToReplaceMessage({
@@ -84,7 +89,9 @@ String periodTimeSetInUseMessage(
   return _stringsForLocale(localeCode).periodTimeSetInUseMessage(count);
 }
 
-String selectAtLeastOneScheduleMessage({String localeCode = defaultLocaleCode}) {
+String selectAtLeastOneScheduleMessage({
+  String localeCode = defaultLocaleCode,
+}) {
   return _stringsForLocale(localeCode).selectAtLeastOneScheduleMessage;
 }
 
@@ -99,7 +106,9 @@ String noSchedulesInImportMessage({String localeCode = defaultLocaleCode}) {
 String replaceActiveRequiresSingleScheduleMessage({
   String localeCode = defaultLocaleCode,
 }) {
-  return _stringsForLocale(localeCode).replaceActiveRequiresSingleScheduleMessage;
+  return _stringsForLocale(
+    localeCode,
+  ).replaceActiveRequiresSingleScheduleMessage;
 }
 
 String noActiveScheduleToReplaceMessage({

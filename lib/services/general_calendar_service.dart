@@ -2,6 +2,7 @@ import '../models/general_event.dart';
 import '../models/general_event_occurrence.dart';
 import '../models/general_schedule.dart';
 import '../models/general_schedule_data.dart';
+import '../utils/time_utils.dart';
 
 class GeneralEventMutationResult {
   const GeneralEventMutationResult({required this.data, required this.event});
@@ -50,10 +51,8 @@ class GeneralCalendarService {
   ) {
     final normalizedName = name.trim();
     if (normalizedName.isEmpty) return data;
-    final existing = data.schedules.firstWhere(
-      (s) => s.id == scheduleId,
-      orElse: () => data.activeSchedule,
-    );
+    final existing = _scheduleById(data, scheduleId);
+    if (existing == null) return data;
     return data.withSchedule(existing.copyWith(name: normalizedName));
   }
 
@@ -70,10 +69,8 @@ class GeneralCalendarService {
     String scheduleId,
     bool isVisible,
   ) {
-    final existing = data.schedules.firstWhere(
-      (s) => s.id == scheduleId,
-      orElse: () => data.activeSchedule,
-    );
+    final existing = _scheduleById(data, scheduleId);
+    if (existing == null) return data;
     return data.withSchedule(existing.copyWith(isVisible: isVisible));
   }
 
@@ -126,16 +123,19 @@ class GeneralCalendarService {
   }
 
   GeneralScheduleData saveEvent(GeneralScheduleData data, GeneralEvent event) {
+    final base = data.schedules.isEmpty ? data.normalized() : data;
     var targetScheduleId = event.calendarId.trim().isEmpty
-        ? data.activeSchedule.id
+        ? base.activeSchedule.id
         : event.calendarId.trim();
-    if (!data.schedules.any((s) => s.id == targetScheduleId)) {
-      targetScheduleId = data.activeSchedule.id;
+    if (!base.schedules.any((s) => s.id == targetScheduleId)) {
+      targetScheduleId = base.activeSchedule.id;
     }
-    final normalized = event.normalized(fallbackCalendarId: targetScheduleId);
+    final normalized = event
+        .copyWith(calendarId: targetScheduleId)
+        .normalized(fallbackCalendarId: targetScheduleId);
     final updatedSchedules = <GeneralSchedule>[];
     var inserted = false;
-    for (final schedule in data.schedules) {
+    for (final schedule in base.schedules) {
       var events = schedule.events.where((e) => e.id != event.id).toList();
       if (schedule.id == targetScheduleId) {
         events = [...events, normalized]
@@ -145,7 +145,7 @@ class GeneralCalendarService {
       updatedSchedules.add(schedule.copyWith(events: events));
     }
     if (!inserted) return data;
-    return data.copyWith(schedules: updatedSchedules);
+    return base.copyWith(schedules: updatedSchedules);
   }
 
   GeneralScheduleData deleteEvent(GeneralScheduleData data, String eventId) {
@@ -272,6 +272,15 @@ class GeneralCalendarService {
   }
 }
 
+GeneralSchedule? _scheduleById(GeneralScheduleData data, String scheduleId) {
+  for (final schedule in data.schedules) {
+    if (schedule.id == scheduleId) {
+      return schedule;
+    }
+  }
+  return null;
+}
+
 String _nextEventId(GeneralScheduleData data) {
   final existingIds = data.schedules
       .expand((schedule) => schedule.events)
@@ -305,6 +314,6 @@ bool _reminderKeyMatchesEventAtOrAfter(
   if (parts.length < 3 || parts[1] != eventId) {
     return false;
   }
-  final start = DateTime.tryParse(parts[2]);
+  final start = tryParseStrictIsoDateTime(parts[2]);
   return start != null && !start.isBefore(startInclusive);
 }

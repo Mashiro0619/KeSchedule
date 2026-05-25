@@ -1,49 +1,39 @@
-import 'dart:io';
+import 'school_site_store_stub.dart'
+    if (dart.library.io) 'school_site_store_io.dart';
 
-import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+class SchoolSiteStoreCandidate {
+  const SchoolSiteStoreCandidate({
+    required this.source,
+    Future<void> Function()? promote,
+  }) : _promote = promote;
 
-class SchoolSiteStore {
-  const SchoolSiteStore();
+  final String source;
+  final Future<void> Function()? _promote;
 
-  static const _storageKey = 'Sked_school_sites_json';
-  static const _fileName = 'Sked_school_sites.json';
-
-  Future<String?> load() async {
-    if (kIsWeb) {
-      final preferences = await SharedPreferences.getInstance();
-      return preferences.getString(_storageKey);
+  Future<void> promote() async {
+    final action = _promote;
+    if (action != null) {
+      await action();
     }
-    final file = await _resolveFile();
-    if (!await file.exists()) {
-      return null;
+  }
+}
+
+abstract class SchoolSiteStore {
+  const factory SchoolSiteStore() = PlatformSchoolSiteStore;
+
+  const SchoolSiteStore.base();
+
+  Future<String?> load();
+
+  Future<List<SchoolSiteStoreCandidate>> loadCandidates() async {
+    final source = await load();
+    if (source == null || source.trim().isEmpty) {
+      return const <SchoolSiteStoreCandidate>[];
     }
-    final content = await file.readAsString();
-    return content.trim().isEmpty ? null : content;
+    return [SchoolSiteStoreCandidate(source: source)];
   }
 
-  Future<void> save(String source) async {
-    if (kIsWeb) {
-      final preferences = await SharedPreferences.getInstance();
-      await preferences.setString(_storageKey, source);
-      return;
-    }
-    final file = await _resolveFile();
-    await file.writeAsString(source);
-  }
+  Future<void> save(String source);
 
-  Future<String?> filePath() async {
-    if (kIsWeb) {
-      return 'browser://local-storage/$_storageKey';
-    }
-    final file = await _resolveFile();
-    return file.path;
-  }
-
-  Future<File> _resolveFile() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return File(path.join(directory.path, _fileName));
-  }
+  Future<String?> filePath();
 }

@@ -213,7 +213,8 @@ class TimetableImportFlow {
     final selectedPeriodTimeSetId = await showPeriodTimeSetPickerDialog(
       context,
       provider: provider,
-      selectedPeriodTimeSetId: provider.activePeriodTimeSetOrNull?.id ??
+      selectedPeriodTimeSetId:
+          provider.activePeriodTimeSetOrNull?.id ??
           provider.periodTimeSets.first.id,
     );
     if (selectedPeriodTimeSetId == null || selectedPeriodTimeSetId.isEmpty) {
@@ -287,7 +288,9 @@ class TimetableImportFlow {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             tileColor: selected
-                                ? Theme.of(context).colorScheme.secondaryContainer
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.secondaryContainer
                                 : null,
                             title: Text(timetable.config.name),
                             subtitle: Text(
@@ -342,7 +345,8 @@ class TimetableImportFlow {
       allowedExtensions: const ['json'],
       withData: true,
     );
-    final file = result?.files.single;
+    final files = result?.files ?? const <PlatformFile>[];
+    final file = files.isEmpty ? null : files.first;
     final bytes = file?.bytes;
     if (file == null || bytes == null) {
       return null;
@@ -354,6 +358,8 @@ class TimetableImportFlow {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

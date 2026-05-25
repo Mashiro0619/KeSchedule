@@ -148,15 +148,16 @@ class GeneralCalendarIcsService {
       );
     }
     events.sort((a, b) => a.startDateTimeIso.compareTo(b.startDateTimeIso));
+    final normalizedEvents = _deduplicateImportedEventIds(events, schedule.id);
     return GeneralCalendarIcsImportResult(
-      schedules: [schedule.copyWith(events: events)],
+      schedules: [schedule.copyWith(events: normalizedEvents)],
       warningItems: warnings,
     );
   }
 
   List<String> _exportEvent(GeneralSchedule schedule, GeneralEvent event) {
-    final start = DateTime.tryParse(event.startDateTimeIso);
-    final end = DateTime.tryParse(event.endDateTimeIso);
+    final start = tryParseStrictIsoDateTime(event.startDateTimeIso);
+    final end = tryParseStrictIsoDateTime(event.endDateTimeIso);
     if (start == null || end == null) {
       return const [];
     }
@@ -435,7 +436,7 @@ DateTime? _parseIcsDateTime(_IcsField field) {
     r'^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$',
   ).firstMatch(value);
   if (match == null) {
-    return DateTime.tryParse(value);
+    return _parseIsoDateTime(value);
   }
   final year = int.parse(match.group(1)!);
   final month = int.parse(match.group(2)!);
@@ -445,21 +446,114 @@ DateTime? _parseIcsDateTime(_IcsField field) {
   final second = int.parse(match.group(6)!);
   final isUtc = match.group(7) == 'Z';
   if (isUtc) {
-    return DateTime.utc(year, month, day, hour, minute, second).toLocal();
+    return _strictDateTime(
+      year: year,
+      month: month,
+      day: day,
+      hour: hour,
+      minute: minute,
+      second: second,
+      isUtc: true,
+    )?.toLocal();
   }
-  return DateTime(year, month, day, hour, minute, second);
+  return _strictDateTime(
+    year: year,
+    month: month,
+    day: day,
+    hour: hour,
+    minute: minute,
+    second: second,
+  );
 }
 
-DateTime? _parseDate(String value) {
-  final match = RegExp(r'^(\d{4})(\d{2})(\d{2})').firstMatch(value);
-  if (match == null) {
-    return DateTime.tryParse(value);
+DateTime? _parseDate(String value, {bool allowDateTime = false}) {
+  final trimmed = value.trim();
+  final basicPattern = allowDateTime
+      ? RegExp(r'^(\d{4})(\d{2})(\d{2})(?:T.*)?$')
+      : RegExp(r'^(\d{4})(\d{2})(\d{2})$');
+  final basicMatch = basicPattern.firstMatch(trimmed);
+  if (basicMatch != null) {
+    return _strictDateTime(
+      year: int.parse(basicMatch.group(1)!),
+      month: int.parse(basicMatch.group(2)!),
+      day: int.parse(basicMatch.group(3)!),
+    );
   }
-  return DateTime(
-    int.parse(match.group(1)!),
-    int.parse(match.group(2)!),
-    int.parse(match.group(3)!),
+
+  final isoPattern = allowDateTime
+      ? RegExp(r'^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$')
+      : RegExp(r'^(\d{4})-(\d{2})-(\d{2})$');
+  final isoMatch = isoPattern.firstMatch(trimmed);
+  if (isoMatch == null) {
+    return null;
+  }
+  return _strictDateTime(
+    year: int.parse(isoMatch.group(1)!),
+    month: int.parse(isoMatch.group(2)!),
+    day: int.parse(isoMatch.group(3)!),
   );
+}
+
+DateTime? _parseIsoDateTime(String value) {
+  final match = RegExp(
+    r'^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?(Z|[+-]\d{2}:?\d{2})?$',
+  ).firstMatch(value.trim());
+  if (match == null) {
+    return null;
+  }
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  final hour = int.parse(match.group(4) ?? '0');
+  final minute = int.parse(match.group(5) ?? '0');
+  final second = int.parse(match.group(6) ?? '0');
+  final offset = match.group(7);
+  final local = _strictDateTime(
+    year: year,
+    month: month,
+    day: day,
+    hour: hour,
+    minute: minute,
+    second: second,
+  );
+  if (local == null) {
+    return null;
+  }
+  if (offset == null || offset.isEmpty) {
+    return local;
+  }
+  final parsed = DateTime.tryParse(value);
+  return parsed?.isUtc == true ? parsed!.toLocal() : parsed;
+}
+
+DateTime? _strictDateTime({
+  required int year,
+  required int month,
+  required int day,
+  int hour = 0,
+  int minute = 0,
+  int second = 0,
+  bool isUtc = false,
+}) {
+  if (year < 1 ||
+      year > 9999 ||
+      month < 1 ||
+      month > 12 ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59 ||
+      second < 0 ||
+      second > 59) {
+    return null;
+  }
+  final maxDay = DateTime(year, month + 1, 0).day;
+  if (day < 1 || day > maxDay) {
+    return null;
+  }
+  return isUtc
+      ? DateTime.utc(year, month, day, hour, minute, second)
+      : DateTime(year, month, day, hour, minute, second);
 }
 
 String? _exportRRule(GeneralEventRecurrenceRule rule) {
@@ -486,7 +580,7 @@ String? _exportRRule(GeneralEventRecurrenceRule rule) {
   if (rule.count != null && rule.count! > 0) {
     parts.add('COUNT=${rule.count}');
   } else if (rule.untilDateIso != null) {
-    final until = DateTime.tryParse(rule.untilDateIso!);
+    final until = tryParseStrictIsoDate(rule.untilDateIso!);
     if (until != null) {
       parts.add('UNTIL=${_formatDate(until)}');
     }
@@ -534,7 +628,9 @@ GeneralEventRecurrenceRule _parseRRule(
     unsupportedValues.add('COUNT=$rawCount');
   }
   final rawUntil = parts['UNTIL'];
-  final until = rawUntil == null ? null : _parseDate(rawUntil);
+  final until = rawUntil == null
+      ? null
+      : _parseDate(rawUntil, allowDateTime: true);
   if (rawUntil != null && until == null) {
     unsupportedValues.add('UNTIL=$rawUntil');
   }
@@ -593,3 +689,28 @@ List<String> _unsupportedFields(Iterable<String> fields) {
 }
 
 String _generateEventId() => 'evt_${DateTime.now().microsecondsSinceEpoch}';
+
+List<GeneralEvent> _deduplicateImportedEventIds(
+  List<GeneralEvent> events,
+  String calendarId,
+) {
+  final usedIds = <String>{};
+  return [
+    for (final event in events)
+      event.copyWith(
+        id: _uniqueImportedEventId(event.id, usedIds),
+        calendarId: calendarId,
+      ),
+  ];
+}
+
+String _uniqueImportedEventId(String rawId, Set<String> usedIds) {
+  final base = rawId.trim();
+  var candidate = base.isEmpty ? _generateEventId() : base;
+  var suffix = 1;
+  while (usedIds.contains(candidate)) {
+    candidate = base.isEmpty ? _generateEventId() : '${base}_${suffix++}';
+  }
+  usedIds.add(candidate);
+  return candidate;
+}

@@ -14,6 +14,45 @@ import 'timetable_data.dart';
 
 const Symbol _keepNullable = #keep;
 
+Map<String, dynamic>? _asStringKeyedMap(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  final result = <String, dynamic>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is String) {
+      result[key] = entry.value;
+    }
+  }
+  return result;
+}
+
+Map<String, dynamic> _decodeJsonObject(String source) {
+  final decoded = jsonDecode(source);
+  final object = _asStringKeyedMap(decoded);
+  if (object == null) {
+    throw const FormatException('JSON root must be an object.');
+  }
+  return object;
+}
+
+int? _tryDecodeInt(Object? value) {
+  return value is num ? value.toInt() : null;
+}
+
+String _stringValue(Object? value, [String fallback = '']) {
+  return value is String ? value : fallback;
+}
+
+String? _nullableStringValue(Object? value) {
+  return value is String ? value : null;
+}
+
+List<dynamic> _listValue(Object? value) {
+  return value is List ? value : const <dynamic>[];
+}
+
 class AppData {
   const AppData({
     required this.activeMode,
@@ -70,12 +109,13 @@ class AppData {
     final migrated = appDataMigrationRunner.run(json);
 
     final localeCode = normalizeLocaleCode(
-      migrated['localeCode'] as String? ?? defaultLocaleCode,
+      _stringValue(migrated['localeCode'], defaultLocaleCode),
     );
 
     // Detect legacy format: old flat keys exist and studentMode key is absent
     final isLegacy =
-        migrated.containsKey('timetables') && !migrated.containsKey('studentMode');
+        migrated.containsKey('timetables') &&
+        !migrated.containsKey('studentMode');
 
     final StudentModeData studentMode;
     final GeneralScheduleData generalMode;
@@ -91,16 +131,16 @@ class AppData {
     } else {
       studentMode = migrated.containsKey('studentMode')
           ? StudentModeData.fromJson(
-              Map<String, dynamic>.from(migrated['studentMode'] as Map),
+              _asStringKeyedMap(migrated['studentMode']) ?? const {},
               localeCode: localeCode,
             )
           : StudentModeData.fromJson({}, localeCode: localeCode);
       generalMode = migrated.containsKey('generalMode')
           ? GeneralScheduleData.fromJson(
-              Map<String, dynamic>.from(migrated['generalMode'] as Map),
+              _asStringKeyedMap(migrated['generalMode']) ?? const {},
             )
           : _buildDefaultGeneralMode();
-      activeMode = parseAppMode(migrated['activeMode'] as String?);
+      activeMode = parseAppMode(_nullableStringValue(migrated['activeMode']));
     }
 
     return AppData(
@@ -109,20 +149,27 @@ class AppData {
       generalMode: generalMode,
       localeCode: localeCode,
       themeMode: normalizeThemeMode(
-        migrated['themeMode'] as String? ?? defaultThemeMode,
+        _stringValue(migrated['themeMode'], defaultThemeMode),
       ),
       themeColorMode: normalizeThemeColorMode(
-        migrated['themeColorMode'] as String? ?? defaultThemeColorMode,
+        _stringValue(migrated['themeColorMode'], defaultThemeColorMode),
       ),
       themeSeedColorValue:
-          (migrated['themeSeedColorValue'] as num?)?.toInt() ??
+          _tryDecodeInt(migrated['themeSeedColorValue']) ??
           defaultThemeSeedColorValue,
-      colorfulUiColorValues: decodeColorValueMap(migrated['colorfulUiColorValues']),
+      colorfulUiColorValues: decodeColorValueMap(
+        migrated['colorfulUiColorValues'],
+      ),
       privacyPolicyAcceptedVersion:
-          migrated['privacyPolicyAcceptedVersion'] as String?,
-      privacyPolicyAcceptedAtIso: migrated['privacyPolicyAcceptedAtIso'] as String?,
-      ignoredUpdateVersion: migrated['ignoredUpdateVersion'] as String?,
-      availableUpdateVersion: migrated['availableUpdateVersion'] as String?,
+          _nullableStringValue(migrated['privacyPolicyAcceptedVersion']),
+      privacyPolicyAcceptedAtIso:
+          _nullableStringValue(migrated['privacyPolicyAcceptedAtIso']),
+      ignoredUpdateVersion: _nullableStringValue(
+        migrated['ignoredUpdateVersion'],
+      ),
+      availableUpdateVersion: _nullableStringValue(
+        migrated['availableUpdateVersion'],
+      ),
     );
   }
 
@@ -172,9 +219,7 @@ class AppData {
   String encode() => jsonEncode(toJson());
 
   factory AppData.decode(String source) {
-    return AppData.fromJson(
-      Map<String, dynamic>.from(jsonDecode(source) as Map),
-    );
+    return AppData.fromJson(_decodeJsonObject(source));
   }
 }
 
@@ -203,18 +248,16 @@ class ImportExportEnvelope {
 
   factory ImportExportEnvelope.fromJson(Map<String, dynamic> json) {
     return ImportExportEnvelope(
-      schema: json['schema'] as String? ?? '',
-      version: (json['version'] as num?)?.toInt() ?? 1,
-      data: Map<String, dynamic>.from(json['data'] as Map? ?? const {}),
+      schema: _stringValue(json['schema']),
+      version: _tryDecodeInt(json['version']) ?? 1,
+      data: _asStringKeyedMap(json['data']) ?? const {},
     );
   }
 
   String encode() => jsonEncode(toJson());
 
   factory ImportExportEnvelope.decode(String source) {
-    return ImportExportEnvelope.fromJson(
-      Map<String, dynamic>.from(jsonDecode(source) as Map),
-    );
+    return ImportExportEnvelope.fromJson(_decodeJsonObject(source));
   }
 }
 
@@ -223,7 +266,7 @@ void _ensureSupportedEnvelope(
   required String expectedSchema,
   String localeCode = defaultLocaleCode,
 }) {
-  if (envelope.schema != expectedSchema) {
+  if (!isImportExportSchema(envelope.schema, expectedSchema)) {
     throw FormatException(
       importFileTypeMismatchMessage(localeCode: localeCode),
     );
@@ -233,6 +276,16 @@ void _ensureSupportedEnvelope(
       importFileVersionUnsupportedMessage(localeCode: localeCode),
     );
   }
+}
+
+bool isImportExportSchema(String schema, String expectedSchema) {
+  if (schema == expectedSchema) {
+    return true;
+  }
+  const legacyPrefix = 'KeSchedule-';
+  const currentPrefix = 'Sked-';
+  return expectedSchema.startsWith(currentPrefix) &&
+      schema == expectedSchema.replaceFirst(currentPrefix, legacyPrefix);
 }
 
 String encodeAppDataEnvelope(AppData data) {
@@ -269,11 +322,10 @@ List<CoursePeriodTime> decodePeriodTimesEnvelope(
     expectedSchema: periodTimesSchema,
     localeCode: localeCode,
   );
-  return (envelope.data['periodTimes'] as List<dynamic>? ?? const <dynamic>[])
-      .map(
-        (item) =>
-            CoursePeriodTime.fromJson(Map<String, dynamic>.from(item as Map)),
-      )
+  return _listValue(envelope.data['periodTimes'])
+      .map(_asStringKeyedMap)
+      .whereType<Map<String, dynamic>>()
+      .map(CoursePeriodTime.fromJson)
       .toList();
 }
 
@@ -341,14 +393,12 @@ class GeneralScheduleExportData {
   };
 
   factory GeneralScheduleExportData.fromJson(Map<String, dynamic> json) {
-    final raw = (json['schedules'] as List<dynamic>? ?? const <dynamic>[]);
+    final raw = _listValue(json['schedules']);
     return GeneralScheduleExportData(
       schedules: raw
-          .map(
-            (s) => GeneralSchedule.fromJson(
-              Map<String, dynamic>.from(s as Map),
-            ).normalized(),
-          )
+          .map(_asStringKeyedMap)
+          .whereType<Map<String, dynamic>>()
+          .map((s) => GeneralSchedule.fromJson(s).normalized())
           .toList(),
     );
   }

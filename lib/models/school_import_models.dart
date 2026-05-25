@@ -1,8 +1,44 @@
+import '../utils/time_utils.dart';
+
 Map<String, dynamic> _asStringKeyedMap(Object? value) {
-  if (value is Map) {
-    return Map<String, dynamic>.from(value);
+  if (value is! Map) {
+    return const <String, dynamic>{};
   }
-  return const <String, dynamic>{};
+  final result = <String, dynamic>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is String) {
+      result[key] = entry.value;
+    }
+  }
+  return result;
+}
+
+List<int> _intList(Object? value) {
+  if (value is! List) {
+    return const [];
+  }
+  return value.whereType<num>().map((item) => item.toInt()).toList();
+}
+
+List<dynamic> _listValue(Object? value) {
+  return value is List ? value : const <dynamic>[];
+}
+
+String _stringValue(Object? value, [String fallback = '']) {
+  return value is String ? value : fallback;
+}
+
+int? _intValue(Object? value) {
+  return value is num ? value.toInt() : null;
+}
+
+double? _doubleValue(Object? value) {
+  return value is num ? value.toDouble() : null;
+}
+
+bool? _boolValue(Object? value) {
+  return value is bool ? value : null;
 }
 
 enum TimetableImportMode { addAsNew, replaceActive }
@@ -83,10 +119,11 @@ class SchoolImportMeta {
 
   factory SchoolImportMeta.fromJson(Map<String, dynamic> json) {
     return SchoolImportMeta(
-      sourceUrl: json['sourceUrl'] as String? ?? '',
-      pageTitle: json['pageTitle'] as String? ?? '',
-      parser: json['parser'] as String? ?? '',
-      warnings: (json['warnings'] as List<dynamic>? ?? const <dynamic>[])
+      sourceUrl: _stringValue(json['sourceUrl']),
+      pageTitle: _stringValue(json['pageTitle']),
+      parser: _stringValue(json['parser']),
+      warnings: _listValue(json['warnings'])
+          .where((item) => item != null)
           .map((item) => item.toString())
           .where((item) => item.trim().isNotEmpty)
           .toList(),
@@ -107,29 +144,54 @@ class ImportedPeriodTimeDraft {
 
   factory ImportedPeriodTimeDraft.fromJson(Map<String, dynamic> json) {
     return ImportedPeriodTimeDraft(
-      index: (json['index'] as num?)?.toInt() ?? 1,
-      startMinutes: (json['startMinutes'] as num?)?.toInt() ?? 8 * 60,
-      endMinutes: (json['endMinutes'] as num?)?.toInt() ?? (8 * 60) + 45,
+      index: _intValue(json['index']) ?? 1,
+      startMinutes: _intValue(json['startMinutes']) ?? 0,
+      endMinutes: _intValue(json['endMinutes']) ?? 0,
     );
   }
 }
 
+ImportedPeriodTimeDraft? _tryParseBundledPeriodTimeDraft(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  final json = _asStringKeyedMap(value);
+  final index = _intValue(json['index']);
+  final startMinutes = _intValue(json['startMinutes']);
+  final endMinutes = _intValue(json['endMinutes']);
+  if (index == null || startMinutes == null || endMinutes == null) {
+    return null;
+  }
+  if (index <= 0 || startMinutes < 0 || endMinutes <= startMinutes) {
+    return null;
+  }
+  return ImportedPeriodTimeDraft(
+    index: index,
+    startMinutes: startMinutes,
+    endMinutes: endMinutes,
+  );
+}
+
 class ImportedPeriodTimeSetDraft {
-  const ImportedPeriodTimeSetDraft({required this.name, required this.periodTimes});
+  const ImportedPeriodTimeSetDraft({
+    required this.name,
+    required this.periodTimes,
+  });
 
   final String name;
   final List<ImportedPeriodTimeDraft> periodTimes;
 
   factory ImportedPeriodTimeSetDraft.fromJson(Map<String, dynamic> json) {
+    final periodTimes = <ImportedPeriodTimeDraft>[];
+    for (final item in _listValue(json['periodTimes'])) {
+      final parsed = _tryParseBundledPeriodTimeDraft(item);
+      if (parsed != null) {
+        periodTimes.add(parsed);
+      }
+    }
     return ImportedPeriodTimeSetDraft(
-      name: json['name'] as String? ?? '',
-      periodTimes: (json['periodTimes'] as List<dynamic>? ?? const <dynamic>[])
-          .map(
-            (item) => ImportedPeriodTimeDraft.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .toList(),
+      name: _stringValue(json['name']),
+      periodTimes: periodTimes,
     );
   }
 }
@@ -163,20 +225,16 @@ class ImportedCourseDraft {
 
   factory ImportedCourseDraft.fromJson(Map<String, dynamic> json) {
     return ImportedCourseDraft(
-      name: json['name'] as String? ?? '',
-      teacher: json['teacher'] as String? ?? '',
-      location: json['location'] as String? ?? '',
-      dayOfWeek: (json['dayOfWeek'] as num?)?.toInt() ?? 1,
-      semesterWeeks: (json['semesterWeeks'] as List<dynamic>? ?? const <dynamic>[])
-          .map((item) => (item as num).toInt())
-          .toList(),
-      periods: (json['periods'] as List<dynamic>? ?? const <dynamic>[])
-          .map((item) => (item as num).toInt())
-          .toList(),
-      startMinutes: (json['startMinutes'] as num?)?.toInt() ?? 8 * 60,
-      endMinutes: (json['endMinutes'] as num?)?.toInt() ?? (8 * 60) + 45,
-      credit: (json['credit'] as num?)?.toDouble() ?? 0,
-      remarks: json['remarks'] as String? ?? '',
+      name: _stringValue(json['name']),
+      teacher: _stringValue(json['teacher']),
+      location: _stringValue(json['location']),
+      dayOfWeek: _intValue(json['dayOfWeek']) ?? 1,
+      semesterWeeks: _intList(json['semesterWeeks']),
+      periods: _intList(json['periods']),
+      startMinutes: _intValue(json['startMinutes']) ?? 0,
+      endMinutes: _intValue(json['endMinutes']) ?? 0,
+      credit: _doubleValue(json['credit']) ?? 0,
+      remarks: _stringValue(json['remarks']),
       customFields: _asStringKeyedMap(json['customFields']),
     );
   }
@@ -198,20 +256,18 @@ class SchoolImportTimetableDraft {
   final List<ImportedCourseDraft> courses;
 
   factory SchoolImportTimetableDraft.fromJson(Map<String, dynamic> json) {
-    final startDateRaw = json['startDate'] as String?;
+    final startDateRaw = _stringValue(json['startDate']);
     return SchoolImportTimetableDraft(
-      name: json['name'] as String? ?? '',
-      startDate: DateTime.tryParse(startDateRaw ?? '') ?? DateTime.now(),
-      totalWeeks: (json['totalWeeks'] as num?)?.toInt() ?? 18,
+      name: _stringValue(json['name']),
+      startDate: tryParseStrictIsoDate(startDateRaw) ?? DateTime.now(),
+      totalWeeks: _intValue(json['totalWeeks']) ?? 18,
       periodTimeSet: ImportedPeriodTimeSetDraft.fromJson(
-        Map<String, dynamic>.from(json['periodTimeSet'] as Map? ?? const {}),
+        _asStringKeyedMap(json['periodTimeSet']),
       ),
-      courses: (json['courses'] as List<dynamic>? ?? const <dynamic>[])
-          .map(
-            (item) => ImportedCourseDraft.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
+      courses: _listValue(json['courses'])
+          .map(_asStringKeyedMap)
+          .where((item) => item.isNotEmpty)
+          .map(ImportedCourseDraft.fromJson)
           .toList(),
     );
   }
@@ -240,16 +296,14 @@ class SchoolImportResponse {
   final SchoolImportTimetableDraft timetable;
 
   factory SchoolImportResponse.fromJson(Map<String, dynamic> json) {
-    final ok = json['ok'] as bool? ?? false;
+    final ok = _boolValue(json['ok']) ?? false;
     if (!ok) {
-      throw FormatException(json['message'] as String? ?? 'Import failed.');
+      throw FormatException(_stringValue(json['message'], 'Import failed.'));
     }
     return SchoolImportResponse(
-      meta: SchoolImportMeta.fromJson(
-        Map<String, dynamic>.from(json['meta'] as Map? ?? const {}),
-      ),
+      meta: SchoolImportMeta.fromJson(_asStringKeyedMap(json['meta'])),
       timetable: SchoolImportTimetableDraft.fromJson(
-        Map<String, dynamic>.from(json['timetable'] as Map? ?? const {}),
+        _asStringKeyedMap(json['timetable']),
       ),
     );
   }

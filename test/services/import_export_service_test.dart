@@ -108,12 +108,14 @@ void main() {
     List<TimetableData>? timetables,
     List<PeriodTimeSet>? periodTimeSets,
     String activeTimetableId = 'table1',
+    Map<String, String> conflictDisplayCourseIds = const {},
     Map<String, int> courseNameColorValues = const {},
   }) {
     return StudentModeData(
       activeTimetableId: activeTimetableId,
       timetables: timetables ?? [timetable()],
       periodTimeSets: periodTimeSets ?? [periodSet()],
+      conflictDisplayCourseIds: conflictDisplayCourseIds,
       courseNameColorValues: courseNameColorValues,
     );
   }
@@ -207,6 +209,28 @@ void main() {
   });
 
   group('general JSON import', () {
+    test(
+      'decodes general schedule envelope while ignoring malformed entries',
+      () {
+        final source = ImportExportEnvelope(
+          schema: generalScheduleDataSchema,
+          version: importExportVersion,
+          data: {
+            'schedules': [
+              schedule(id: 'valid', name: 'Valid').toJson(),
+              'bad',
+              null,
+            ],
+          },
+        ).encode();
+
+        final decoded = decodeGeneralScheduleDataEnvelope(source);
+
+        expect(decoded.schedules, hasLength(1));
+        expect(decoded.schedules.single.id, 'valid');
+      },
+    );
+
     test('adds selected calendars as new and de-duplicates ids', () {
       final current = data(
         schedules: [schedule(id: 'work', name: 'Work')],
@@ -346,6 +370,29 @@ END:VCALENDAR
   });
 
   group('student JSON export', () {
+    test('decodes period time envelope while ignoring malformed entries', () {
+      final source = ImportExportEnvelope(
+        schema: periodTimesSchema,
+        version: importExportVersion,
+        data: {
+          'periodTimes': [
+            const CoursePeriodTime(
+              index: 1,
+              startMinutes: 480,
+              endMinutes: 525,
+            ).toJson(),
+            'bad',
+            null,
+          ],
+        },
+      ).encode();
+
+      final decoded = decodePeriodTimesEnvelope(source);
+
+      expect(decoded, hasLength(1));
+      expect(decoded.single.index, 1);
+    });
+
     test('exports selected timetables with linked period time sets', () {
       final source = studentData(
         timetables: [
@@ -369,6 +416,121 @@ END:VCALENDAR
   });
 
   group('student JSON import', () {
+    test('decodes app data envelope with malformed nested modes safely', () {
+      final source = ImportExportEnvelope(
+        schema: appDataSchema,
+        version: importExportVersion,
+        data: {
+          'activeMode': 'student',
+          'studentMode': 'bad',
+          'generalMode': 'bad',
+          'themeSeedColorValue': 'bad',
+          'colorfulUiColorValues': {'ok': 0xFF123456, 'bad': 'nope'},
+        },
+      ).encode();
+
+      final decoded = decodeAppDataEnvelope(source);
+
+      expect(decoded.studentMode.timetables, isEmpty);
+      expect(decoded.generalMode.schedules, isNotEmpty);
+      expect(decoded.themeSeedColorValue, defaultThemeSeedColorValue);
+      expect(decoded.colorfulUiColorValues, {'ok': 0xFF123456});
+    });
+
+    test('normalizes duplicate student ids and stale display preferences', () {
+      final duplicateData = AppData(
+        activeMode: AppMode.student,
+        studentMode: StudentModeData(
+          activeTimetableId: 'dup',
+          timetables: [
+            timetable(
+              id: 'dup',
+              name: 'First',
+              periodTimeSetId: 'set',
+              courses: [
+                course(
+                  id: 'course',
+                  name: 'Algebra',
+                  startMinutes: 600,
+                  endMinutes: 645,
+                ).copyWith(timeRange: 'stale'),
+              ],
+            ),
+            timetable(
+              id: 'dup',
+              name: 'Second',
+              periodTimeSetId: 'set',
+              courses: [course(id: 'course', name: 'Physics')],
+            ),
+          ],
+          periodTimeSets: [
+            periodSet(id: 'set'),
+            periodSet(id: 'set'),
+          ],
+          conflictDisplayCourseIds: const {
+            'dup|1|480|525|course,missing': 'course',
+            'bad-key': 'course',
+          },
+        ),
+        generalMode: GeneralScheduleData.createDefault(),
+      );
+
+      final normalized = service.normalizeAppData(
+        duplicateData,
+        localeCode: defaultLocaleCode,
+      );
+
+      expect(
+        normalized.studentMode.timetables.map((item) => item.id).toSet(),
+        hasLength(2),
+      );
+      expect(
+        normalized.studentMode.periodTimeSets.map((item) => item.id).toSet(),
+        hasLength(2),
+      );
+      expect(
+        normalized.studentMode.timetables
+            .expand((item) => item.courses)
+            .map((item) => item.id)
+            .toSet(),
+        hasLength(2),
+      );
+      expect(normalized.studentMode.activeTimetableId, 'dup');
+      expect(
+        normalized.studentMode.timetables.first.courses.single.timeRange,
+        '10:00 - 10:45',
+      );
+      expect(normalized.studentMode.conflictDisplayCourseIds, isEmpty);
+    });
+
+    test('keeps preview ids stable for files with missing timetable ids', () {
+      final source = timetableEnvelope(
+        TimetableExportData(
+          timetables: [
+            timetable(id: '', name: 'First', periodTimeSetId: ''),
+            timetable(id: '', name: 'Second', periodTimeSetId: ''),
+          ],
+          periodTimeSets: const [],
+        ),
+      );
+      final preview = service.previewImportTimetables(
+        source,
+        localeCode: defaultLocaleCode,
+      );
+
+      final mutation = service.importSelectedTimetablesJson(
+        studentData(timetables: const [], activeTimetableId: ''),
+        source,
+        timetableIds: [preview.last.id],
+        mode: TimetableImportMode.addAsNew,
+        localeCode: defaultLocaleCode,
+      );
+
+      expect(preview.map((item) => item.id), ['table', 'table_1']);
+      expect(mutation.importedCount, 1);
+      expect(mutation.selectedTimetable!.config.name, 'Second');
+    });
+
     test('adds selected timetable as new and maps bundled period set ids', () {
       final current = studentData(
         timetables: [
@@ -416,14 +578,73 @@ END:VCALENDAR
       expect(mutation.data.courseNameColorValues.keys, contains('Physics'));
     });
 
+    test('adds imported timetables with globally unique course ids', () {
+      final current = studentData(
+        timetables: [
+          timetable(
+            id: 'current',
+            courses: [course(id: 'dup', name: 'Current')],
+          ),
+        ],
+      );
+      final source = timetableEnvelope(
+        TimetableExportData(
+          timetables: [
+            timetable(
+              id: 'imported',
+              periodTimeSetId: 'import_set',
+              courses: [
+                course(id: 'dup', name: 'Imported A'),
+                course(id: 'dup', name: 'Imported B'),
+              ],
+            ),
+          ],
+          periodTimeSets: [periodSet(id: 'import_set')],
+        ),
+      );
+
+      final mutation = service.importSelectedTimetablesJson(
+        current,
+        source,
+        timetableIds: const ['imported'],
+        mode: TimetableImportMode.addAsNew,
+        localeCode: defaultLocaleCode,
+      );
+
+      final allCourseIds = mutation.data.timetables
+          .expand((item) => item.courses)
+          .map((item) => item.id)
+          .toList();
+      expect(allCourseIds.toSet(), hasLength(allCourseIds.length));
+      expect(mutation.selectedTimetable!.courses.map((item) => item.id), [
+        'dup_copy',
+        'dup_copy_1',
+      ]);
+    });
+
     test('replaces active timetable and can reuse an existing period set', () {
       final current = studentData(
-        timetables: [timetable(id: 'active', name: 'Current')],
+        timetables: [
+          timetable(
+            id: 'active',
+            name: 'Current',
+            courses: [course(id: 'old', name: 'Old')],
+          ),
+          timetable(
+            id: 'other',
+            name: 'Other',
+            courses: [course(id: 'shared', name: 'Other')],
+          ),
+        ],
         periodTimeSets: [
           periodSet(id: 'set1'),
           periodSet(id: 'set2', name: 'Manual Target'),
         ],
         activeTimetableId: 'active',
+        conflictDisplayCourseIds: const {
+          'active|1|480|525|old,another': 'old',
+          'other|1|480|525|shared': 'shared',
+        },
       );
       final source = timetableEnvelope(
         TimetableExportData(
@@ -432,6 +653,7 @@ END:VCALENDAR
               id: 'imported',
               name: 'Replacement',
               periodTimeSetId: 'import_set',
+              courses: [course(id: 'shared', name: 'Replacement Course')],
             ),
           ],
           periodTimeSets: [periodSet(id: 'import_set')],
@@ -454,6 +676,10 @@ END:VCALENDAR
       expect(mutation.selectedTimetable!.id, 'active');
       expect(mutation.selectedTimetable!.config.name, 'Replacement');
       expect(mutation.selectedTimetable!.config.periodTimeSetId, 'set2');
+      expect(mutation.selectedTimetable!.courses.single.id, 'shared_copy');
+      expect(mutation.data.conflictDisplayCourseIds, {
+        'other|1|480|525|shared': 'shared',
+      });
     });
 
     test(
@@ -524,6 +750,30 @@ END:VCALENDAR
       expect(importedSet.periodTimes, hasLength(2));
     });
 
+    test('sanitizes malformed school imported periods and time ranges', () {
+      final current = studentData();
+
+      final mutation = service.applySchoolImportRequest(
+        current,
+        SchoolImportApplyRequest(
+          response: schoolResponse(
+            periods: const [2, 2, -1, 99],
+            startMinutes: 2000,
+            endMinutes: -5,
+          ),
+          mode: TimetableImportMode.addAsNew,
+          importBundledPeriodTimeSet: true,
+        ),
+        localeCode: defaultLocaleCode,
+      );
+
+      final course = mutation.selectedTimetable!.courses.single;
+      expect(course.periods, [2]);
+      expect(course.startMinutes, 530);
+      expect(course.endMinutes, 575);
+      expect(course.timeRange, '08:50 - 09:35');
+    });
+
     test('adds as new without bundled periods by reusing target set', () {
       final current = studentData(
         periodTimeSets: [
@@ -549,6 +799,40 @@ END:VCALENDAR
       ]);
       expect(mutation.selectedTimetable!.config.periodTimeSetId, 'set2');
     });
+
+    test(
+      'keeps school imported course time unknown when nothing can resolve it',
+      () {
+        final current = studentData(
+          periodTimeSets: [
+            periodSet(id: 'set1'),
+            periodSet(id: 'set2', name: 'Manual Target'),
+          ],
+        );
+
+        final mutation = service.applySchoolImportRequest(
+          current,
+          SchoolImportApplyRequest(
+            response: schoolResponse(
+              periodTimes: const [],
+              periods: const [],
+              startMinutes: 0,
+              endMinutes: 0,
+            ),
+            mode: TimetableImportMode.addAsNew,
+            importBundledPeriodTimeSet: false,
+            targetPeriodTimeSetId: 'set2',
+          ),
+          localeCode: defaultLocaleCode,
+        );
+
+        final course = mutation.selectedTimetable!.courses.single;
+        expect(course.periods, isEmpty);
+        expect(course.startMinutes, 0);
+        expect(course.endMinutes, 0);
+        expect(course.timeRange, '00:00 - 00:00');
+      },
+    );
 
     test('replaces active timetable and appends bundled periods', () {
       final current = studentData(

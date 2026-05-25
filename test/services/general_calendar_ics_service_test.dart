@@ -267,4 +267,87 @@ END:VCALENDAR
       contains('Unsupported RRULE parts ignored: BYDAY=MO,WE'),
     );
   });
+
+  test('rejects invalid ICS dates instead of rolling them forward', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:bad-date
+SUMMARY:Bad date
+DTSTART;VALUE=DATE:20260231
+DTEND;VALUE=DATE:20260301
+END:VEVENT
+BEGIN:VEVENT
+UID:good-date
+SUMMARY:Good date
+DTSTART:20260228T090000
+DTEND:20260228T100000
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.id, 'ics_good-date');
+    expect(event.startDateTimeIso, startsWith('2026-02-28T09:00:00'));
+    expect(
+      imported.warningItems.single.code,
+      GeneralCalendarIcsWarningCode.unsupportedDtStart,
+    );
+  });
+
+  test('rejects invalid RRULE UNTIL dates instead of rolling them forward', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:bad-until
+SUMMARY:Bad until
+DTSTART:20260228T090000
+DTEND:20260228T100000
+RRULE:FREQ=WEEKLY;UNTIL=20260231
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+    final warning = imported.warningItems.singleWhere(
+      (item) => item.code == GeneralCalendarIcsWarningCode.unsupportedFields,
+    );
+
+    expect(event.recurrenceRule.isRepeating, false);
+    expect(warning.values, contains('RRULE:UNTIL=20260231'));
+    expect(event.notes, contains('Unsupported RRULE parts ignored'));
+  });
+
+  test('deduplicates repeated imported UIDs inside one calendar', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:duplicate
+SUMMARY:First
+DTSTART:20260525T090000
+DTEND:20260525T100000
+END:VEVENT
+BEGIN:VEVENT
+UID:duplicate
+SUMMARY:Second
+DTSTART:20260526T090000
+DTEND:20260526T100000
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final events = imported.schedules.single.events;
+
+    expect(events, hasLength(2));
+    expect(events.map((event) => event.id).toSet(), hasLength(2));
+    expect(events.first.id, 'ics_duplicate');
+    expect(events.last.id, 'ics_duplicate_1');
+  });
 }

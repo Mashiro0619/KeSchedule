@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sked/data/timetable_storage.dart';
 import 'package:sked/l10n/app_locale.dart';
+import 'package:sked/models/school_import_models.dart';
 import 'package:sked/models/timetable_models.dart';
 import 'package:sked/providers/timetable_provider.dart';
 
@@ -8,6 +9,7 @@ class _MemoryTimetableStorage implements TimetableStorage {
   _MemoryTimetableStorage(this.data);
 
   AppData? data;
+  int saveCount = 0;
 
   @override
   Future<StorageLoadResult> load() async =>
@@ -15,6 +17,7 @@ class _MemoryTimetableStorage implements TimetableStorage {
 
   @override
   Future<void> save(AppData data) async {
+    saveCount += 1;
     this.data = data;
   }
 
@@ -113,6 +116,55 @@ void main() {
   }
 
   group('TimetableProvider student mode', () {
+    test('persists normalized legacy data after loading', () async {
+      final storage = _MemoryTimetableStorage(
+        appData(
+          activeTimetableId: 'dup',
+          timetables: [
+            timetable(
+              id: 'dup',
+              name: 'First',
+              periodTimeSetId: 'set1',
+              courses: [course(id: 'course')],
+            ),
+            timetable(
+              id: 'dup',
+              name: 'Second',
+              periodTimeSetId: 'set1',
+              courses: [course(id: 'course')],
+            ),
+          ],
+          periodTimeSets: [
+            periodSet(id: 'set1'),
+            periodSet(id: 'set1'),
+          ],
+        ),
+      );
+      final provider = TimetableProvider(
+        storage: storage,
+        systemLocaleCodeResolver: () => defaultLocaleCode,
+      );
+
+      await provider.load();
+
+      expect(storage.saveCount, 1);
+      expect(
+        storage.data!.studentMode.timetables.map((item) => item.id).toSet(),
+        hasLength(2),
+      );
+      expect(
+        storage.data!.studentMode.periodTimeSets.map((item) => item.id).toSet(),
+        hasLength(2),
+      );
+      expect(
+        storage.data!.studentMode.timetables
+            .expand((item) => item.courses)
+            .map((item) => item.id)
+            .toSet(),
+        hasLength(2),
+      );
+    });
+
     test('saves and deletes courses through the facade', () async {
       final provider = providerWith(
         appData(
@@ -253,6 +305,38 @@ void main() {
 
       expect(provider.displayedCourseIdForConflict(conflictKey), isNull);
     });
+
+    test(
+      'single timetable import reports empty files without mutating state',
+      () async {
+        final provider = providerWith(appData());
+        final source = encodeTimetableDataEnvelope(
+          const TimetableExportData(timetables: [], periodTimeSets: []),
+        );
+
+        await provider.load();
+        final beforeTimetableIds = provider.timetables
+            .map((item) => item.id)
+            .toList();
+
+        await expectLater(
+          provider.importTimetableJson(
+            source,
+            mode: TimetableImportMode.addAsNew,
+          ),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              noImportableTimetablesMessage(localeCode: defaultLocaleCode),
+            ),
+          ),
+        );
+
+        expect(provider.timetables.map((item) => item.id), beforeTimetableIds);
+        expect(provider.activeTimetable.id, 'table1');
+      },
+    );
 
     test('switching app modes preserves student data', () async {
       final provider = providerWith(appData(activeMode: AppMode.general));

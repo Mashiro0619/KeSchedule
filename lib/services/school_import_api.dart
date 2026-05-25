@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -9,14 +10,17 @@ import '../models/timetable_models.dart';
 sealed class SchoolImportStreamEvent {
   const SchoolImportStreamEvent();
 }
+
 class ParseDelta extends SchoolImportStreamEvent {
   const ParseDelta(this.text);
   final String text;
 }
+
 class ParseDone extends SchoolImportStreamEvent {
   const ParseDone({required this.response});
   final SchoolImportResponse response;
 }
+
 class ParseError extends SchoolImportStreamEvent {
   const ParseError(this.message);
   final String message;
@@ -34,10 +38,39 @@ class SchoolImportApiResult {
   final int statusCode;
 }
 
-class SchoolImportApi {
-  const SchoolImportApi({http.Client? client}) : _client = client;
+Map<String, dynamic>? _asStringKeyedMap(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  final result = <String, dynamic>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is String) {
+      result[key] = entry.value;
+    }
+  }
+  return result;
+}
 
-  static const _defaultCustomOpenAiSystemPrompt = '''You are an expert timetable extraction engine.
+String _stringValue(Object? value, [String fallback = '']) {
+  return value is String ? value : fallback;
+}
+
+List<dynamic> _listValue(Object? value) {
+  return value is List ? value : const <dynamic>[];
+}
+
+class SchoolImportApi {
+  const SchoolImportApi({
+    http.Client? client,
+    Duration requestTimeout = const Duration(seconds: 30),
+    Duration streamIdleTimeout = const Duration(minutes: 2),
+  }) : _client = client,
+       _requestTimeout = requestTimeout,
+       _streamIdleTimeout = streamIdleTimeout;
+
+  static const _defaultCustomOpenAiSystemPrompt =
+      '''You are an expert timetable extraction engine.
 
 Your job is to read the provided page content and convert it into exactly one JSON object.
 The content may be HTML, plain text, copied table text, JSON fragments, or mixed page source.
@@ -99,6 +132,8 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
       _defaultCustomOpenAiSystemPrompt;
 
   final http.Client? _client;
+  final Duration _requestTimeout;
+  final Duration _streamIdleTimeout;
 
   Future<SchoolImportResponse> importCurrentPage(
     SchoolImportPagePayload payload, {
@@ -128,48 +163,60 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
     final normalizedBaseUrl = baseUrl.trim();
     final normalizedApiKey = apiKey.trim();
     if (normalizedBaseUrl.isEmpty || normalizedApiKey.isEmpty) {
-      throw const FormatException('Custom parser base URL or API key is missing.');
+      throw const FormatException(
+        'Custom parser base URL or API key is missing.',
+      );
     }
 
     final client = _client ?? http.Client();
     final ownsClient = _client == null;
     try {
       final uri = _buildOpenAiModelsUri(normalizedBaseUrl);
-      final response = await client.get(
-        uri,
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $normalizedApiKey',
-        },
-      );
-      final rawBody = response.body;
+      final response = await client
+          .get(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $normalizedApiKey',
+            },
+          )
+          .timeout(_requestTimeout);
+      final rawBody = _decodeBody(response);
       final decoded = _tryDecodeJson(rawBody);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final message = _extractErrorMessage(decoded);
         throw FormatException(
-          message ?? 'Model list request failed (${response.statusCode}).\n\n$rawBody',
+          message ??
+              'Model list request failed (${response.statusCode}).\n\n$rawBody',
         );
       }
       if (decoded is! Map<String, dynamic>) {
-        throw FormatException('Model list response format is invalid.\n\n$rawBody');
+        throw FormatException(
+          'Model list response format is invalid.\n\n$rawBody',
+        );
       }
       final data = decoded['data'];
       if (data is! List) {
-        throw FormatException('Model list response format is invalid.\n\n$rawBody');
+        throw FormatException(
+          'Model list response format is invalid.\n\n$rawBody',
+        );
       }
-      final models = data
-          .map((item) {
-            if (item is Map) {
-              final id = item['id']?.toString().trim() ?? '';
-              return id;
-            }
-            return '';
-          })
-          .where((item) => item.isNotEmpty)
-          .toSet()
-          .toList()
-        ..sort();
+      final models =
+          data
+              .map((item) {
+                if (item is Map) {
+                  final id = item['id']?.toString().trim() ?? '';
+                  return id;
+                }
+                return '';
+              })
+              .where((item) => item.isNotEmpty)
+              .toSet()
+              .toList()
+            ..sort();
       return models;
+    } on TimeoutException {
+      throw const FormatException('Model list request timed out.');
     } on FormatException {
       rethrow;
     } catch (error) {
@@ -185,7 +232,9 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
     SchoolImportPagePayload payload,
   ) async {
     if (!AppConfig.hasSchoolImportApiBaseUrl) {
-      throw const FormatException('School import API base URL is not configured.');
+      throw const FormatException(
+        'School import API base URL is not configured.',
+      );
     }
 
     final client = _client ?? http.Client();
@@ -199,27 +248,32 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
         path: path,
         queryParameters: const {'action': 'import_timetable'},
       );
-      final response = await client.post(
-        uri,
-        headers: const {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(payload.toJson()),
-      );
-      final rawBody = response.body;
+      final response = await client
+          .post(
+            uri,
+            headers: const {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode(payload.toJson()),
+          )
+          .timeout(_requestTimeout);
+      final rawBody = _decodeBody(response);
       final decoded = _tryDecodeJson(rawBody);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final message = _extractErrorMessage(decoded);
         throw FormatException(
-          message ?? 'Import request failed (${response.statusCode}).\n\n$rawBody',
+          message ??
+              'Import request failed (${response.statusCode}).\n\n$rawBody',
         );
       }
       if (decoded is! Map<String, dynamic>) {
         throw FormatException('Import response format is invalid.\n\n$rawBody');
       }
       if (decoded['ok'] == false) {
-        throw FormatException(_extractErrorMessage(decoded) ?? 'Import failed.');
+        throw FormatException(
+          _extractErrorMessage(decoded) ?? 'Import failed.',
+        );
       }
       try {
         return SchoolImportApiResult(
@@ -230,12 +284,18 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
       } on FormatException {
         rethrow;
       } catch (error) {
-        throw FormatException('Import response parse failed.\n\n$rawBody\n\n$error');
+        throw FormatException(
+          'Import response parse failed.\n\n$rawBody\n\n$error',
+        );
       }
+    } on TimeoutException {
+      throw const FormatException('Import request timed out.');
     } on FormatException {
       rethrow;
     } catch (error) {
-      throw FormatException('Unable to connect to the import service.\n\n$error');
+      throw FormatException(
+        'Unable to connect to the import service.\n\n$error',
+      );
     } finally {
       if (ownsClient) {
         client.close();
@@ -260,42 +320,42 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
     final ownsClient = _client == null;
     try {
       final uri = _buildOpenAiChatUri(normalizedBaseUrl);
-      final response = await client.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $normalizedApiKey',
-        },
-        body: jsonEncode({
-          'model': normalizedModel,
-          'temperature': 0,
-          'messages': [
-            {
-              'role': 'system',
-              'content': _buildCustomOpenAiSystemPrompt(settings),
+      final response = await client
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $normalizedApiKey',
             },
-            {
-              'role': 'user',
-              'content': _buildOpenAiUserPrompt(payload),
-            },
-          ],
-          'response_format': const {'type': 'json_object'},
-        }),
-      );
-      final rawBody = response.body;
+            body: jsonEncode({
+              'model': normalizedModel,
+              'temperature': 0,
+              'messages': [
+                {
+                  'role': 'system',
+                  'content': _buildCustomOpenAiSystemPrompt(settings),
+                },
+                {'role': 'user', 'content': _buildOpenAiUserPrompt(payload)},
+              ],
+              'response_format': const {'type': 'json_object'},
+            }),
+          )
+          .timeout(_requestTimeout);
+      final rawBody = _decodeBody(response);
       final decoded = _tryDecodeJson(rawBody);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final message = _extractErrorMessage(decoded);
         throw FormatException(
-          message ?? 'Import request failed (${response.statusCode}).\n\n$rawBody',
+          message ??
+              'Import request failed (${response.statusCode}).\n\n$rawBody',
         );
       }
       if (decoded is! Map<String, dynamic>) {
         throw FormatException('Import response format is invalid.\n\n$rawBody');
       }
       final content = _extractOpenAiMessageContent(decoded);
-      final parsedJson = _tryDecodeJson(content);
+      final parsedJson = _tryDecodeJsonFromModelContent(content);
       if (parsedJson is! Map<String, dynamic>) {
         throw FormatException('Import response parse failed.\n\n$rawBody');
       }
@@ -309,10 +369,14 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
         rawBody: rawBody,
         statusCode: response.statusCode,
       );
+    } on TimeoutException {
+      throw const FormatException('Import request timed out.');
     } on FormatException {
       rethrow;
     } catch (error) {
-      throw FormatException('Unable to connect to the import service.\n\n$error');
+      throw FormatException(
+        'Unable to connect to the import service.\n\n$error',
+      );
     } finally {
       if (ownsClient) {
         client.close();
@@ -330,7 +394,8 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
 
   String _buildOpenAiUserPrompt(SchoolImportPagePayload payload) {
     return jsonEncode({
-      'task': 'Extract timetable data from the provided source content. The content may be HTML or any other raw page content as long as it contains timetable information.',
+      'task':
+          'Extract timetable data from the provided source content. The content may be HTML or any other raw page content as long as it contains timetable information.',
       'locale': payload.locale,
       'sourceHint': payload.sourceHint,
       'url': payload.url,
@@ -346,14 +411,14 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
   }) {
     final responseJson = Map<String, dynamic>.from(json);
     responseJson['ok'] = responseJson['ok'] != false;
-    final meta = Map<String, dynamic>.from(responseJson['meta'] as Map? ?? const {});
-    meta['sourceUrl'] = (meta['sourceUrl'] as String? ?? payload.url).trim();
-    meta['pageTitle'] = (meta['pageTitle'] as String? ?? payload.title).trim();
-    meta['parser'] =
-        (meta['parser'] as String? ?? 'custom-openai:$model').trim().isEmpty
-        ? 'custom-openai:$model'
-        : (meta['parser'] as String).trim();
-    meta['warnings'] = (meta['warnings'] as List?) ?? const [];
+    final meta = _asStringKeyedMap(responseJson['meta']) ?? {};
+    final sourceUrl = _stringValue(meta['sourceUrl']).trim();
+    final pageTitle = _stringValue(meta['pageTitle']).trim();
+    final parser = _stringValue(meta['parser'], 'custom-openai:$model').trim();
+    meta['sourceUrl'] = sourceUrl.isEmpty ? payload.url.trim() : sourceUrl;
+    meta['pageTitle'] = pageTitle.isEmpty ? payload.title.trim() : pageTitle;
+    meta['parser'] = parser.isEmpty ? 'custom-openai:$model' : parser;
+    meta['warnings'] = _listValue(meta['warnings']);
     responseJson['meta'] = meta;
     return responseJson;
   }
@@ -411,12 +476,38 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
 
   Map<String, dynamic>? _tryDecodeJson(String source) {
     try {
-      final decoded = jsonDecode(source);
-      if (decoded is Map<String, dynamic>) {
-        return decoded;
-      }
+      return _asStringKeyedMap(jsonDecode(source));
     } catch (_) {
       return null;
+    }
+  }
+
+  String _decodeBody(http.Response response) {
+    return utf8.decode(response.bodyBytes, allowMalformed: true);
+  }
+
+  Map<String, dynamic>? _tryDecodeJsonFromModelContent(String source) {
+    final exact = _tryDecodeJson(source);
+    if (exact != null) {
+      return exact;
+    }
+
+    final trimmed = source.trim();
+    final fenceMatch = RegExp(
+      r'^```(?:json)?\s*([\s\S]*?)\s*```$',
+      caseSensitive: false,
+    ).firstMatch(trimmed);
+    if (fenceMatch != null) {
+      final fenced = _tryDecodeJson(fenceMatch.group(1) ?? '');
+      if (fenced != null) {
+        return fenced;
+      }
+    }
+
+    final start = trimmed.indexOf('{');
+    final end = trimmed.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      return _tryDecodeJson(trimmed.substring(start, end + 1));
     }
     return null;
   }
@@ -434,6 +525,14 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
       }
     }
     return null;
+  }
+
+  String _timeoutMessage(TimeoutException error, {required String fallback}) {
+    final message = error.message;
+    if (message == null || message == 'Future not completed') {
+      return fallback;
+    }
+    return message;
   }
 
   Stream<SchoolImportStreamEvent> importCurrentPageStream(
@@ -459,6 +558,7 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
     }
 
     final effectiveClient = client ?? _client ?? http.Client();
+    final ownsClient = client == null && _client == null;
     try {
       final baseUri = Uri.parse(AppConfig.schoolImportApiBaseUrl);
       final path = baseUri.path.trim().toLowerCase().endsWith('.php')
@@ -469,10 +569,7 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
         queryParameters: const {'action': 'import_timetable'},
       );
 
-      final body = jsonEncode({
-        ...payload.toJson(),
-        'stream': true,
-      });
+      final body = jsonEncode({...payload.toJson(), 'stream': true});
 
       final request = http.Request('POST', uri)
         ..headers.addAll(const {
@@ -481,14 +578,29 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
         })
         ..body = body;
 
-      final response = await effectiveClient.send(request);
+      final response = await effectiveClient
+          .send(request)
+          .timeout(_requestTimeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final rawBody = await response.stream.bytesToString();
-        yield ParseError('Import request failed (${response.statusCode}).\n\n$rawBody');
+        yield ParseError(
+          'Import request failed (${response.statusCode}).\n\n$rawBody',
+        );
         return;
       }
 
       final stream = response.stream
+          .timeout(
+            _streamIdleTimeout,
+            onTimeout: (sink) {
+              sink.addError(
+                TimeoutException(
+                  'Import stream timed out.',
+                  _streamIdleTimeout,
+                ),
+              );
+            },
+          )
           .transform(utf8.decoder)
           .transform(const LineSplitter());
 
@@ -496,27 +608,21 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
 
       await for (final line in stream) {
         if (line.trim().isEmpty) continue;
-        final Map<String, dynamic> json;
-        try {
-          json = Map<String, dynamic>.from(jsonDecode(line) as Map);
-        } catch (_) {
-          continue;
-        }
+        final json = _tryDecodeJson(line);
+        if (json == null) continue;
         if (json.containsKey('delta')) {
-          yield ParseDelta((json['delta'] as String?) ?? '');
+          yield ParseDelta(_stringValue(json['delta']));
         } else if (json.containsKey('done')) {
           terminalEventReceived = true;
           try {
-            yield ParseDone(
-              response: buildResponseFromPhpDone(json),
-            );
+            yield ParseDone(response: buildResponseFromPhpDone(json));
           } catch (e) {
             yield ParseError('Import response parse failed.\n\n$line\n\n$e');
           }
           return;
         } else if (json.containsKey('error')) {
           terminalEventReceived = true;
-          yield ParseError((json['error'] as String?) ?? 'Unknown error');
+          yield ParseError(_stringValue(json['error'], 'Unknown error'));
           return;
         }
       }
@@ -524,8 +630,16 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
       if (!terminalEventReceived) {
         yield const ParseError('Connection closed unexpectedly.');
       }
+    } on TimeoutException catch (e) {
+      yield ParseError(
+        _timeoutMessage(e, fallback: 'Import request timed out.'),
+      );
     } catch (e) {
       yield ParseError('Unable to connect to the import service.\n\n$e');
+    } finally {
+      if (ownsClient) {
+        effectiveClient.close();
+      }
     }
   }
 
@@ -545,6 +659,7 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
     }
 
     final effectiveClient = client ?? _client ?? http.Client();
+    final ownsClient = client == null && _client == null;
     try {
       final uri = _buildOpenAiChatUri(normalizedBaseUrl);
       final body = jsonEncode({
@@ -556,11 +671,9 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
             'role': 'system',
             'content': _buildCustomOpenAiSystemPrompt(settings),
           },
-          {
-            'role': 'user',
-            'content': _buildOpenAiUserPrompt(payload),
-          },
+          {'role': 'user', 'content': _buildOpenAiUserPrompt(payload)},
         ],
+        'response_format': const {'type': 'json_object'},
       });
 
       final request = http.Request('POST', uri)
@@ -571,14 +684,29 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
         })
         ..body = body;
 
-      final response = await effectiveClient.send(request);
+      final response = await effectiveClient
+          .send(request)
+          .timeout(_requestTimeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final rawBody = await response.stream.bytesToString();
-        yield ParseError('Import request failed (${response.statusCode}).\n\n$rawBody');
+        yield ParseError(
+          'Import request failed (${response.statusCode}).\n\n$rawBody',
+        );
         return;
       }
 
       final stream = response.stream
+          .timeout(
+            _streamIdleTimeout,
+            onTimeout: (sink) {
+              sink.addError(
+                TimeoutException(
+                  'Import stream timed out.',
+                  _streamIdleTimeout,
+                ),
+              );
+            },
+          )
           .transform(utf8.decoder)
           .transform(const LineSplitter());
 
@@ -589,10 +717,16 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
         final jsonStr = trimmed.substring(6).trim();
         if (jsonStr == '[DONE]') continue;
         try {
-          final json = Map<String, dynamic>.from(
-            jsonDecode(jsonStr) as Map,
-          );
-          final delta = json['choices']?[0]?['delta']?['content'] as String? ?? '';
+          final json = _tryDecodeJson(jsonStr);
+          if (json == null) continue;
+          final choices = json['choices'];
+          final firstChoice = choices is List && choices.isNotEmpty
+              ? choices.first
+              : null;
+          final deltaJson = firstChoice is Map ? firstChoice['delta'] : null;
+          final delta = deltaJson is Map
+              ? _stringValue(deltaJson['content'])
+              : '';
           if (delta.isNotEmpty) {
             accumulatedContent += delta;
             yield ParseDelta(delta);
@@ -605,9 +739,11 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
         return;
       }
 
-      final parsedJson = _tryDecodeJson(accumulatedContent);
+      final parsedJson = _tryDecodeJsonFromModelContent(accumulatedContent);
       if (parsedJson is! Map<String, dynamic>) {
-        yield ParseError('Import response parse failed.\n\n$accumulatedContent');
+        yield ParseError(
+          'Import response parse failed.\n\n$accumulatedContent',
+        );
         return;
       }
 
@@ -616,32 +752,42 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
         payload: payload,
         model: normalizedModel,
       );
-      yield ParseDone(
-        response: SchoolImportResponse.fromJson(normalizedResponseJson),
+      try {
+        yield ParseDone(
+          response: SchoolImportResponse.fromJson(normalizedResponseJson),
+        );
+      } catch (e) {
+        yield ParseError(
+          'Import response parse failed.\n\n$accumulatedContent\n\n$e',
+        );
+      }
+    } on TimeoutException catch (e) {
+      yield ParseError(
+        _timeoutMessage(e, fallback: 'Import request timed out.'),
       );
     } catch (e) {
       yield ParseError('Unable to connect to the import service.\n\n$e');
+    } finally {
+      if (ownsClient) {
+        effectiveClient.close();
+      }
     }
   }
 
-  static SchoolImportResponse buildResponseFromPhpDone(Map<String, dynamic> json) {
-    final rawTimetable =
-        Map<String, dynamic>.from(json['timetable'] as Map? ?? const {});
-    final periodTimeSetData =
-        Map<String, dynamic>.from(rawTimetable['periodTimeSet'] as Map? ?? const {});
-
+  static SchoolImportResponse buildResponseFromPhpDone(
+    Map<String, dynamic> json,
+  ) {
+    final rawTimetable = _asStringKeyedMap(json['timetable']) ?? json;
     final wrapped = <String, dynamic>{
       'ok': json['ok'] ?? true,
-      'meta': json['meta'] ?? const {},
+      'message': json['message'],
+      'meta': _asStringKeyedMap(json['meta']) ?? const {},
       'timetable': {
-        'config': {
-          'name': rawTimetable['name'] ?? '',
-          'startDate': rawTimetable['startDate'] ?? '',
-          'totalWeeks': rawTimetable['totalWeeks'] ?? 18,
-          'periodTimeSetId': 'imported_period_times',
-          'periodTimes': periodTimeSetData['periodTimes'] ?? [],
-        },
-        'courses': rawTimetable['courses'] ?? [],
+        'name': rawTimetable['name'] ?? '',
+        'startDate': rawTimetable['startDate'] ?? '',
+        'totalWeeks': rawTimetable['totalWeeks'] ?? 18,
+        'periodTimeSet': rawTimetable['periodTimeSet'] ?? const {},
+        'courses': rawTimetable['courses'] ?? const [],
       },
     };
     return SchoolImportResponse.fromJson(wrapped);

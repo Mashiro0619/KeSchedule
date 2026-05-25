@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
@@ -104,6 +103,8 @@ class ExportService {
   Future<void> openSettings() async {}
 
   bool get isWeb => kIsWeb;
-  bool get isAndroid => !kIsWeb && Platform.isAndroid;
-  bool get isWindows => !kIsWeb && Platform.isWindows;
+  bool get isAndroid =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  bool get isWindows =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
 }

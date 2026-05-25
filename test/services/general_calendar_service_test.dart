@@ -81,6 +81,23 @@ void main() {
       expect(identical(missing, data), isTrue);
     });
 
+    test('ignores updates for a missing schedule id', () {
+      final data = buildData(
+        schedules: const [
+          GeneralSchedule(id: 'cal', name: 'Work', events: []),
+          GeneralSchedule(id: 'home', name: 'Home', events: []),
+        ],
+      );
+
+      final renamed = service.renameSchedule(data, 'missing', 'Renamed');
+      final hidden = service.updateScheduleVisibility(data, 'missing', false);
+
+      expect(identical(renamed, data), isTrue);
+      expect(identical(hidden, data), isTrue);
+      expect(data.activeSchedule.name, 'Work');
+      expect(data.activeSchedule.isVisible, isTrue);
+    });
+
     test('deletes the last schedule by creating a default replacement', () {
       final data = buildData(
         acknowledgements: const [
@@ -101,6 +118,23 @@ void main() {
   });
 
   group('GeneralCalendarService events', () {
+    test('saveEvent recovers when the schedule list is empty', () {
+      final data = GeneralScheduleData(
+        activeScheduleId: 'missing',
+        schedules: const [],
+      );
+      final event = buildEvent(calendarId: '');
+
+      final updated = service.saveEvent(data, event);
+
+      expect(updated.schedules, hasLength(1));
+      expect(updated.activeSchedule.events, hasLength(1));
+      expect(
+        updated.activeSchedule.events.single.calendarId,
+        updated.activeSchedule.id,
+      );
+    });
+
     test(
       'saves an event into the active schedule when calendar id is missing',
       () {
@@ -112,6 +146,37 @@ void main() {
         expect(updated.activeSchedule.events, hasLength(1));
         expect(updated.activeSchedule.events.single.calendarId, 'cal');
         expect(updated.activeSchedule.events.single.title, 'Event');
+      },
+    );
+
+    test(
+      'saveEvent rewrites invalid calendar ids to the resolved schedule',
+      () {
+        final data = buildData(
+          schedules: const [
+            GeneralSchedule(id: 'cal', name: 'Work', events: []),
+            GeneralSchedule(id: 'home', name: 'Home', events: []),
+          ],
+        );
+
+        final missing = service.saveEvent(
+          data,
+          buildEvent(id: 'missing', calendarId: 'missing'),
+        );
+        final spaced = service.saveEvent(
+          data,
+          buildEvent(id: 'spaced', calendarId: ' home '),
+        );
+
+        expect(missing.activeSchedule.events.single.calendarId, 'cal');
+        expect(
+          spaced.schedules
+              .singleWhere((s) => s.id == 'home')
+              .events
+              .single
+              .calendarId,
+          'home',
+        );
       },
     );
 

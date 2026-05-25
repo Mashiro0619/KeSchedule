@@ -10,7 +10,7 @@ mixin _TimetableProviderLifecycle on _TimetableProviderBase {
 
   DateTime? get privacyPolicyAcceptedAt {
     final value = _appData.privacyPolicyAcceptedAtIso;
-    return value == null ? null : DateTime.tryParse(value);
+    return tryParseStrictIsoDateTime(value);
   }
 
   bool get hasAcceptedCurrentPrivacyPolicy {
@@ -37,10 +37,14 @@ mixin _TimetableProviderLifecycle on _TimetableProviderBase {
     try {
       final fileData = await _repository.load();
       if (fileData != null) {
-        _appData = _importExportService.normalizeAppData(
+        final normalized = _importExportService.normalizeAppData(
           fileData,
           localeCode: fileData.localeCode,
         );
+        _appData = normalized;
+        if (normalized.encode() != fileData.encode()) {
+          await _repository.save(normalized);
+        }
       } else {
         _appData = await _buildDefaultAppData();
         await _save();

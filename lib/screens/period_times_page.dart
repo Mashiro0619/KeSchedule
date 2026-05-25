@@ -323,7 +323,11 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
       allowedExtensions: const ['json'],
       withData: true,
     );
-    final file = result?.files.single;
+    if (!mounted) {
+      return;
+    }
+    final files = result?.files ?? const <PlatformFile>[];
+    final file = files.isEmpty ? null : files.first;
     final bytes = file?.bytes;
     if (file == null || bytes == null) {
       return;
@@ -355,6 +359,9 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
         builder: (_) => TextImportPage(
           title: l10n.importPeriodTemplateText,
           onSubmit: (_, content) async {
+            if (!mounted) {
+              return false;
+            }
             final provider = context.read<TimetableProvider>();
             try {
               final imported = provider.importPeriodTimesJson(content);
@@ -414,9 +421,7 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
 
     switch (result.status) {
       case ExportSaveStatus.saved:
-        _showMessage(
-          l10n.savedToPath(result.path ?? 'Sked_period_times.json'),
-        );
+        _showMessage(l10n.savedToPath(result.path ?? 'Sked_period_times.json'));
         return;
       case ExportSaveStatus.cancelled:
         _showMessage(l10n.saveCancelled);
@@ -533,7 +538,9 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
   Future<void> _pickPeriodTime(int index, {required bool isStart}) async {
     // 这里先只改草稿，等用户点保存时再整体写回，避免改到一半就影响正在用的课表。
     final period = _periodTimes[index];
-    final initialMinutes = isStart ? period.startMinutes : period.endMinutes;
+    final initialMinutes = normalizeMinuteOfDay(
+      isStart ? period.startMinutes : period.endMinutes,
+    );
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(
@@ -547,14 +554,18 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
         );
       },
     );
-    if (picked == null) {
+    if (!mounted ||
+        picked == null ||
+        index < 0 ||
+        index >= _periodTimes.length) {
       return;
     }
     final minutes = (picked.hour * 60) + picked.minute;
     setState(() {
+      final currentPeriod = _periodTimes[index];
       _periodTimes[index] = isStart
-          ? period.copyWith(startMinutes: minutes)
-          : period.copyWith(endMinutes: minutes);
+          ? currentPeriod.copyWith(startMinutes: minutes)
+          : currentPeriod.copyWith(endMinutes: minutes);
     });
   }
 }

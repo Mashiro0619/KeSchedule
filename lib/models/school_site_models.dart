@@ -1,25 +1,37 @@
 import 'dart:convert';
 
+Map<String, dynamic> _asStringKeyedMap(Object? value) {
+  if (value is! Map) {
+    return const <String, dynamic>{};
+  }
+  final result = <String, dynamic>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is String) {
+      result[key] = entry.value;
+    }
+  }
+  return result;
+}
+
+String _stringValue(Object? value) {
+  return value is String ? value : '';
+}
+
 class SchoolSite {
-  const SchoolSite({
-    required this.name,
-    required this.loginUrl,
-  });
+  const SchoolSite({required this.name, required this.loginUrl});
 
   final String name;
   final String loginUrl;
 
   factory SchoolSite.fromJson(Map<String, dynamic> json) {
     return SchoolSite(
-      name: json['name'] as String? ?? '',
-      loginUrl: json['loginUrl'] as String? ?? '',
+      name: _stringValue(json['name']),
+      loginUrl: _stringValue(json['loginUrl']),
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'loginUrl': loginUrl,
-  };
+  Map<String, dynamic> toJson() => {'name': name, 'loginUrl': loginUrl};
 
   SchoolSite copyWith({String? name, String? loginUrl}) {
     return SchoolSite(
@@ -37,14 +49,15 @@ List<SchoolSite> decodeSchoolSites(String source) {
     throw const FormatException('School site JSON format is invalid.');
   }
   return decoded
-      .whereType<Map>()
-      .map((item) => SchoolSite.fromJson(Map<String, dynamic>.from(item)))
+      .map(_asStringKeyedMap)
+      .where((item) => item.isNotEmpty)
+      .map(SchoolSite.fromJson)
       .where((item) => item.isValid)
       .toList();
 }
 
 String encodeSchoolSites(List<SchoolSite> sites) {
-  return const JsonEncoder.withIndent('  ').convert(
-    sites.map((item) => item.toJson()).toList(),
-  );
+  return const JsonEncoder.withIndent(
+    '  ',
+  ).convert(sites.map((item) => item.toJson()).toList());
 }

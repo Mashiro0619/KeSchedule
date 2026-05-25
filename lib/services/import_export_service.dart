@@ -124,26 +124,25 @@ class ImportExportService {
         importFileVersionUnsupportedMessage(localeCode: localeCode),
       );
     }
-    switch (envelope.schema) {
-      case timetableDataSchema:
-        return normalizeTimetableExportData(
-          TimetableExportData.fromJson(envelope.data, localeCode: localeCode),
-          localeCode: localeCode,
-        );
-      case appDataSchema:
-        final appData = normalizeAppData(
-          AppData.fromJson({...envelope.data, 'localeCode': localeCode}),
-          localeCode: localeCode,
-        );
-        return TimetableExportData(
-          timetables: appData.studentMode.timetables,
-          periodTimeSets: appData.studentMode.periodTimeSets,
-        );
-      default:
-        throw FormatException(
-          importFileTypeMismatchMessage(localeCode: localeCode),
-        );
+    if (isImportExportSchema(envelope.schema, timetableDataSchema)) {
+      return normalizeTimetableExportData(
+        TimetableExportData.fromJson(envelope.data, localeCode: localeCode),
+        localeCode: localeCode,
+      );
     }
+    if (isImportExportSchema(envelope.schema, appDataSchema)) {
+      final appData = normalizeAppData(
+        AppData.fromJson({...envelope.data, 'localeCode': localeCode}),
+        localeCode: localeCode,
+      );
+      return TimetableExportData(
+        timetables: appData.studentMode.timetables,
+        periodTimeSets: appData.studentMode.periodTimeSets,
+      );
+    }
+    throw FormatException(
+      importFileTypeMismatchMessage(localeCode: localeCode),
+    );
   }
 
   StudentTimetableImportMutation importSelectedTimetablesJson(
@@ -208,13 +207,25 @@ class ImportExportService {
       final resolvedSetId = shouldReuseExistingSet
           ? manualTargetSetId
           : copiedSet!.id;
-      final replaced = selected.copyWith(
+      final existingCourseIds = _courseIdsForTimetables(
+        data.timetables,
+        excludingTimetableId: current.id,
+      );
+      final replaced = _normalizeTimetable(
+        selected,
         id: current.id,
+        courseIds: existingCourseIds,
         config: selected.config.copyWith(periodTimeSetId: resolvedSetId),
       );
       final updatedTimetables = data.timetables
           .map((item) => item.id == current.id ? replaced : item)
           .toList();
+      final filteredPrefs = _filterConflictDisplayCourseIds(
+        Map<String, String>.from(data.conflictDisplayCourseIds)..removeWhere(
+          (key, _) => _conflictKeyContainsTimetable(key, current.id),
+        ),
+        updatedTimetables,
+      );
       final nextPeriodTimeSets = copiedSet == null
           ? data.periodTimeSets
           : [...data.periodTimeSets, copiedSet];
@@ -223,6 +234,7 @@ class ImportExportService {
           activeTimetableId: current.id,
           timetables: updatedTimetables,
           periodTimeSets: nextPeriodTimeSets,
+          conflictDisplayCourseIds: filteredPrefs,
           courseNameColorValues: buildCourseNameColorValuesForTimetables(
             updatedTimetables,
             existing: data.courseNameColorValues,
@@ -254,16 +266,23 @@ class ImportExportService {
         : <PeriodTimeSet>[];
 
     final existingTimetableIds = data.timetables.map((item) => item.id).toSet();
+    final existingCourseIds = _courseIdsForTimetables(data.timetables);
     final appendedTimetables = selectedTimetables.map((item) {
       final mappedSetId = importBundledPeriodTimeSets
           ? (importedSetIdMap[item.config.periodTimeSetId] ??
                 item.config.periodTimeSetId)
           : manualTargetSetId;
-      return _copyImportedTimetableWithUniqueId(
+      final copied = _copyImportedTimetableWithUniqueId(
         item.copyWith(
           config: item.config.copyWith(periodTimeSetId: mappedSetId),
         ),
         existingTimetableIds,
+      );
+      return _normalizeTimetable(
+        copied,
+        id: copied.id,
+        courseIds: existingCourseIds,
+        config: copied.config,
       );
     }).toList();
 
@@ -333,10 +352,25 @@ class ImportExportService {
           noActiveTimetableToReplaceMessage(localeCode: localeCode),
         );
       }
-      final replaced = timetable.copyWith(id: current.id);
+      final existingCourseIds = _courseIdsForTimetables(
+        data.timetables,
+        excludingTimetableId: current.id,
+      );
+      final replaced = _normalizeTimetable(
+        timetable,
+        id: current.id,
+        courseIds: existingCourseIds,
+        config: timetable.config,
+      );
       final updatedTimetables = data.timetables
           .map((item) => item.id == current.id ? replaced : item)
           .toList();
+      final filteredPrefs = _filterConflictDisplayCourseIds(
+        Map<String, String>.from(data.conflictDisplayCourseIds)..removeWhere(
+          (key, _) => _conflictKeyContainsTimetable(key, current.id),
+        ),
+        updatedTimetables,
+      );
       final nextPeriodTimeSets = bundledPeriodTimeSet == null
           ? data.periodTimeSets
           : [...data.periodTimeSets, bundledPeriodTimeSet];
@@ -345,6 +379,7 @@ class ImportExportService {
           activeTimetableId: current.id,
           timetables: updatedTimetables,
           periodTimeSets: nextPeriodTimeSets,
+          conflictDisplayCourseIds: filteredPrefs,
           courseNameColorValues: buildCourseNameColorValuesForTimetables(
             updatedTimetables,
             existing: data.courseNameColorValues,
@@ -355,13 +390,25 @@ class ImportExportService {
       );
     }
 
-    final nextTimetables = [...data.timetables, timetable];
+    final existingTimetableIds = data.timetables.map((item) => item.id).toSet();
+    final existingCourseIds = _courseIdsForTimetables(data.timetables);
+    final appendedTimetable = _copyImportedTimetableWithUniqueId(
+      timetable,
+      existingTimetableIds,
+    );
+    final normalizedTimetable = _normalizeTimetable(
+      appendedTimetable,
+      id: appendedTimetable.id,
+      courseIds: existingCourseIds,
+      config: appendedTimetable.config,
+    );
+    final nextTimetables = [...data.timetables, normalizedTimetable];
     final nextPeriodTimeSets = bundledPeriodTimeSet == null
         ? data.periodTimeSets
         : [...data.periodTimeSets, bundledPeriodTimeSet];
     return StudentTimetableImportMutation(
       data: data.copyWith(
-        activeTimetableId: timetable.id,
+        activeTimetableId: normalizedTimetable.id,
         timetables: nextTimetables,
         periodTimeSets: nextPeriodTimeSets,
         courseNameColorValues: buildCourseNameColorValuesForTimetables(
@@ -370,27 +417,50 @@ class ImportExportService {
         ),
       ),
       importedCount: 1,
-      selectedTimetable: timetable,
+      selectedTimetable: normalizedTimetable,
     );
   }
 
   AppData normalizeAppData(AppData data, {required String localeCode}) {
     final normalizedSets = <PeriodTimeSet>[];
     final normalizedSetIds = <String>{};
+    final periodTimeSetIdMap = <String, String>{};
     for (final item in data.studentMode.periodTimeSets) {
       final normalized = normalizePeriodTimeSet(item, localeCode: localeCode);
-      final nextId =
-          normalized.id.trim().isEmpty ||
-              normalizedSetIds.contains(normalized.id)
-          ? _nextPeriodTimeSetId(normalizedSetIds)
-          : normalized.id;
+      final rawId = normalized.id.trim();
+      final nextId = _normalizeUniqueId(
+        rawId,
+        fallbackPrefix: 'period_set',
+        existingIds: normalizedSetIds,
+      );
       normalizedSetIds.add(nextId);
+      if (rawId.isNotEmpty) {
+        periodTimeSetIdMap.putIfAbsent(rawId, () => nextId);
+      }
       normalizedSets.add(normalized.copyWith(id: nextId));
     }
 
     final normalizedTimetables = <TimetableData>[];
+    final normalizedTimetableIds = <String>{};
+    final normalizedCourseIds = <String>{};
+    final requestedActiveTimetableId = data.studentMode.activeTimetableId;
+    String? remappedActiveTimetableId;
     for (final item in data.studentMode.timetables) {
-      var periodTimeSetId = item.config.periodTimeSetId.trim();
+      final rawTimetableId = item.id.trim();
+      final timetableId = _normalizeUniqueId(
+        rawTimetableId,
+        fallbackPrefix: 'table',
+        existingIds: normalizedTimetableIds,
+      );
+      normalizedTimetableIds.add(timetableId);
+      if (remappedActiveTimetableId == null &&
+          _matchesRawId(item.id, requestedActiveTimetableId)) {
+        remappedActiveTimetableId = timetableId;
+      }
+
+      var periodTimeSetId =
+          periodTimeSetIdMap[item.config.periodTimeSetId.trim()] ??
+          item.config.periodTimeSetId.trim();
       if (periodTimeSetId.isEmpty ||
           !normalizedSetIds.contains(periodTimeSetId)) {
         final fallbackSet = _createImportedFallbackPeriodTimeSet(
@@ -403,7 +473,10 @@ class ImportExportService {
         periodTimeSetId = fallbackSet.id;
       }
       normalizedTimetables.add(
-        item.copyWith(
+        _normalizeTimetable(
+          item,
+          id: timetableId,
+          courseIds: normalizedCourseIds,
           config: item.config.copyWith(
             totalWeeks: normalizeTimetableWeeks(item.config.totalWeeks),
             periodTimeSetId: periodTimeSetId,
@@ -412,20 +485,21 @@ class ImportExportService {
       );
     }
 
-    final activeId =
-        normalizedTimetables.any(
-          (item) => item.id == data.studentMode.activeTimetableId,
-        )
-        ? data.studentMode.activeTimetableId
+    final requestedActiveId = requestedActiveTimetableId.trim();
+    final fallbackActiveId =
+        normalizedTimetables.any((item) => item.id == requestedActiveId)
+        ? requestedActiveId
         : normalizedTimetables.isEmpty
         ? ''
         : normalizedTimetables.first.id;
+    final activeId = remappedActiveTimetableId ?? fallbackActiveId;
     final remainingCourseIds = normalizedTimetables
         .expand((item) => item.courses)
         .map((item) => item.id)
         .toSet();
-    final filteredPrefs = Map<String, String>.from(
-      data.studentMode.conflictDisplayCourseIds,
+    final filteredPrefs = _filterConflictDisplayCourseIds(
+      Map<String, String>.from(data.studentMode.conflictDisplayCourseIds),
+      normalizedTimetables,
     )..removeWhere((_, value) => !remainingCourseIds.contains(value));
     return data.copyWith(
       studentMode: data.studentMode.copyWith(
@@ -449,21 +523,40 @@ class ImportExportService {
   }) {
     final normalizedSets = <PeriodTimeSet>[];
     final setIds = <String>{};
+    final periodTimeSetIdMap = <String, String>{};
     for (final item in data.periodTimeSets) {
       final normalized = normalizePeriodTimeSet(item, localeCode: localeCode);
-      final nextId =
-          normalized.id.trim().isEmpty || setIds.contains(normalized.id)
-          ? _nextPeriodTimeSetId(setIds)
-          : normalized.id;
+      final rawId = normalized.id.trim();
+      final nextId = _normalizeUniqueId(
+        rawId,
+        fallbackPrefix: 'period_set',
+        existingIds: setIds,
+      );
       setIds.add(nextId);
+      if (rawId.isNotEmpty) {
+        periodTimeSetIdMap.putIfAbsent(rawId, () => nextId);
+      }
       normalizedSets.add(normalized.copyWith(id: nextId));
     }
 
     final normalizedTimetables = <TimetableData>[];
+    final timetableIds = <String>{};
+    final courseIds = <String>{};
     for (final item in data.timetables) {
+      final timetableId = _normalizeUniqueId(
+        item.id.trim(),
+        fallbackPrefix: 'table',
+        existingIds: timetableIds,
+      );
+      timetableIds.add(timetableId);
+      var periodTimeSetId =
+          periodTimeSetIdMap[item.config.periodTimeSetId.trim()] ??
+          item.config.periodTimeSetId.trim();
       var timetable = item.copyWith(
+        id: timetableId,
         config: item.config.copyWith(
           totalWeeks: normalizeTimetableWeeks(item.config.totalWeeks),
+          periodTimeSetId: periodTimeSetId,
         ),
       );
       if (normalizedSets.isEmpty ||
@@ -475,11 +568,19 @@ class ImportExportService {
         );
         normalizedSets.add(fallbackSet);
         setIds.add(fallbackSet.id);
+        periodTimeSetId = fallbackSet.id;
         timetable = timetable.copyWith(
-          config: timetable.config.copyWith(periodTimeSetId: fallbackSet.id),
+          config: timetable.config.copyWith(periodTimeSetId: periodTimeSetId),
         );
       }
-      normalizedTimetables.add(timetable);
+      normalizedTimetables.add(
+        _normalizeTimetable(
+          timetable,
+          id: timetable.id,
+          courseIds: courseIds,
+          config: timetable.config,
+        ),
+      );
     }
 
     return TimetableExportData(
@@ -731,6 +832,108 @@ TimetableData _copyImportedTimetableWithUniqueId(
   return timetable.copyWith(id: nextId);
 }
 
+TimetableData _normalizeTimetable(
+  TimetableData timetable, {
+  required String id,
+  required Set<String> courseIds,
+  required TimetableConfig config,
+}) {
+  final normalizedCourses = <CourseItem>[];
+  for (final course in timetable.courses) {
+    final courseId = _normalizeUniqueId(
+      course.id.trim(),
+      fallbackPrefix: 'course',
+      existingIds: courseIds,
+    );
+    courseIds.add(courseId);
+    final periods = course.periods.where((item) => item > 0).toSet().toList()
+      ..sort();
+    normalizedCourses.add(
+      course.copyWith(
+        id: courseId,
+        dayOfWeek: normalizeDayOfWeek(course.dayOfWeek),
+        semesterWeeks: normalizeSemesterWeeks(course.semesterWeeks),
+        periods: periods,
+        timeRange: buildTimeRange(course.startMinutes, course.endMinutes),
+      ),
+    );
+  }
+  return timetable.copyWith(id: id, config: config, courses: normalizedCourses);
+}
+
+String _normalizeUniqueId(
+  String rawId, {
+  required String fallbackPrefix,
+  required Set<String> existingIds,
+}) {
+  final trimmed = rawId.trim();
+  if (trimmed.isNotEmpty && !existingIds.contains(trimmed)) {
+    return trimmed;
+  }
+  final base = trimmed.isEmpty ? fallbackPrefix : _copyIdBase(trimmed);
+  var candidate = base;
+  var suffix = 1;
+  while (existingIds.contains(candidate)) {
+    candidate = '${base}_${suffix++}';
+  }
+  return candidate;
+}
+
+String _copyIdBase(String id) {
+  final match = RegExp(r'^(.*_copy)(?:_\d+)?$').firstMatch(id);
+  return match == null ? '${id}_copy' : match.group(1)!;
+}
+
+bool _matchesRawId(String rawId, String requestedId) {
+  return rawId.trim() == requestedId.trim();
+}
+
+Set<String> _courseIdsForTimetables(
+  List<TimetableData> timetables, {
+  String? excludingTimetableId,
+}) {
+  return {
+    for (final timetable in timetables)
+      if (timetable.id != excludingTimetableId)
+        for (final course in timetable.courses)
+          if (course.id.trim().isNotEmpty) course.id.trim(),
+  };
+}
+
+bool _conflictKeyContainsTimetable(String conflictKey, String timetableId) {
+  final parts = conflictKey.split('|');
+  return parts.isNotEmpty && parts.first == timetableId;
+}
+
+Map<String, String> _filterConflictDisplayCourseIds(
+  Map<String, String> preferences,
+  List<TimetableData> timetables,
+) {
+  final courseIdsByTimetable = <String, Set<String>>{
+    for (final timetable in timetables)
+      timetable.id: timetable.courses.map((course) => course.id).toSet(),
+  };
+  preferences.removeWhere((key, value) {
+    final parts = key.split('|');
+    if (parts.length < 5) {
+      return true;
+    }
+    final timetableCourseIds = courseIdsByTimetable[parts.first];
+    if (timetableCourseIds == null || !timetableCourseIds.contains(value)) {
+      return true;
+    }
+    final keyedCourseIds = parts.last
+        .split(',')
+        .where((courseId) => courseId.trim().isNotEmpty)
+        .toSet();
+    return keyedCourseIds.isEmpty ||
+        keyedCourseIds.any(
+          (courseId) => !timetableCourseIds.contains(courseId),
+        );
+  });
+  return preferences;
+}
+
 String _nextImportedTimetableId(Set<String> existingIds) {
   var stamp = DateTime.now().microsecondsSinceEpoch;
   var candidate = 'table_import_$stamp';
@@ -805,21 +1008,70 @@ PeriodTimeSet? _periodTimeSetForId(StudentModeData data, String id) {
   int startMinutes,
   int endMinutes,
 ) {
-  if (startMinutes > 0 && endMinutes > startMinutes) {
+  final rawRangeKnown = startMinutes != 0 || endMinutes != 0;
+  final rawRangeInDay =
+      startMinutes >= 0 &&
+      startMinutes < 24 * 60 &&
+      endMinutes >= 0 &&
+      endMinutes < 24 * 60;
+  if (rawRangeKnown && rawRangeInDay && endMinutes > startMinutes) {
     return (startMinutes, endMinutes);
   }
+
+  final matchedSlots = _periodTimeSlotsForPeriods(periodTimes, periods);
+  if (matchedSlots.isNotEmpty) {
+    return (matchedSlots.first.startMinutes, matchedSlots.last.endMinutes);
+  }
+
+  if (!rawRangeKnown) {
+    return (0, 0);
+  }
+
+  final normalizedStart = normalizeMinuteOfDay(startMinutes);
+  final normalizedEnd = normalizeMinuteOfDay(endMinutes);
+  if (normalizedEnd > normalizedStart) {
+    return (normalizedStart, normalizedEnd);
+  }
+
+  final repairedEnd = normalizeMinuteOfDay(normalizedStart + 45);
+  if (repairedEnd > normalizedStart) {
+    return (normalizedStart, repairedEnd);
+  }
+
+  if (periodTimes.isNotEmpty) {
+    final first = periodTimes.first;
+    return (first.startMinutes, first.endMinutes);
+  }
+  return (0, 0);
+}
+
+List<CoursePeriodTime> _periodTimeSlotsForPeriods(
+  List<CoursePeriodTime> periodTimes,
+  List<int> periods,
+) {
   if (periods.isEmpty || periodTimes.isEmpty) {
-    return (startMinutes, endMinutes);
+    return const [];
   }
+  final periodSet = periods.toSet();
+  return periodTimes.where((slot) => periodSet.contains(slot.index)).toList()
+    ..sort((a, b) => a.index.compareTo(b.index));
+}
 
-  final matchedSlots =
-      periodTimes.where((slot) => periods.contains(slot.index)).toList()
-        ..sort((a, b) => a.index.compareTo(b.index));
-  if (matchedSlots.isEmpty) {
-    return (startMinutes, endMinutes);
-  }
-
-  return (matchedSlots.first.startMinutes, matchedSlots.last.endMinutes);
+List<int> _normalizeImportedCoursePeriods(
+  List<int> periods,
+  List<CoursePeriodTime> periodTimes,
+) {
+  final validIndices = periodTimes.map((slot) => slot.index).toSet();
+  final normalized =
+      periods
+          .where((period) => period > 0)
+          .where(
+            (period) => validIndices.isEmpty || validIndices.contains(period),
+          )
+          .toSet()
+          .toList()
+        ..sort();
+  return normalized;
 }
 
 PeriodTimeSet _buildImportedSchoolPeriodTimeSet(
@@ -857,13 +1109,17 @@ TimetableData _buildSchoolImportedTimetable(
   final courses = draft.courses.map((item) {
     final rawStartMinutes = item.startMinutes;
     final rawEndMinutes = item.endMinutes;
-    final periods = item.periods.isEmpty
+    final explicitPeriods = _normalizeImportedCoursePeriods(
+      item.periods,
+      periodTimeSet.periodTimes,
+    );
+    final periods = explicitPeriods.isEmpty
         ? matchPeriodsForTimeRange(
             periodTimeSet.periodTimes,
             rawStartMinutes,
             rawEndMinutes,
           )
-        : item.periods;
+        : explicitPeriods;
     final resolvedTimeRange = _resolveImportedCourseTimeRange(
       periodTimeSet.periodTimes,
       periods,

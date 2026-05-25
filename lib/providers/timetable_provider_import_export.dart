@@ -164,6 +164,11 @@ mixin _TimetableProviderImportExport on _TimetableProviderBase {
       source,
       localeCode: _appData.localeCode,
     );
+    if (imported.timetables.isEmpty) {
+      throw FormatException(
+        noImportableTimetablesMessage(localeCode: _appData.localeCode),
+      );
+    }
     final selected = imported.timetables.first;
     await importSelectedTimetablesJson(
       source,

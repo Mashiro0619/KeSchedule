@@ -36,14 +36,16 @@ class SchoolHtmlImportPage extends StatefulWidget {
 
 class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
   late final SchoolImportApi _api;
-  final SchoolImportApplyService _applyService = const SchoolImportApplyService();
+  final SchoolImportApplyService _applyService =
+      const SchoolImportApplyService();
   final TextEditingController _htmlController = TextEditingController();
 
   bool _isSubmitting = false;
   bool _isCompressed = false;
 
   bool _isConfigured(TimetableProvider provider) {
-    if (provider.schoolImportParserSource == schoolImportParserSourceCustomOpenAi) {
+    if (provider.schoolImportParserSource ==
+        schoolImportParserSourceCustomOpenAi) {
       return provider.customSchoolImportBaseUrl.trim().isNotEmpty &&
           provider.customSchoolImportApiKey.trim().isNotEmpty &&
           provider.customSchoolImportModel.trim().isNotEmpty;
@@ -55,7 +57,8 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
     TimetableProvider provider,
     AppLocalizations l10n,
   ) {
-    if (provider.schoolImportParserSource == schoolImportParserSourceCustomOpenAi) {
+    if (provider.schoolImportParserSource ==
+        schoolImportParserSourceCustomOpenAi) {
       final model = provider.customSchoolImportModel.trim();
       return model.isEmpty
           ? l10n.schoolImportParserSourceCustomOpenAi
@@ -68,7 +71,8 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
     TimetableProvider provider,
     AppLocalizations l10n,
   ) {
-    if (provider.schoolImportParserSource == schoolImportParserSourceCustomOpenAi) {
+    if (provider.schoolImportParserSource ==
+        schoolImportParserSourceCustomOpenAi) {
       return l10n.schoolImportParserCustomConfigIncomplete;
     }
     return l10n.schoolWebImportConfigMissing;
@@ -183,7 +187,8 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
     AppLocalizations l10n,
   ) {
     final isCustom =
-        provider.schoolImportParserSource == schoolImportParserSourceCustomOpenAi;
+        provider.schoolImportParserSource ==
+        schoolImportParserSourceCustomOpenAi;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -321,8 +326,21 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
     if (importResult == null || !mounted) {
       return;
     }
-    await _applyService.apply(provider, importResult);
-    if (!mounted) return;
+    setState(() => _isSubmitting = true);
+    Object? applyError;
+    try {
+      await _applyService.apply(provider, importResult);
+    } catch (error) {
+      applyError = error;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() => _isSubmitting = false);
+    if (applyError != null) {
+      _showMessage(mapSchoolImportApplyError(applyError, l10n));
+      return;
+    }
     _showMessage(l10n.schoolWebImportSuccess);
     Navigator.of(context).pop();
   }
@@ -335,4 +353,12 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
+}
+
+@visibleForTesting
+String mapSchoolImportApplyError(Object error, AppLocalizations l10n) {
+  if (error is FormatException) {
+    return error.message;
+  }
+  return l10n.importFailedCheckContent;
 }

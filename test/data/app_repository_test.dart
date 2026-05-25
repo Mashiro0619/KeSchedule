@@ -12,6 +12,7 @@ class _FakeStorage implements TimetableStorage {
   StorageLoadResult initialResult;
   AppData? lastSaved;
   final List<AppData> writeLog = [];
+  final List<Object> saveFailures = [];
   Completer<void>? gate;
   int saveCount = 0;
 
@@ -23,6 +24,9 @@ class _FakeStorage implements TimetableStorage {
     saveCount += 1;
     if (gate != null) {
       await gate!.future;
+    }
+    if (saveFailures.isNotEmpty) {
+      throw saveFailures.removeAt(0);
     }
     lastSaved = data;
     writeLog.add(data);
@@ -36,16 +40,18 @@ AppData _emptyApp() => AppData.fromJson(const {});
 
 void main() {
   group('AppRepository load', () {
-    test('returns null on empty storage and reports RecoveryStatus.none',
-        () async {
-      final repo = AppRepository(storage: _FakeStorage());
+    test(
+      'returns null on empty storage and reports RecoveryStatus.none',
+      () async {
+        final repo = AppRepository(storage: _FakeStorage());
 
-      final loaded = await repo.load();
+        final loaded = await repo.load();
 
-      expect(loaded, isNull);
-      expect(repo.lastRecoveryStatus, equals(RecoveryStatus.none));
-      expect(repo.current, isNull);
-    });
+        expect(loaded, isNull);
+        expect(repo.lastRecoveryStatus, equals(RecoveryStatus.none));
+        expect(repo.current, isNull);
+      },
+    );
 
     test('caches loaded AppData as current state', () async {
       final initial = _emptyApp();
@@ -92,19 +98,10 @@ void main() {
       final repo = AppRepository(storage: storage);
       await repo.load();
 
-      await repo.updateGeneral(
-        (g) => g.copyWith(dayStartHour: 5),
-        flush: true,
-      );
+      await repo.updateGeneral((g) => g.copyWith(dayStartHour: 5), flush: true);
 
-      expect(
-        repo.current!.generalMode.dayStartHour,
-        equals(5),
-      );
-      expect(
-        storage.lastSaved!.generalMode.dayStartHour,
-        equals(5),
-      );
+      expect(repo.current!.generalMode.dayStartHour, equals(5));
+      expect(storage.lastSaved!.generalMode.dayStartHour, equals(5));
     });
 
     test('updateStudent applies pure-function patch to subtree', () async {
@@ -172,10 +169,7 @@ void main() {
       final before = repo.current;
 
       expect(
-        () => repo.updateGeneral(
-          (g) => throw Exception('boom'),
-          flush: true,
-        ),
+        () => repo.updateGeneral((g) => throw Exception('boom'), flush: true),
         throwsException,
       );
 
@@ -185,8 +179,7 @@ void main() {
   });
 
   group('AppRepository write serialization', () {
-    test('updates without flush still persist in registration order',
-        () async {
+    test('updates without flush still persist in registration order', () async {
       final storage = _FakeStorage(
         initialResult: StorageLoadResult(
           data: _emptyApp(),
@@ -198,23 +191,13 @@ void main() {
 
       // Fire two updates without flush; the second depends on the first
       // through the chained pending write.
-      await repo.updateGeneral(
-        (g) => g.copyWith(dayStartHour: 5),
-      );
-      await repo.updateGeneral(
-        (g) => g.copyWith(dayStartHour: 7),
-      );
+      await repo.updateGeneral((g) => g.copyWith(dayStartHour: 5));
+      await repo.updateGeneral((g) => g.copyWith(dayStartHour: 7));
       await repo.flush();
 
       expect(storage.writeLog.length, equals(2));
-      expect(
-        storage.writeLog[0].generalMode.dayStartHour,
-        equals(5),
-      );
-      expect(
-        storage.writeLog[1].generalMode.dayStartHour,
-        equals(7),
-      );
+      expect(storage.writeLog[0].generalMode.dayStartHour, equals(5));
+      expect(storage.writeLog[1].generalMode.dayStartHour, equals(7));
     });
 
     test('flush awaits the most recent pending save', () async {
@@ -229,9 +212,7 @@ void main() {
       final repo = AppRepository(storage: storage);
       await repo.load();
 
-      await repo.updateGeneral(
-        (g) => g.copyWith(dayStartHour: 9),
-      );
+      await repo.updateGeneral((g) => g.copyWith(dayStartHour: 9));
 
       var flushDone = false;
       final flushFuture = repo.flush().then((_) => flushDone = true);
@@ -244,10 +225,7 @@ void main() {
       await flushFuture;
 
       expect(flushDone, isTrue);
-      expect(
-        storage.lastSaved!.generalMode.dayStartHour,
-        equals(9),
-      );
+      expect(storage.lastSaved!.generalMode.dayStartHour, equals(9));
     });
 
     test('save() replaces current and persists the snapshot', () async {
@@ -265,6 +243,44 @@ void main() {
 
       expect(repo.current!.activeMode, equals(AppMode.student));
       expect(storage.lastSaved!.activeMode, equals(AppMode.student));
+    });
+
+    test('flush reports the current pending write failure', () async {
+      final storage = _FakeStorage(
+        initialResult: StorageLoadResult(
+          data: _emptyApp(),
+          recoveryStatus: RecoveryStatus.none,
+        ),
+      )..saveFailures.add(Exception('disk full'));
+      final repo = AppRepository(storage: storage);
+      await repo.load();
+
+      await repo.updateGeneral((g) => g.copyWith(dayStartHour: 6));
+
+      await expectLater(repo.flush(), throwsException);
+      expect(storage.lastSaved, isNull);
+      expect(storage.saveCount, equals(1));
+      expect(repo.current!.generalMode.dayStartHour, equals(6));
+    });
+
+    test('a failed pending write does not block later writes', () async {
+      final storage = _FakeStorage(
+        initialResult: StorageLoadResult(
+          data: _emptyApp(),
+          recoveryStatus: RecoveryStatus.none,
+        ),
+      )..saveFailures.add(Exception('temporary failure'));
+      final repo = AppRepository(storage: storage);
+      await repo.load();
+
+      await repo.updateGeneral((g) => g.copyWith(dayStartHour: 6));
+      await expectLater(repo.flush(), throwsException);
+
+      await repo.updateGeneral((g) => g.copyWith(dayStartHour: 8), flush: true);
+
+      expect(storage.saveCount, equals(2));
+      expect(storage.writeLog.length, equals(1));
+      expect(storage.lastSaved!.generalMode.dayStartHour, equals(8));
     });
   });
 }

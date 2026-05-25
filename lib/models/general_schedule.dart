@@ -2,6 +2,36 @@ import 'general_event.dart';
 
 const defaultGeneralCalendarColorValue = 0xFF4DB6AC;
 
+Map<String, dynamic>? _asStringKeyedMap(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  final result = <String, dynamic>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is String) {
+      result[key] = entry.value;
+    }
+  }
+  return result;
+}
+
+List<dynamic> _listValue(Object? value) {
+  return value is List ? value : const <dynamic>[];
+}
+
+String _stringValue(Object? value, [String fallback = '']) {
+  return value is String ? value : fallback;
+}
+
+int? _intValue(Object? value) {
+  return value is num ? value.toInt() : null;
+}
+
+bool? _boolValue(Object? value) {
+  return value is bool ? value : null;
+}
+
 class GeneralSchedule {
   const GeneralSchedule({
     required this.id,
@@ -32,21 +62,22 @@ class GeneralSchedule {
     Map<String, dynamic> json, {
     String? localeCode,
   }) {
-    final id = json['id'] as String? ?? '';
-    final events = (json['events'] as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => GeneralEvent.fromJson(Map<String, dynamic>.from(e as Map)))
+    final id = _stringValue(json['id']);
+    final events = _listValue(json['events'])
+        .map(_asStringKeyedMap)
+        .whereType<Map<String, dynamic>>()
+        .map(GeneralEvent.fromJson)
         .map(
           (e) => e.calendarId.trim().isEmpty ? e.copyWith(calendarId: id) : e,
         )
         .toList();
     return GeneralSchedule(
       id: id,
-      name: json['name'] as String? ?? 'My calendar',
+      name: _stringValue(json['name'], 'My calendar'),
       colorValue:
-          (json['colorValue'] as num?)?.toInt() ??
-          defaultGeneralCalendarColorValue,
-      isVisible: json['isVisible'] as bool? ?? true,
-      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+          _intValue(json['colorValue']) ?? defaultGeneralCalendarColorValue,
+      isVisible: _boolValue(json['isVisible']) ?? true,
+      sortOrder: _intValue(json['sortOrder']) ?? 0,
       events: events,
     );
   }

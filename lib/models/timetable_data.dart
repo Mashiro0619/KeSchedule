@@ -5,6 +5,41 @@ import '../utils/localized_names.dart';
 import '../utils/time_utils.dart';
 import 'course_item.dart';
 
+Map<String, dynamic> _asStringKeyedMap(Object? value) {
+  if (value is! Map) {
+    return const <String, dynamic>{};
+  }
+  final result = <String, dynamic>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is String) {
+      result[key] = entry.value;
+    }
+  }
+  return result;
+}
+
+Map<String, dynamic> _decodeJsonObject(String source) {
+  final decoded = jsonDecode(source);
+  final object = _asStringKeyedMap(decoded);
+  if (decoded is! Map) {
+    throw const FormatException('JSON root must be an object.');
+  }
+  return object;
+}
+
+List<dynamic> _listValue(Object? value) {
+  return value is List ? value : const <dynamic>[];
+}
+
+String _stringValue(Object? value, [String fallback = '']) {
+  return value is String ? value : fallback;
+}
+
+int? _intValue(Object? value) {
+  return value is num ? value.toInt() : null;
+}
+
 class TimetableConfig {
   const TimetableConfig({
     required this.name,
@@ -29,14 +64,15 @@ class TimetableConfig {
     Map<String, dynamic> json, {
     String localeCode = defaultLocaleCode,
   }) {
-    final startDateValue = json['startDate'] as String?;
+    final startDateValue = _stringValue(json['startDate']);
     return TimetableConfig(
-      name:
-          json['name'] as String? ??
-          untitledTimetableName(localeCode: localeCode),
-      startDate: DateTime.tryParse(startDateValue ?? '') ?? DateTime.now(),
-      totalWeeks: normalizeTimetableWeeks((json['totalWeeks'] as num?)?.toInt()),
-      periodTimeSetId: json['periodTimeSetId'] as String? ?? '',
+      name: _stringValue(
+        json['name'],
+        untitledTimetableName(localeCode: localeCode),
+      ),
+      startDate: tryParseStrictIsoDateTime(startDateValue) ?? DateTime.now(),
+      totalWeeks: normalizeTimetableWeeks(_intValue(json['totalWeeks'])),
+      periodTimeSetId: _stringValue(json['periodTimeSetId']),
     );
   }
 
@@ -77,16 +113,15 @@ class TimetableData {
     String localeCode = defaultLocaleCode,
   }) {
     return TimetableData(
-      id: json['id'] as String? ?? '',
+      id: _stringValue(json['id']),
       config: TimetableConfig.fromJson(
-        Map<String, dynamic>.from(json['config'] as Map? ?? const {}),
+        _asStringKeyedMap(json['config']),
         localeCode: localeCode,
       ),
-      courses: (json['courses'] as List<dynamic>? ?? const <dynamic>[])
-          .map(
-            (item) =>
-                CourseItem.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
+      courses: _listValue(json['courses'])
+          .map(_asStringKeyedMap)
+          .where((item) => item.isNotEmpty)
+          .map(CourseItem.fromJson)
           .toList(),
     );
   }
@@ -94,9 +129,7 @@ class TimetableData {
   String encode() => jsonEncode(toJson());
 
   factory TimetableData.decode(String source) {
-    return TimetableData.fromJson(
-      Map<String, dynamic>.from(jsonDecode(source) as Map),
-    );
+    return TimetableData.fromJson(_decodeJsonObject(source));
   }
 
   TimetableData copyWith({
@@ -127,11 +160,10 @@ class TimetableLiveCourseTarget {
 }
 
 List<CoursePeriodTime> _decodeLegacyPeriodTimes(Map<String, dynamic> json) {
-  return (json['periodTimes'] as List<dynamic>? ?? const <dynamic>[])
-      .map(
-        (item) =>
-            CoursePeriodTime.fromJson(Map<String, dynamic>.from(item as Map)),
-      )
+  return _listValue(json['periodTimes'])
+      .map(_asStringKeyedMap)
+      .where((item) => item.isNotEmpty)
+      .map(CoursePeriodTime.fromJson)
       .toList();
 }
 
@@ -139,7 +171,7 @@ int _decodeLegacyDailyPeriods(
   Map<String, dynamic> json,
   List<CoursePeriodTime> legacyPeriodTimes,
 ) {
-  return ((json['dailyPeriods'] as num?)?.toInt() ??
+  return (_intValue(json['dailyPeriods']) ??
           (legacyPeriodTimes.isEmpty ? 10 : legacyPeriodTimes.length))
       .clamp(1, 999);
 }
@@ -165,70 +197,77 @@ class TimetableExportData {
     String localeCode = defaultLocaleCode,
   }) {
     if (json.containsKey('config') && json.containsKey('courses')) {
-      final rawTimetable = Map<String, dynamic>.from(json);
-      final rawConfig = Map<String, dynamic>.from(
-        rawTimetable['config'] as Map? ?? const {},
-      );
-      final timetable = TimetableData.fromJson(
-        rawTimetable,
+      return _legacySingleTimetableExportData(
+        Map<String, dynamic>.from(json),
         localeCode: localeCode,
-      );
-      final setId = timetable.config.periodTimeSetId.trim().isEmpty
-          ? 'imported_period_times'
-          : timetable.config.periodTimeSetId;
-      final legacyPeriodTimes = _decodeLegacyPeriodTimes(rawConfig);
-      final fallbackCount = _decodeLegacyDailyPeriods(
-        rawConfig,
-        legacyPeriodTimes,
-      );
-      final periodTimeSet = PeriodTimeSet(
-        id: setId,
-        name: importedPeriodTimeSetName(
-          timetable.config.name,
-          localeCode: localeCode,
-        ),
-        periodTimes: buildPeriodTimesForCount(
-          legacyPeriodTimes.isEmpty ? fallbackCount : legacyPeriodTimes.length,
-          source: legacyPeriodTimes,
-        ),
-      );
-      return TimetableExportData(
-        timetables: [
-          timetable.copyWith(
-            config: timetable.config.copyWith(periodTimeSetId: setId),
-          ),
-        ],
-        periodTimeSets: [periodTimeSet],
       );
     }
 
-    final timetables = json['timetables'] is List<dynamic>
-        ? (json['timetables'] as List<dynamic>)
+    final rawTimetables = json['timetables'];
+    final rawLegacyTimetable = _asStringKeyedMap(json['timetable']);
+    final timetables = rawTimetables is List
+        ? rawTimetables
+              .map(_asStringKeyedMap)
+              .where((item) => item.isNotEmpty)
               .map(
-                (item) => TimetableData.fromJson(
-                  Map<String, dynamic>.from(item as Map),
-                  localeCode: localeCode,
-                ),
+                (item) => TimetableData.fromJson(item, localeCode: localeCode),
               )
               .toList()
-        : [
-            TimetableData.fromJson(
-              Map<String, dynamic>.from(json['timetable'] as Map? ?? const {}),
-              localeCode: localeCode,
-            ),
-          ];
-    final periodTimeSets =
-        (json['periodTimeSets'] as List<dynamic>? ?? const <dynamic>[])
-            .map(
-              (item) => PeriodTimeSet.fromJson(
-                Map<String, dynamic>.from(item as Map),
-                localeCode: localeCode,
-              ),
-            )
-            .toList();
+        : rawLegacyTimetable.isEmpty
+        ? <TimetableData>[]
+        : [TimetableData.fromJson(rawLegacyTimetable, localeCode: localeCode)];
+    final decodedPeriodTimeSets = _listValue(json['periodTimeSets'])
+        .map(_asStringKeyedMap)
+        .where((item) => item.isNotEmpty)
+        .map((item) => PeriodTimeSet.fromJson(item, localeCode: localeCode))
+        .toList();
+    if (rawTimetables is! List &&
+        rawLegacyTimetable.containsKey('config') &&
+        rawLegacyTimetable.containsKey('courses') &&
+        decodedPeriodTimeSets.isEmpty) {
+      return _legacySingleTimetableExportData(
+        rawLegacyTimetable,
+        localeCode: localeCode,
+      );
+    }
     return TimetableExportData(
       timetables: timetables,
-      periodTimeSets: periodTimeSets,
+      periodTimeSets: decodedPeriodTimeSets,
     );
   }
+}
+
+TimetableExportData _legacySingleTimetableExportData(
+  Map<String, dynamic> rawTimetable, {
+  required String localeCode,
+}) {
+  final rawConfig = _asStringKeyedMap(rawTimetable['config']);
+  final timetable = TimetableData.fromJson(
+    rawTimetable,
+    localeCode: localeCode,
+  );
+  final setId = timetable.config.periodTimeSetId.trim().isEmpty
+      ? 'imported_period_times'
+      : timetable.config.periodTimeSetId;
+  final legacyPeriodTimes = _decodeLegacyPeriodTimes(rawConfig);
+  final fallbackCount = _decodeLegacyDailyPeriods(rawConfig, legacyPeriodTimes);
+  final periodTimeSet = PeriodTimeSet(
+    id: setId,
+    name: importedPeriodTimeSetName(
+      timetable.config.name,
+      localeCode: localeCode,
+    ),
+    periodTimes: buildPeriodTimesForCount(
+      legacyPeriodTimes.isEmpty ? fallbackCount : legacyPeriodTimes.length,
+      source: legacyPeriodTimes,
+    ),
+  );
+  return TimetableExportData(
+    timetables: [
+      timetable.copyWith(
+        config: timetable.config.copyWith(periodTimeSetId: setId),
+      ),
+    ],
+    periodTimeSets: [periodTimeSet],
+  );
 }

@@ -27,11 +27,13 @@ class SchoolWebImportResultSheet extends StatefulWidget {
       _SchoolWebImportResultSheetState();
 }
 
-class _SchoolWebImportResultSheetState extends State<SchoolWebImportResultSheet> {
+class _SchoolWebImportResultSheetState
+    extends State<SchoolWebImportResultSheet> {
   late final TextEditingController _nameController;
   late DateTime _startDate;
   late String _selectedPeriodTimeSetId;
   late bool _importBundledPeriodTimeSet;
+  bool _hasPopped = false;
 
   bool get _hasBundledPeriodTimeSet =>
       widget.response.timetable.periodTimeSet.periodTimes.isNotEmpty;
@@ -44,10 +46,12 @@ class _SchoolWebImportResultSheetState extends State<SchoolWebImportResultSheet>
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.response.timetable.name)
-      ..addListener(_handleNameChanged);
+    _nameController = TextEditingController(
+      text: widget.response.timetable.name,
+    )..addListener(_handleNameChanged);
     _startDate = normalizeDateOnly(widget.response.timetable.startDate);
-    _selectedPeriodTimeSetId = widget.periodTimeSets.any(
+    _selectedPeriodTimeSetId =
+        widget.periodTimeSets.any(
           (item) => item.id == widget.initialPeriodTimeSetId,
         )
         ? widget.initialPeriodTimeSetId
@@ -168,7 +172,9 @@ class _SchoolWebImportResultSheetState extends State<SchoolWebImportResultSheet>
                       selected: !_importBundledPeriodTimeSet,
                       onTap: _canDiscardBundledPeriodTimeSet
                           ? () {
-                              setState(() => _importBundledPeriodTimeSet = false);
+                              setState(
+                                () => _importBundledPeriodTimeSet = false,
+                              );
                             }
                           : null,
                     ),
@@ -190,11 +196,13 @@ class _SchoolWebImportResultSheetState extends State<SchoolWebImportResultSheet>
                       onTap: widget.periodTimeSets.isEmpty
                           ? null
                           : () async {
-                              final result = await showPeriodTimeSetPickerDialog(
-                                context,
-                                provider: widget.provider,
-                                selectedPeriodTimeSetId: _selectedPeriodTimeSetId,
-                              );
+                              final result =
+                                  await showPeriodTimeSetPickerDialog(
+                                    context,
+                                    provider: widget.provider,
+                                    selectedPeriodTimeSetId:
+                                        _selectedPeriodTimeSetId,
+                                  );
                               if (!mounted || result == null) {
                                 return;
                               }
@@ -245,18 +253,18 @@ class _SchoolWebImportResultSheetState extends State<SchoolWebImportResultSheet>
                     alignment: WrapAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: _hasPopped ? null : _cancel,
                         child: Text(l10n.cancel),
                       ),
                       OutlinedButton(
-                        onPressed: _canSubmitImport
+                        onPressed: (_canSubmitImport && !_hasPopped)
                             ? () => _submit(TimetableImportMode.addAsNew)
                             : null,
                         child: Text(l10n.importAsNewTimetable),
                       ),
                       if (widget.canReplaceCurrent)
                         FilledButton(
-                          onPressed: _canSubmitImport
+                          onPressed: (_canSubmitImport && !_hasPopped)
                               ? () => _submit(TimetableImportMode.replaceActive)
                               : null,
                           child: Text(l10n.replaceCurrentTimetable),
@@ -318,19 +326,29 @@ class _SchoolWebImportResultSheetState extends State<SchoolWebImportResultSheet>
   }
 
   Future<void> _pickStartDate() async {
+    final firstDate = DateTime(2020);
+    final lastDate = DateTime(2035);
+    final boundedInitialDate = _startDate.isBefore(firstDate)
+        ? firstDate
+        : _startDate.isAfter(lastDate)
+        ? lastDate
+        : _startDate;
     final picked = await showDatePicker(
       context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
-      initialDate: _startDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      initialDate: boundedInitialDate,
     );
-    if (picked == null) {
+    if (!mounted || picked == null) {
       return;
     }
     setState(() => _startDate = picked);
   }
 
   void _submit(TimetableImportMode mode) {
+    if (_hasPopped) {
+      return;
+    }
     final editedName = _nameController.text.trim();
     final nextResponse = widget.response.copyWith(
       timetable: widget.response.timetable.copyWith(
@@ -338,6 +356,7 @@ class _SchoolWebImportResultSheetState extends State<SchoolWebImportResultSheet>
         startDate: _startDate,
       ),
     );
+    setState(() => _hasPopped = true);
     Navigator.of(context).pop(
       SchoolImportApplyRequest(
         response: nextResponse,
@@ -348,6 +367,14 @@ class _SchoolWebImportResultSheetState extends State<SchoolWebImportResultSheet>
             : _selectedPeriodTimeSetId,
       ),
     );
+  }
+
+  void _cancel() {
+    if (_hasPopped) {
+      return;
+    }
+    setState(() => _hasPopped = true);
+    Navigator.of(context).pop();
   }
 
   String _formatDate(DateTime date) {
@@ -404,10 +431,7 @@ class _ImportChoiceTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleSmall,
-                    ),
+                    Text(title, style: theme.textTheme.titleSmall),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,

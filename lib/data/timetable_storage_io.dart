@@ -20,7 +20,8 @@ TimetableStorage createTimetableStorage() => IoTimetableStorage();
 /// [RecoveryStatus.failedBackupRestore]。
 class IoTimetableStorage implements TimetableStorage {
   IoTimetableStorage({Future<Directory> Function()? directoryProvider})
-    : _directoryProvider = directoryProvider ?? getApplicationDocumentsDirectory;
+    : _directoryProvider =
+          directoryProvider ?? getApplicationDocumentsDirectory;
 
   static const _fileName = 'Sked_data.json';
   static const _backupSuffix = '.bak';
@@ -50,6 +51,12 @@ class IoTimetableStorage implements TimetableStorage {
     }
 
     if (backupAttempt.outcome == _Outcome.success) {
+      try {
+        await _restoreBackupToMain(backup: backup, main: main);
+      } catch (_) {
+        // Recovery should still succeed even if the best-effort promotion
+        // cannot rewrite the main file on this run.
+      }
       return StorageLoadResult(
         data: backupAttempt.data,
         recoveryStatus: RecoveryStatus.restoredFromBackup,
@@ -106,15 +113,30 @@ class IoTimetableStorage implements TimetableStorage {
     return File(filePath);
   }
 
+  Future<void> _restoreBackupToMain({
+    required File backup,
+    required File main,
+  }) async {
+    final tmp = File('${main.path}$_tempSuffix');
+    if (await tmp.exists()) {
+      await tmp.delete();
+    }
+    await backup.copy(tmp.path);
+    if (await main.exists()) {
+      await main.delete();
+    }
+    await tmp.rename(main.path);
+  }
+
   Future<_DecodeAttempt> _tryDecode(File file) async {
-    if (!await file.exists()) {
-      return const _DecodeAttempt(_Outcome.missing, null);
-    }
-    final content = await file.readAsString();
-    if (content.trim().isEmpty) {
-      return const _DecodeAttempt(_Outcome.missing, null);
-    }
     try {
+      if (!await file.exists()) {
+        return const _DecodeAttempt(_Outcome.missing, null);
+      }
+      final content = await file.readAsString();
+      if (content.trim().isEmpty) {
+        return const _DecodeAttempt(_Outcome.missing, null);
+      }
       final data = AppData.decode(content);
       return _DecodeAttempt(_Outcome.success, data);
     } catch (_) {

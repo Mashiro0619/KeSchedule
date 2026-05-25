@@ -223,13 +223,22 @@ extension _HomeScreenTimetableManagement on _HomeScreenState {
                             subtitle: Text(formatDate(selectedStartDate)),
                             trailing: const Icon(Icons.calendar_month),
                             onTap: () async {
+                              final firstDate = DateTime(2020);
+                              final lastDate = DateTime(2035);
+                              final boundedInitialDate =
+                                  selectedStartDate.isBefore(firstDate)
+                                  ? firstDate
+                                  : selectedStartDate.isAfter(lastDate)
+                                  ? lastDate
+                                  : selectedStartDate;
                               final picked = await showDatePicker(
                                 context: context,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime(2035),
-                                initialDate: selectedStartDate,
+                                firstDate: firstDate,
+                                lastDate: lastDate,
+                                initialDate: boundedInitialDate,
                               );
-                              if (picked == null ||
+                              if (!context.mounted ||
+                                  picked == null ||
                                   picked == selectedStartDate) {
                                 return;
                               }
