@@ -85,19 +85,22 @@ class TimetableImportFlow {
         context: context,
         builder: (context) {
           final l10n = AppLocalizations.of(context);
+          var popped = false;
+          void popOnce(TimetableImportMode value) {
+            if (popped) return;
+            popped = true;
+            Navigator.of(context).pop(value);
+          }
           return AlertDialog(
             title: Text(l10n.importTimetableDialogTitle),
             content: Text(l10n.chooseImportMethod),
             actions: [
               TextButton(
-                onPressed: () =>
-                    Navigator.of(context).pop(TimetableImportMode.addAsNew),
+                onPressed: () => popOnce(TimetableImportMode.addAsNew),
                 child: Text(l10n.importAsNewTimetable),
               ),
               FilledButton(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pop(TimetableImportMode.replaceActive),
+                onPressed: () => popOnce(TimetableImportMode.replaceActive),
                 child: Text(l10n.replaceCurrentTimetable),
               ),
             ],
@@ -183,18 +186,22 @@ class TimetableImportFlow {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popOnce(bool value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(l10n.importPeriodTimeSetDialogTitle),
           content: Text(dialogBody),
           actions: [
             TextButton(
-              onPressed: canDiscardBundledSets
-                  ? () => Navigator.of(context).pop(false)
-                  : null,
+              onPressed: canDiscardBundledSets ? () => popOnce(false) : null,
               child: Text(l10n.discardBundledPeriodTimeSets),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => popOnce(true),
               child: Text(l10n.importBundledPeriodTimeSets),
             ),
           ],
@@ -244,9 +251,15 @@ class TimetableImportFlow {
     return showDialog<List<String>>(
       context: context,
       builder: (context) {
+        var popped = false;
         return StatefulBuilder(
           builder: (context, setState) {
             final l10n = AppLocalizations.of(context);
+            void popOnce(List<String>? result) {
+              if (popped) return;
+              popped = true;
+              Navigator.of(context).pop(result);
+            }
             return AlertDialog(
               title: Text(title),
               content: SizedBox(
@@ -317,13 +330,13 @@ class TimetableImportFlow {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => popOnce(null),
                   child: Text(l10n.cancel),
                 ),
                 FilledButton(
                   onPressed: draft.isEmpty
                       ? null
-                      : () => Navigator.of(context).pop(
+                      : () => popOnce(
                           timetables
                               .where((item) => draft.contains(item.id))
                               .map((item) => item.id)

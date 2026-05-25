@@ -41,7 +41,8 @@ class _SchoolWebImportResultSheetState
   bool get _canDiscardBundledPeriodTimeSet => widget.periodTimeSets.isNotEmpty;
 
   bool get _canSubmitImport =>
-      _importBundledPeriodTimeSet || _selectedPeriodTimeSetId.isNotEmpty;
+      widget.response.timetable.courses.isNotEmpty &&
+      (_importBundledPeriodTimeSet || _selectedPeriodTimeSetId.isNotEmpty);
 
   @override
   void initState() {

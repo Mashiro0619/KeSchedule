@@ -28,7 +28,7 @@ class _MemoryTimetableStorage implements TimetableStorage {
   Future<String?> filePath() async => 'memory://sheet-test';
 }
 
-SchoolImportResponse _buildResponse() {
+SchoolImportResponse _buildResponse({bool withCourses = true}) {
   return SchoolImportResponse(
     meta: const SchoolImportMeta(
       sourceUrl: '',
@@ -44,7 +44,23 @@ SchoolImportResponse _buildResponse() {
         name: '',
         periodTimes: [],
       ),
-      courses: const [],
+      courses: withCourses
+          ? const [
+              ImportedCourseDraft(
+                name: 'Sample course',
+                teacher: '',
+                location: '',
+                dayOfWeek: 1,
+                semesterWeeks: [],
+                periods: [1],
+                startMinutes: 480,
+                endMinutes: 540,
+                credit: 0,
+                remarks: '',
+                customFields: <String, dynamic>{},
+              ),
+            ]
+          : const [],
     ),
   );
 }
@@ -198,5 +214,72 @@ void main() {
 
     await tester.pumpAndSettle();
     expect(results, [isNull]);
+  });
+
+  testWidgets('import buttons stay disabled when the response has no courses', (
+    tester,
+  ) async {
+    final provider = await _createProvider();
+    final periodTimeSets = provider.periodTimeSets;
+    final initialPeriodTimeSetId =
+        periodTimeSets.isEmpty ? '' : periodTimeSets.first.id;
+    final response = _buildResponse(withCourses: false);
+
+    late String importLabel;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) {
+            importLabel = AppLocalizations.of(context).importAsNewTimetable;
+            return Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () async {
+                    await showModalBottomSheet<SchoolImportApplyRequest>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => SchoolWebImportResultSheet(
+                        response: response,
+                        canReplaceCurrent: true,
+                        periodTimeSets: periodTimeSets,
+                        initialPeriodTimeSetId: initialPeriodTimeSetId,
+                        provider: provider,
+                      ),
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    final importButton = find.widgetWithText(OutlinedButton, importLabel);
+    expect(importButton, findsOneWidget);
+    expect(
+      (tester.widget(importButton) as OutlinedButton).onPressed,
+      isNull,
+      reason: 'Import button must be disabled when the response has 0 courses.',
+    );
+
+    final replaceLabel = AppLocalizations.of(
+      tester.element(find.byType(SchoolWebImportResultSheet)),
+    ).replaceCurrentTimetable;
+    final replaceButton = find.widgetWithText(FilledButton, replaceLabel);
+    expect(replaceButton, findsOneWidget);
+    expect(
+      (tester.widget(replaceButton) as FilledButton).onPressed,
+      isNull,
+      reason: 'Replace button must also be disabled when 0 courses.',
+    );
   });
 }

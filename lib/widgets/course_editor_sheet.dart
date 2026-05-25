@@ -51,6 +51,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   late List<int> _selectedPeriods;
+  bool _hasPopped = false;
 
   @override
   void initState() {
@@ -283,18 +284,21 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                 children: [
                   if (widget.initialCourse != null)
                     TextButton(
-                      onPressed: () => Navigator.of(
-                        context,
-                      ).pop(const CourseEditorResult.delete()),
+                      onPressed: _hasPopped
+                          ? null
+                          : () => _popOnce(const CourseEditorResult.delete()),
                       child: Text(l10n.delete),
                     ),
                   const Spacer(),
                   TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: _hasPopped ? null : () => _popOnce(),
                     child: Text(l10n.cancel),
                   ),
                   const SizedBox(width: 8),
-                  FilledButton(onPressed: _submit, child: Text(l10n.save)),
+                  FilledButton(
+                    onPressed: _hasPopped ? null : _submit,
+                    child: Text(l10n.save),
+                  ),
                 ],
               ),
             ],
@@ -319,6 +323,12 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     final result = await showDialog<int>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(int day) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(day);
+        }
         return AlertDialog(
           title: Text(AppLocalizations.of(context).selectDayOfWeek),
           content: SizedBox(
@@ -338,7 +348,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                     ),
                   ),
                   selected: day == _selectedDayOfWeek,
-                  onSelected: (_) => Navigator.of(context).pop(day),
+                  onSelected: (_) => popWith(day),
                 );
               }),
             ),
@@ -358,9 +368,15 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     final result = await showDialog<List<int>>(
       context: context,
       builder: (context) {
+        var popped = false;
         return StatefulBuilder(
           builder: (context, setState) {
             final l10n = AppLocalizations.of(context);
+            void popWith(List<int>? value) {
+              if (popped) return;
+              popped = true;
+              Navigator.of(context).pop(value);
+            }
             return AlertDialog(
               title: Text(l10n.selectSemesterWeeks),
               content: SizedBox(
@@ -445,13 +461,12 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => popWith(null),
                   child: Text(l10n.cancel),
                 ),
                 FilledButton(
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pop(normalizeSemesterWeeks(draft.toList())),
+                  onPressed: () =>
+                      popWith(normalizeSemesterWeeks(draft.toList())),
                   child: Text(l10n.confirm),
                 ),
               ],
@@ -502,9 +517,15 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     final result = await showDialog<List<int>>(
       context: context,
       builder: (context) {
+        var popped = false;
         return StatefulBuilder(
           builder: (context, setState) {
             final l10n = AppLocalizations.of(context);
+            void popWith(List<int>? value) {
+              if (popped) return;
+              popped = true;
+              Navigator.of(context).pop(value);
+            }
             return AlertDialog(
               title: Text(l10n.selectLinkedPeriods),
               content: SizedBox(
@@ -538,12 +559,11 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                   child: Text(l10n.clear),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => popWith(null),
                   child: Text(l10n.cancel),
                 ),
                 FilledButton(
-                  onPressed: () =>
-                      Navigator.of(context).pop(List<int>.from(draft)),
+                  onPressed: () => popWith(List<int>.from(draft)),
                   child: Text(l10n.confirm),
                 ),
               ],
@@ -598,7 +618,13 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       remarks: _remarksController.text.trim(),
       customFields: _parseCustomFields(_customFieldsController.text),
     );
-    Navigator.of(context).pop(CourseEditorResult.save(course));
+    _popOnce(CourseEditorResult.save(course));
+  }
+
+  void _popOnce([CourseEditorResult? result]) {
+    if (_hasPopped) return;
+    setState(() => _hasPopped = true);
+    Navigator.of(context).pop(result);
   }
 
   List<int> _togglePeriodSelection(List<int> current, int periodIndex) {

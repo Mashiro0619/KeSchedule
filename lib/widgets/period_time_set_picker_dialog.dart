@@ -14,6 +14,8 @@ Future<String?> showPeriodTimeSetPickerDialog(
     context: context,
     builder: (dialogContext) {
       var currentSelectedId = selectedPeriodTimeSetId;
+      var popped = false;
+      var busy = false;
 
       Future<void> openPeriodTimePage(String periodTimeSetId) async {
         await Navigator.of(dialogContext).push(
@@ -29,20 +31,37 @@ Future<String?> showPeriodTimeSetPickerDialog(
       return StatefulBuilder(
         builder: (dialogContext, refreshDialog) {
           final l10n = AppLocalizations.of(dialogContext);
+
+          Future<void> runBusy(Future<void> Function() action) async {
+            if (busy || popped) return;
+            refreshDialog(() => busy = true);
+            try {
+              await action();
+            } finally {
+              if (dialogContext.mounted) {
+                refreshDialog(() => busy = false);
+              }
+            }
+          }
+
+          void popOnce([String? result]) {
+            if (popped) return;
+            popped = true;
+            Navigator.of(dialogContext).pop(result);
+          }
+
           return AlertDialog(
             title: Row(
               children: [
                 Expanded(child: Text(l10n.selectPeriodTimeSet)),
                 TextButton.icon(
-                  onPressed: () async {
-                    final created = await provider.addPeriodTimeSet();
-                    currentSelectedId = created.id;
-                    await openPeriodTimePage(created.id);
-                    if (!dialogContext.mounted) {
-                      return;
-                    }
-                    refreshDialog(() {});
-                  },
+                  onPressed: (busy || popped)
+                      ? null
+                      : () => runBusy(() async {
+                          final created = await provider.addPeriodTimeSet();
+                          currentSelectedId = created.id;
+                          await openPeriodTimePage(created.id);
+                        }),
                   icon: const Icon(Icons.add),
                   label: Text(l10n.newItem),
                 ),
@@ -73,29 +92,29 @@ Future<String?> showPeriodTimeSetPickerDialog(
                     ),
                     trailing: IconButton(
                       tooltip: l10n.editPeriodTimeSet,
-                      onPressed: () async {
-                        await openPeriodTimePage(item.id);
-                        if (!dialogContext.mounted) {
-                          return;
-                        }
-                        final stillExists =
-                            provider.periodTimeSetForId(item.id) != null;
-                        if (!stillExists && currentSelectedId == item.id) {
-                          currentSelectedId =
-                              provider.activePeriodTimeSetOrNull?.id ?? '';
-                        }
-                        refreshDialog(() {});
-                      },
+                      onPressed: (busy || popped)
+                          ? null
+                          : () => runBusy(() async {
+                              await openPeriodTimePage(item.id);
+                              final stillExists =
+                                  provider.periodTimeSetForId(item.id) != null;
+                              if (!stillExists &&
+                                  currentSelectedId == item.id) {
+                                currentSelectedId =
+                                    provider.activePeriodTimeSetOrNull?.id ??
+                                        '';
+                              }
+                            }),
                       icon: const Icon(Icons.edit_outlined),
                     ),
-                    onTap: () => Navigator.of(dialogContext).pop(item.id),
+                    onTap: (busy || popped) ? null : () => popOnce(item.id),
                   );
                 },
               ),
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
+                onPressed: (busy || popped) ? null : () => popOnce(),
                 child: Text(l10n.cancel),
               ),
             ],

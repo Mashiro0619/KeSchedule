@@ -276,31 +276,41 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
 
     final httpClient = http.Client();
     SchoolImportResponse? response;
+    Object? streamError;
     try {
-      final stream = _api.importCurrentPageStream(
-        SchoolImportPagePayload(
-          url: widget.initialUrl,
-          title: widget.initialTitle,
-          html: sanitizedContent,
-          locale: localeCode,
-          sourceHint: parserSettings.source,
-        ),
-        parserSettings: parserSettings,
-        client: httpClient,
-      );
+      try {
+        final stream = _api.importCurrentPageStream(
+          SchoolImportPagePayload(
+            url: widget.initialUrl,
+            title: widget.initialTitle,
+            html: sanitizedContent,
+            locale: localeCode,
+            sourceHint: parserSettings.source,
+          ),
+          parserSettings: parserSettings,
+          client: httpClient,
+        );
 
-      if (!mounted) return;
-      response = await showDialog<SchoolImportResponse>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => SchoolImportStreamDialog(stream: stream),
-      );
-    } finally {
-      httpClient.close();
+        if (!mounted) return;
+        response = await showDialog<SchoolImportResponse>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => SchoolImportStreamDialog(stream: stream),
+        );
+      } finally {
+        httpClient.close();
+      }
+    } catch (error) {
+      streamError = error;
     }
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
+
+    if (streamError != null) {
+      _showMessage(mapSchoolImportApplyError(streamError, l10n));
+      return;
+    }
 
     if (response == null) {
       return;

@@ -286,16 +286,22 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
         final name = _nameController.text.trim().isEmpty
             ? l10n.currentPeriodTimeSet
             : _nameController.text.trim();
+        var popped = false;
+        void popWith(bool value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(l10n.deletePeriodTimeSetTitle),
           content: Text(l10n.deletePeriodTimeSetMessage(name)),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => popWith(false),
               child: Text(l10n.cancel),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => popWith(true),
               child: Text(l10n.delete),
             ),
           ],
@@ -492,16 +498,22 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
     return showDialog<bool>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(bool value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(title),
           content: Text(message),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => popWith(false),
               child: Text(AppLocalizations.of(context).cancel),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => popWith(true),
               child: Text(confirmText),
             ),
           ],
@@ -517,16 +529,22 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
     return showDialog<bool>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(bool value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(title),
           content: Text(message),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => popWith(false),
               child: Text(AppLocalizations.of(context).retryLater),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => popWith(true),
               child: Text(AppLocalizations.of(context).switchToShare),
             ),
           ],

@@ -16,6 +16,12 @@ extension _HomeScreenTimetableManagement on _HomeScreenState {
         const spacing = 10.0;
         const chipHeight = 40.0;
         final maxGridHeight = mediaQuery.size.height * 0.5;
+        var popped = false;
+        void popWith(int value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(AppLocalizations.of(context).jumpToWeek),
           contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -70,8 +76,7 @@ extension _HomeScreenTimetableManagement on _HomeScreenState {
                                   color: Colors.transparent,
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(12),
-                                    onTap: () =>
-                                        Navigator.of(context).pop(weekNumber),
+                                    onTap: () => popWith(weekNumber),
                                     child: Ink(
                                       decoration: BoxDecoration(
                                         color: backgroundColor,
@@ -128,6 +133,12 @@ extension _HomeScreenTimetableManagement on _HomeScreenState {
       builder: (context) {
         final l10n = AppLocalizations.of(context);
         final viewInsets = MediaQuery.of(context).viewInsets;
+        var popped = false;
+        void popWith(String? value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         String formatDate(DateTime date) {
           final year = date.year.toString().padLeft(4, '0');
           final month = date.month.toString().padLeft(2, '0');
@@ -250,19 +261,17 @@ extension _HomeScreenTimetableManagement on _HomeScreenState {
                             child: Row(
                               children: [
                                 TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop('delete'),
+                                  onPressed: () => popWith('delete'),
                                   child: Text(l10n.delete),
                                 ),
                                 const Spacer(),
                                 TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
+                                  onPressed: () => popWith(null),
                                   child: Text(l10n.cancel),
                                 ),
                                 const SizedBox(width: 8),
                                 FilledButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop('save'),
+                                  onPressed: () => popWith('save'),
                                   child: Text(l10n.save),
                                 ),
                               ],
@@ -310,16 +319,22 @@ extension _HomeScreenTimetableManagement on _HomeScreenState {
         context: this.context,
         builder: (context) {
           final l10n = AppLocalizations.of(context);
+          var popped = false;
+          void popWith(bool value) {
+            if (popped) return;
+            popped = true;
+            Navigator.of(context).pop(value);
+          }
           return AlertDialog(
             title: Text(l10n.deleteTimetableTitle),
             content: Text(l10n.deleteTimetableMessage(timetable.config.name)),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: () => popWith(false),
                 child: Text(l10n.cancel),
               ),
               FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
+                onPressed: () => popWith(true),
                 child: Text(l10n.delete),
               ),
             ],

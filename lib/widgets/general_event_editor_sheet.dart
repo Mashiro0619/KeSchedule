@@ -47,6 +47,7 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
   int? _colorValue;
   late List<int> _reminders;
   late List<GeneralSchedule> _calendarOptions;
+  bool _hasPopped = false;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -213,7 +214,13 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
       createdAtIso: widget.initialEvent?.createdAtIso ?? now,
       updatedAtIso: now,
     );
-    Navigator.of(context).pop(GeneralEventEditorResult(event: event));
+    _popOnce(GeneralEventEditorResult(event: event));
+  }
+
+  void _popOnce([GeneralEventEditorResult? result]) {
+    if (_hasPopped) return;
+    setState(() => _hasPopped = true);
+    Navigator.of(context).pop(result);
   }
 
   GeneralEventRecurrenceRule _buildRecurrenceRule(int? repeatCount) {
@@ -468,9 +475,11 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
               children: [
                 if (_isEditing)
                   OutlinedButton.icon(
-                    onPressed: () => Navigator.of(
-                      context,
-                    ).pop(const GeneralEventEditorResult(delete: true)),
+                    onPressed: _hasPopped
+                        ? null
+                        : () => _popOnce(
+                            const GeneralEventEditorResult(delete: true),
+                          ),
                     icon: const Icon(Icons.delete_outline),
                     label: Text(l10n.delete),
                     style: OutlinedButton.styleFrom(
@@ -479,12 +488,12 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                   ),
                 const Spacer(),
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: _hasPopped ? null : () => _popOnce(),
                   child: Text(l10n.cancel),
                 ),
                 const SizedBox(width: 8),
                 FilledButton.icon(
-                  onPressed: _save,
+                  onPressed: _hasPopped ? null : _save,
                   icon: const Icon(Icons.check),
                   label: Text(l10n.save),
                 ),

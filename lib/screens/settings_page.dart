@@ -144,6 +144,12 @@ class AppUpdateCoordinator {
     return showDialog<_UpdateAction>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(_UpdateAction action) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(action);
+        }
         return AlertDialog(
           title: Text(l10n.checkForUpdates),
           content: SingleChildScrollView(
@@ -172,6 +178,7 @@ class AppUpdateCoordinator {
               runSpacing: 4,
               children: _buildUpdateDialogActions(
                 context,
+                pop: popWith,
                 showIgnoreButton: showIgnoreButton,
               ),
             ),
@@ -189,6 +196,12 @@ class AppUpdateCoordinator {
     return showDialog<_UpdateAction>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(_UpdateAction action) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(action);
+        }
         return AlertDialog(
           title: Text(l10n.updateCheckFailedTitle),
           content: Text(l10n.updateCheckFailedMessage),
@@ -198,6 +211,7 @@ class AppUpdateCoordinator {
               runSpacing: 4,
               children: _buildUpdateDialogActions(
                 context,
+                pop: popWith,
                 showIgnoreButton: showIgnoreButton,
               ),
             ),
@@ -209,33 +223,34 @@ class AppUpdateCoordinator {
 
   static List<Widget> _buildUpdateDialogActions(
     BuildContext context, {
+    required void Function(_UpdateAction action) pop,
     required bool showIgnoreButton,
   }) {
     final l10n = AppLocalizations.of(context);
     return [
       TextButton(
-        onPressed: () => Navigator.of(context).pop(_UpdateAction.cancel),
+        onPressed: () => pop(_UpdateAction.cancel),
         child: Text(l10n.cancel),
       ),
       if (showIgnoreButton)
         TextButton(
-          onPressed: () => Navigator.of(context).pop(_UpdateAction.ignore),
+          onPressed: () => pop(_UpdateAction.ignore),
           child: Text(l10n.ignoreThisVersion),
         ),
       TextButton(
-        onPressed: () => Navigator.of(context).pop(_UpdateAction.website),
+        onPressed: () => pop(_UpdateAction.website),
         child: Text(l10n.officialWebsite),
       ),
       TextButton(
-        onPressed: () => Navigator.of(context).pop(_UpdateAction.googlePlay),
+        onPressed: () => pop(_UpdateAction.googlePlay),
         child: Text(l10n.googlePlay),
       ),
       TextButton(
-        onPressed: () => Navigator.of(context).pop(_UpdateAction.quark),
+        onPressed: () => pop(_UpdateAction.quark),
         child: Text(l10n.cloudDrive),
       ),
       FilledButton(
-        onPressed: () => Navigator.of(context).pop(_UpdateAction.github),
+        onPressed: () => pop(_UpdateAction.github),
         child: Text(l10n.githubRepository),
       ),
     ];
@@ -891,9 +906,15 @@ class _SettingsPageState extends State<SettingsPage> {
     return showDialog<List<String>>(
       context: context,
       builder: (context) {
+        var popped = false;
         return StatefulBuilder(
           builder: (context, setState) {
             final l10n = AppLocalizations.of(context);
+            void popWith(List<String>? value) {
+              if (popped) return;
+              popped = true;
+              Navigator.of(context).pop(value);
+            }
             return AlertDialog(
               title: Text(title),
               content: SizedBox(
@@ -964,13 +985,13 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => popWith(null),
                   child: Text(l10n.cancel),
                 ),
                 FilledButton(
                   onPressed: draft.isEmpty
                       ? null
-                      : () => Navigator.of(context).pop(
+                      : () => popWith(
                           timetables
                               .where((item) => draft.contains(item.id))
                               .map((item) => item.id)
@@ -1073,16 +1094,22 @@ class _SettingsPageState extends State<SettingsPage> {
     return showDialog<bool>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(bool value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(title),
           content: Text(message),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => popWith(false),
               child: Text(AppLocalizations.of(context).cancel),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => popWith(true),
               child: Text(confirmText),
             ),
           ],
@@ -1098,16 +1125,22 @@ class _SettingsPageState extends State<SettingsPage> {
     return showDialog<bool>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(bool value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(title),
           content: Text(message),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => popWith(false),
               child: Text(AppLocalizations.of(context).retryLater),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => popWith(true),
               child: Text(AppLocalizations.of(context).switchToShare),
             ),
           ],
@@ -1278,9 +1311,15 @@ class _SettingsPageState extends State<SettingsPage> {
     return showDialog<List<String>>(
       context: context,
       builder: (context) {
+        var popped = false;
         return StatefulBuilder(
           builder: (context, setState) {
             final l10n = AppLocalizations.of(context);
+            void popWith(List<String>? value) {
+              if (popped) return;
+              popped = true;
+              Navigator.of(context).pop(value);
+            }
             return AlertDialog(
               title: Text(title),
               content: SizedBox(
@@ -1351,13 +1390,13 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => popWith(null),
                   child: Text(l10n.cancel),
                 ),
                 FilledButton(
                   onPressed: draft.isEmpty
                       ? null
-                      : () => Navigator.of(context).pop(
+                      : () => popWith(
                           schedules
                               .where((s) => draft.contains(s.id))
                               .map((s) => s.id)
@@ -1424,16 +1463,22 @@ class _SettingsPageState extends State<SettingsPage> {
         final choice = await showDialog<String>(
           context: feedbackContext,
           builder: (ctx) {
+            var popped = false;
+            void popWith(String value) {
+              if (popped) return;
+              popped = true;
+              Navigator.of(ctx).pop(value);
+            }
             return AlertDialog(
               title: Text(l10n.dataImportExport),
               content: Text(l10n.replaceActiveSchedulePrompt),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(ctx).pop('new'),
+                  onPressed: () => popWith('new'),
                   child: Text(l10n.addAsNewSchedule),
                 ),
                 FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop('replace'),
+                  onPressed: () => popWith('replace'),
                   child: Text(l10n.save),
                 ),
               ],
@@ -1508,6 +1553,12 @@ class _SettingsPageState extends State<SettingsPage> {
         final choice = await showDialog<String>(
           context: feedbackContext,
           builder: (ctx) {
+            var popped = false;
+            void popWith(String value) {
+              if (popped) return;
+              popped = true;
+              Navigator.of(ctx).pop(value);
+            }
             return AlertDialog(
               title: Text(l10n.importIcs),
               content: Text(
@@ -1517,11 +1568,11 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(ctx).pop('new'),
+                  onPressed: () => popWith('new'),
                   child: Text(l10n.addAsNewSchedule),
                 ),
                 FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop('replace'),
+                  onPressed: () => popWith('replace'),
                   child: Text(l10n.save),
                 ),
               ],

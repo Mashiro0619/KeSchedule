@@ -229,16 +229,22 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(bool value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(l10n.schoolSitesDeleteTitle),
           content: Text(l10n.schoolSitesDeleteMessage(site.name)),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => popWith(false),
               child: Text(l10n.cancel),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => popWith(true),
               child: Text(l10n.delete),
             ),
           ],
@@ -259,9 +265,15 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
       text: initialSite?.loginUrl ?? '',
     );
 
-    return showDialog<SchoolSite>(
+    final future = showDialog<SchoolSite>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(SchoolSite? value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(
             initialSite == null ? l10n.schoolSitesAdd : l10n.schoolSitesEdit,
@@ -291,11 +303,12 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => popWith(null),
               child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () {
+                if (popped) return;
                 final site = SchoolSite(
                   name: nameController.text.trim(),
                   loginUrl: urlController.text.trim(),
@@ -304,7 +317,7 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
                   _showMessage(l10n.schoolSitesFormInvalid);
                   return;
                 }
-                Navigator.of(context).pop(site);
+                popWith(site);
               },
               child: Text(l10n.save),
             ),
@@ -312,6 +325,11 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
         );
       },
     );
+    future.whenComplete(() {
+      nameController.dispose();
+      urlController.dispose();
+    });
+    return future;
   }
 
   Future<void> _persistSites(List<SchoolSite> sites) async {
@@ -453,16 +471,22 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
     return showDialog<bool>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(bool value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(title),
           content: Text(message),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => popWith(false),
               child: Text(AppLocalizations.of(context).cancel),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => popWith(true),
               child: Text(confirmText),
             ),
           ],
@@ -478,16 +502,22 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
     return showDialog<bool>(
       context: context,
       builder: (context) {
+        var popped = false;
+        void popWith(bool value) {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop(value);
+        }
         return AlertDialog(
           title: Text(title),
           content: Text(message),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => popWith(false),
               child: Text(AppLocalizations.of(context).retryLater),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => popWith(true),
               child: Text(AppLocalizations.of(context).switchToShare),
             ),
           ],
