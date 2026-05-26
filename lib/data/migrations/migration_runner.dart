@@ -68,11 +68,19 @@ class MigrationRunner {
   }
 
   static int _readVersion(Map<String, dynamic> json) {
+    if (!json.containsKey('schemaVersion')) {
+      return 1;
+    }
     final raw = json['schemaVersion'];
     if (raw is int) return raw;
-    if (raw is num) return raw.toInt();
-    if (raw is String) return int.tryParse(raw.trim()) ?? 1;
-    return 1;
+    if (raw is num && raw.isFinite && raw % 1 == 0) return raw.toInt();
+    if (raw is String) {
+      final trimmed = raw.trim();
+      if (RegExp(r'^\d+$').hasMatch(trimmed)) {
+        return int.parse(trimmed);
+      }
+    }
+    throw const MigrationException('Data schemaVersion is invalid.');
   }
 
   static Map<String, dynamic> _deepCopyMap(Map<String, dynamic> source) {

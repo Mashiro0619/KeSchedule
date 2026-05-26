@@ -5,6 +5,9 @@ import 'package:sked/data/timetable_storage.dart';
 import 'package:sked/data/timetable_storage_io.dart';
 import 'package:sked/models/app_data.dart';
 import 'package:sked/models/app_mode.dart';
+import 'package:sked/models/general_event.dart';
+import 'package:sked/models/general_schedule.dart';
+import 'package:sked/models/general_schedule_data.dart';
 
 void main() {
   late Directory tempDir;
@@ -27,6 +30,33 @@ void main() {
       activeMode: mode,
       studentMode: empty.studentMode,
       generalMode: empty.generalMode,
+    );
+  }
+
+  AppData buildGeneralData(String title) {
+    final empty = AppData.fromJson(const {});
+    const scheduleId = 'cal';
+    return AppData(
+      activeMode: AppMode.general,
+      studentMode: empty.studentMode,
+      generalMode: GeneralScheduleData(
+        activeScheduleId: scheduleId,
+        schedules: [
+          GeneralSchedule(
+            id: scheduleId,
+            name: 'Calendar',
+            events: [
+              GeneralEvent(
+                id: 'event',
+                calendarId: scheduleId,
+                title: title,
+                startDateTimeIso: '2026-05-25T09:00:00.000',
+                endDateTimeIso: '2026-05-25T10:00:00.000',
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -120,6 +150,48 @@ void main() {
       expect(result.data!.activeMode, equals(AppMode.student));
       expect(result.recoveryStatus, equals(RecoveryStatus.restoredFromBackup));
     });
+
+    test(
+      'falls back to .bak when main file has malformed studentMode shape',
+      () async {
+        final backupData = buildGeneralData('Recovered from backup');
+        await backupFile().writeAsString(backupData.encode());
+        await mainFile().writeAsString('{"studentMode":"bad"}');
+
+        final result = await storage.load();
+
+        expect(
+          result.recoveryStatus,
+          equals(RecoveryStatus.restoredFromBackup),
+        );
+        expect(
+          result.data!.generalMode.schedules.single.events.single.title,
+          'Recovered from backup',
+        );
+      },
+    );
+
+    test(
+      'falls back to .bak when main file has malformed general schedules',
+      () async {
+        final backupData = buildGeneralData('Recovered schedule');
+        await backupFile().writeAsString(backupData.encode());
+        await mainFile().writeAsString(
+          '{"generalMode":{"schemaVersion":3,"schedules":["bad"]}}',
+        );
+
+        final result = await storage.load();
+
+        expect(
+          result.recoveryStatus,
+          equals(RecoveryStatus.restoredFromBackup),
+        );
+        expect(
+          result.data!.generalMode.schedules.single.events.single.title,
+          'Recovered schedule',
+        );
+      },
+    );
 
     test(
       'returns failedBackupRestore when both main and .bak are corrupted',

@@ -18,7 +18,7 @@ class _BrowserTimetableStorage implements TimetableStorage {
     }
     try {
       return StorageLoadResult(
-        data: AppData.decode(content),
+        data: AppData.decodeStorageSnapshot(content),
         recoveryStatus: RecoveryStatus.none,
       );
     } catch (_) {
@@ -37,6 +37,5 @@ class _BrowserTimetableStorage implements TimetableStorage {
   }
 
   @override
-  Future<String?> filePath() async =>
-      'browser://local-storage/Sked_app_data';
+  Future<String?> filePath() async => 'browser://local-storage/Sked_app_data';
 }

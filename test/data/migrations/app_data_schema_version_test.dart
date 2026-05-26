@@ -56,6 +56,15 @@ void main() {
       expect(() => AppData.fromJson(json), throwsA(isA<MigrationException>()));
     });
 
+    test('fromJson rejects malformed schemaVersion values', () {
+      for (final value in ['future', '1.0', 1.5, null]) {
+        expect(
+          () => AppData.fromJson({'schemaVersion': value}),
+          throwsA(isA<MigrationException>()),
+        );
+      }
+    });
+
     test('decode runs migrations before constructing AppData', () {
       // Synthesize a JSON document at the current schemaVersion.
       final source = jsonEncode({

@@ -47,6 +47,37 @@ int? _tryDecodeInt(Object? value) {
   return null;
 }
 
+int? _tryDecodeIntegerVersion(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num && value.isFinite && value % 1 == 0) {
+    return value.toInt();
+  }
+  if (value is String) {
+    final trimmed = value.trim();
+    if (RegExp(r'^\d+$').hasMatch(trimmed)) {
+      return int.parse(trimmed);
+    }
+  }
+  return null;
+}
+
+int? _readOptionalIntegerVersion(
+  Map<String, dynamic> json,
+  String key, {
+  required String errorMessage,
+}) {
+  if (!json.containsKey(key)) {
+    return null;
+  }
+  final version = _tryDecodeIntegerVersion(json[key]);
+  if (version == null) {
+    throw FormatException(errorMessage);
+  }
+  return version;
+}
+
 String _stringValue(Object? value, [String fallback = '']) {
   return value is String ? value : fallback;
 }
@@ -57,6 +88,76 @@ String? _nullableStringValue(Object? value) {
 
 List<dynamic> _listValue(Object? value) {
   return value is List ? value : const <dynamic>[];
+}
+
+void _validateStorageMapField(Map<String, dynamic> json, String key) {
+  if (json.containsKey(key) && _asStringKeyedMap(json[key]) == null) {
+    throw FormatException('Stored AppData field "$key" is invalid.');
+  }
+}
+
+void _validateStorageObjectListField(
+  Map<String, dynamic> json,
+  String key, {
+  required String errorMessage,
+}) {
+  final raw = json[key];
+  if (raw == null) {
+    return;
+  }
+  if (raw is! List) {
+    throw FormatException(errorMessage);
+  }
+  if (raw.isNotEmpty &&
+      raw.map(_asStringKeyedMap).whereType<Map<String, dynamic>>().isEmpty) {
+    throw FormatException(errorMessage);
+  }
+}
+
+void _validateStorageStudentMode(Map<String, dynamic> json) {
+  final studentMode = _asStringKeyedMap(json['studentMode']);
+  if (studentMode == null) {
+    return;
+  }
+  _validateStorageObjectListField(
+    studentMode,
+    'timetables',
+    errorMessage: 'Stored student timetables are invalid.',
+  );
+  _validateStorageObjectListField(
+    studentMode,
+    'periodTimeSets',
+    errorMessage: 'Stored student period time sets are invalid.',
+  );
+}
+
+void _validateStorageGeneralMode(Map<String, dynamic> json) {
+  final generalMode = _asStringKeyedMap(json['generalMode']);
+  if (generalMode == null) {
+    return;
+  }
+  _validateStorageObjectListField(
+    generalMode,
+    'schedules',
+    errorMessage: 'Stored general schedules are invalid.',
+  );
+}
+
+void _validateStorageSnapshotShape(Map<String, dynamic> json) {
+  _validateStorageMapField(json, 'studentMode');
+  _validateStorageMapField(json, 'generalMode');
+  _validateStorageObjectListField(
+    json,
+    'timetables',
+    errorMessage: 'Stored legacy timetables are invalid.',
+  );
+  _validateStorageObjectListField(
+    json,
+    'periodTimeSets',
+    errorMessage: 'Stored legacy period time sets are invalid.',
+  );
+  _validateStorageStudentMode(json);
+  _validateStorageGeneralMode(json);
 }
 
 class AppData {
@@ -229,6 +330,13 @@ class AppData {
   factory AppData.decode(String source) {
     return AppData.fromJson(_decodeJsonObject(source));
   }
+
+  factory AppData.decodeStorageSnapshot(String source) {
+    final json = _decodeJsonObject(source);
+    final migrated = appDataMigrationRunner.run(json);
+    _validateStorageSnapshotShape(migrated);
+    return AppData.fromJson(migrated);
+  }
 }
 
 GeneralScheduleData _buildDefaultGeneralMode() {
@@ -260,9 +368,16 @@ class ImportExportEnvelope {
     if (json.containsKey('data') && data == null) {
       throw const FormatException('Import/export data format is invalid.');
     }
+    final version =
+        _readOptionalIntegerVersion(
+          json,
+          'version',
+          errorMessage: 'Import/export version is invalid.',
+        ) ??
+        1;
     return ImportExportEnvelope(
       schema: _stringValue(json['schema']),
-      version: _tryDecodeInt(json['version']) ?? 1,
+      version: version,
       data: data ?? const {},
     );
   }
@@ -411,7 +526,11 @@ class GeneralScheduleExportData {
   };
 
   factory GeneralScheduleExportData.fromJson(Map<String, dynamic> json) {
-    final schemaVersion = _tryDecodeInt(json['schemaVersion']);
+    final schemaVersion = _readOptionalIntegerVersion(
+      json,
+      'schemaVersion',
+      errorMessage: 'General schedule schemaVersion is invalid.',
+    );
     if (schemaVersion != null && schemaVersion > generalScheduleSchemaVersion) {
       throw const FormatException(
         'General schedule schemaVersion is unsupported.',

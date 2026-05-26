@@ -586,6 +586,21 @@ END:VCALENDAR
       );
     });
 
+    test('rejects malformed envelope version values', () {
+      for (final version in ['future', '1.0', 1.5, null]) {
+        final source = jsonEncode({
+          'schema': periodTimesSchema,
+          'version': version,
+          'data': {'periodTimes': []},
+        });
+
+        expect(
+          () => decodePeriodTimesEnvelope(source),
+          throwsA(isA<FormatException>()),
+        );
+      }
+    });
+
     test('rejects envelopes with non-object data fields', () {
       final source = jsonEncode({
         'schema': periodTimesSchema,

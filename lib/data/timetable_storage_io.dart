@@ -137,7 +137,7 @@ class IoTimetableStorage implements TimetableStorage {
       if (content.trim().isEmpty) {
         return const _DecodeAttempt(_Outcome.missing, null);
       }
-      final data = AppData.decode(content);
+      final data = AppData.decodeStorageSnapshot(content);
       return _DecodeAttempt(_Outcome.success, data);
     } catch (_) {
       return const _DecodeAttempt(_Outcome.corrupt, null);

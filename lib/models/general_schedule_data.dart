@@ -38,17 +38,38 @@ int? _intValue(Object? value) {
 }
 
 int? _schemaVersionValue(Object? value) {
-  if (value is num) {
+  if (value is int) {
+    return value.toInt();
+  }
+  if (value is num && value.isFinite && value % 1 == 0) {
     return value.toInt();
   }
   if (value is String) {
-    return int.tryParse(value.trim());
+    final trimmed = value.trim();
+    if (RegExp(r'^\d+$').hasMatch(trimmed)) {
+      return int.parse(trimmed);
+    }
   }
   return null;
 }
 
+int? _readSchemaVersion(Map<String, dynamic> json) {
+  if (!json.containsKey('schemaVersion')) {
+    return null;
+  }
+  final version = _schemaVersionValue(json['schemaVersion']);
+  if (version == null) {
+    throw const FormatException('General schedule schemaVersion is invalid.');
+  }
+  return version;
+}
+
 bool? _boolValue(Object? value) {
   return value is bool ? value : null;
+}
+
+bool _hasLegacySchedulePayload(Map<String, dynamic> json) {
+  return json.containsKey('schedules') || json.containsKey('activeScheduleId');
 }
 
 class GeneralReminderAcknowledgement {
@@ -168,13 +189,13 @@ class GeneralScheduleData {
     Map<String, dynamic> json, {
     String? localeCode,
   }) {
-    final schemaVersion = _schemaVersionValue(json['schemaVersion']) ?? 0;
-    if (schemaVersion > generalScheduleSchemaVersion) {
+    final schemaVersion = _readSchemaVersion(json);
+    if (schemaVersion != null && schemaVersion > generalScheduleSchemaVersion) {
       throw const FormatException(
         'General schedule schemaVersion is unsupported.',
       );
     }
-    if (schemaVersion < 2) {
+    if ((schemaVersion ?? 0) < 2 && !_hasLegacySchedulePayload(json)) {
       return GeneralScheduleData.createDefault();
     }
 

@@ -411,6 +411,35 @@ void main() {
       },
     );
 
+    test(
+      'legacy data without schemaVersion preserves schedules and events',
+      () {
+        final decoded = GeneralScheduleData.fromJson({
+          'activeScheduleId': 'legacy_cal',
+          'schedules': [
+            {
+              'id': 'legacy_cal',
+              'name': 'Legacy Calendar',
+              'events': [
+                {
+                  'id': 'legacy_event',
+                  'title': 'Legacy Event',
+                  'start': '2026-05-25T09:00:00.000',
+                  'end': '2026-05-25T10:00:00.000',
+                },
+              ],
+            },
+          ],
+        });
+
+        expect(decoded.activeScheduleId, 'legacy_cal');
+        expect(decoded.schedules, hasLength(1));
+        expect(decoded.schedules.single.name, 'Legacy Calendar');
+        expect(decoded.schedules.single.events.single.id, 'legacy_event');
+        expect(decoded.schedules.single.events.single.calendarId, 'legacy_cal');
+      },
+    );
+
     test('fromJson rejects future schemaVersion', () {
       expect(
         () => GeneralScheduleData.fromJson({
@@ -428,6 +457,19 @@ void main() {
       expect(
         () => GeneralScheduleData.fromJson({
           'schemaVersion': '${generalScheduleSchemaVersion + 1}',
+          'activeScheduleId': 'sched1',
+          'schedules': [
+            {'id': 'sched1', 'name': 'My Schedule', 'events': <Object>[]},
+          ],
+        }),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('fromJson rejects malformed schemaVersion values', () {
+      expect(
+        () => GeneralScheduleData.fromJson({
+          'schemaVersion': 'future',
           'activeScheduleId': 'sched1',
           'schedules': [
             {'id': 'sched1', 'name': 'My Schedule', 'events': <Object>[]},

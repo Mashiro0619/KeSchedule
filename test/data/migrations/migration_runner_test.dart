@@ -98,6 +98,17 @@ void main() {
       },
     );
 
+    test('throws when schemaVersion is present but malformed', () {
+      final runner = MigrationRunner(targetVersion: 1, migrations: const []);
+
+      for (final value in ['future', '1.0', 1.5, null]) {
+        expect(
+          () => runner.run({'schemaVersion': value}),
+          throwsA(isA<MigrationException>()),
+        );
+      }
+    });
+
     test('throws when no migration path bridges versions', () {
       final m1to2 = _FnMigration(from: 1, to: 2, transform: (json) => json);
       // Missing v2 -> v3 migration; target is v3.
