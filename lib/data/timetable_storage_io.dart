@@ -32,7 +32,22 @@ class IoTimetableStorage implements TimetableStorage {
   @override
   Future<StorageLoadResult> load() async {
     final main = await _resolveFile();
+    final tmp = File('${main.path}$_tempSuffix');
     final backup = File('${main.path}$_backupSuffix');
+
+    final tmpAttempt = await _tryDecode(tmp);
+    if (tmpAttempt.outcome == _Outcome.success) {
+      try {
+        await _promoteTempToMain(tmp: tmp, main: main, backup: backup);
+      } catch (_) {
+        // The decoded temp snapshot is still usable even if promotion has to
+        // wait for the next successful save.
+      }
+      return StorageLoadResult(
+        data: tmpAttempt.data,
+        recoveryStatus: RecoveryStatus.none,
+      );
+    }
 
     final mainAttempt = await _tryDecode(main);
     if (mainAttempt.outcome == _Outcome.success) {
@@ -111,6 +126,27 @@ class IoTimetableStorage implements TimetableStorage {
     final directory = await _directoryProvider();
     final filePath = path.join(directory.path, _fileName);
     return File(filePath);
+  }
+
+  Future<void> _promoteTempToMain({
+    required File tmp,
+    required File main,
+    required File backup,
+  }) async {
+    if (!await main.exists()) {
+      await tmp.rename(main.path);
+      return;
+    }
+    final mainAttempt = await _tryDecode(main);
+    if (mainAttempt.outcome == _Outcome.success) {
+      if (await backup.exists()) {
+        await backup.delete();
+      }
+      await main.rename(backup.path);
+    } else {
+      await main.delete();
+    }
+    await tmp.rename(main.path);
   }
 
   Future<void> _restoreBackupToMain({

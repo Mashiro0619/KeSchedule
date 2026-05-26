@@ -404,17 +404,20 @@ void main() {
 
       await provider.deleteFutureGeneralOccurrences(occurrence);
 
+      expect(storage.data!.generalMode.reminderAcknowledgements, hasLength(1));
       expect(
-        storage.data!.generalMode.reminderAcknowledgements.map(
-          (item) => item.occurrenceKey,
+        generalOccurrenceKeyMatches(
+          storage
+              .data!
+              .generalMode
+              .reminderAcknowledgements
+              .single
+              .occurrenceKey,
+          calendarId: 'cal1',
+          eventId: 'repeat1',
+          startDateTimeIso: '2026-05-18T09:00:00.000',
         ),
-        [
-          buildGeneralOccurrenceKey(
-            'cal1',
-            'repeat1',
-            '2026-05-18T09:00:00.000',
-          ),
-        ],
+        isTrue,
       );
     },
   );

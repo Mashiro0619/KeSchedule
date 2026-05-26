@@ -996,6 +996,54 @@ END:VCALENDAR
       },
     );
 
+    test(
+      'remaps general acknowledgement keys by occurrence start for duplicate raw event ids',
+      () {
+        const firstStart = '2026-05-25T09:00:00.000';
+        const secondStart = '2026-05-26T09:00:00.000';
+        final source = AppData(
+          activeMode: AppMode.general,
+          studentMode: studentData(),
+          generalMode: GeneralScheduleData(
+            activeScheduleId: 'calendar',
+            schedules: [
+              schedule(
+                id: 'calendar',
+                name: 'Calendar',
+                events: [
+                  event(id: 'event', calendarId: 'calendar'),
+                  event(id: 'event', calendarId: 'calendar').copyWith(
+                    startDateTimeIso: secondStart,
+                    endDateTimeIso: '2026-05-26T10:00:00.000',
+                  ),
+                ],
+              ),
+            ],
+            reminderAcknowledgements: const [
+              GeneralReminderAcknowledgement(
+                occurrenceKey: 'calendar|event|$secondStart',
+                updatedAtIso: '2026-05-26T08:55:00.000',
+              ),
+            ],
+          ),
+        );
+
+        final normalized = service.normalizeAppData(
+          source,
+          localeCode: defaultLocaleCode,
+        );
+
+        final events = normalized.generalMode.schedules.single.events;
+        expect(events.map((item) => item.id), ['event', 'event_copy']);
+        expect(events.first.startDateTimeIso, firstStart);
+        expect(events.last.startDateTimeIso, secondStart);
+        expect(
+          normalized.generalMode.reminderAcknowledgements.single.occurrenceKey,
+          buildGeneralOccurrenceKey('calendar', 'event_copy', secondStart),
+        );
+      },
+    );
+
     test('keeps preview ids stable for files with missing timetable ids', () {
       final source = timetableEnvelope(
         TimetableExportData(

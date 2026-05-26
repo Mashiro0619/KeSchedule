@@ -1299,15 +1299,21 @@ GeneralScheduleData _normalizeGeneralScheduleData(GeneralScheduleData data) {
         existingIds: eventIds,
       );
       eventIds.add(eventId);
+      final eventWithIds = event.copyWith(id: eventId, calendarId: scheduleId);
+      final normalizedEventWithIds = eventWithIds.normalized(
+        fallbackCalendarId: scheduleId,
+      );
       occurrenceKeyRemaps.add(
         _GeneralOccurrenceKeyRemap(
           rawScheduleId: rawScheduleId,
           rawEventId: rawEventId,
+          rawStartDateTimeIso: event.startDateTimeIso.trim(),
           scheduleId: scheduleId,
           eventId: eventId,
+          startDateTimeIso: normalizedEventWithIds.startDateTimeIso,
         ),
       );
-      events.add(event.copyWith(id: eventId, calendarId: scheduleId));
+      events.add(normalizedEventWithIds);
     }
 
     schedules.add(
@@ -1367,51 +1373,122 @@ String _remapGeneralOccurrenceKey(
 ) {
   final parsed = parseGeneralOccurrenceKey(occurrenceKey);
   if (parsed != null) {
-    for (final remap in remaps) {
-      if (remap.matches(parsed.calendarId, parsed.eventId)) {
-        return buildGeneralOccurrenceKey(
-          remap.scheduleId,
-          remap.eventId,
-          parsed.startDateTimeIso,
-        );
-      }
-    }
-    return buildGeneralOccurrenceKey(
-      parsed.calendarId,
-      parsed.eventId,
-      parsed.startDateTimeIso,
+    final remap = _selectGeneralOccurrenceKeyRemap(
+      remaps,
+      calendarId: parsed.calendarId,
+      eventId: parsed.eventId,
+      startDateTimeIso: parsed.startDateTimeIso,
     );
-  }
-  for (final remap in remaps) {
-    final legacyPrefix = '${remap.rawScheduleId}|${remap.rawEventId}|';
-    if (occurrenceKey.startsWith(legacyPrefix)) {
+    if (remap != null) {
+      if (remap.mapsToSameIds(
+        calendarId: parsed.calendarId,
+        eventId: parsed.eventId,
+      )) {
+        return occurrenceKey;
+      }
       return buildGeneralOccurrenceKey(
         remap.scheduleId,
         remap.eventId,
-        occurrenceKey.substring(legacyPrefix.length),
+        parsed.startDateTimeIso,
+      );
+    }
+    return occurrenceKey;
+  }
+  final legacyCandidates = <_GeneralOccurrenceKeyRemap>[];
+  String? legacyStartDateTimeIso;
+  for (final remap in remaps) {
+    final legacyPrefix = '${remap.rawScheduleId}|${remap.rawEventId}|';
+    if (occurrenceKey.startsWith(legacyPrefix)) {
+      legacyStartDateTimeIso = occurrenceKey.substring(legacyPrefix.length);
+      legacyCandidates.add(remap);
+    }
+  }
+  if (legacyStartDateTimeIso != null &&
+      tryParseStrictIsoDateTime(legacyStartDateTimeIso) != null) {
+    final remap = _selectGeneralOccurrenceKeyRemap(
+      legacyCandidates,
+      calendarId: legacyCandidates.first.rawScheduleId,
+      eventId: legacyCandidates.first.rawEventId,
+      startDateTimeIso: legacyStartDateTimeIso,
+    );
+    if (remap != null) {
+      if (remap.mapsToSameIds(
+        calendarId: remap.rawScheduleId,
+        eventId: remap.rawEventId,
+      )) {
+        return occurrenceKey;
+      }
+      return buildGeneralOccurrenceKey(
+        remap.scheduleId,
+        remap.eventId,
+        legacyStartDateTimeIso,
       );
     }
   }
   return occurrenceKey;
 }
 
+_GeneralOccurrenceKeyRemap? _selectGeneralOccurrenceKeyRemap(
+  Iterable<_GeneralOccurrenceKeyRemap> remaps, {
+  required String calendarId,
+  required String eventId,
+  required String startDateTimeIso,
+}) {
+  final candidates = remaps
+      .where((remap) => remap.matchesIds(calendarId, eventId))
+      .toList();
+  if (candidates.length == 1) {
+    return candidates.single;
+  }
+  final startCandidates = candidates
+      .where((remap) => remap.matchesStart(startDateTimeIso))
+      .toList();
+  return startCandidates.length == 1 ? startCandidates.single : null;
+}
+
 class _GeneralOccurrenceKeyRemap {
   const _GeneralOccurrenceKeyRemap({
     required this.rawScheduleId,
     required this.rawEventId,
+    required this.rawStartDateTimeIso,
     required this.scheduleId,
     required this.eventId,
+    required this.startDateTimeIso,
   });
 
   final String rawScheduleId;
   final String rawEventId;
+  final String rawStartDateTimeIso;
   final String scheduleId;
   final String eventId;
+  final String startDateTimeIso;
 
-  bool matches(String calendarId, String eventId) {
-    return (calendarId == rawScheduleId || calendarId == scheduleId) &&
-        (eventId == rawEventId || eventId == this.eventId);
+  bool matchesIds(String calendarId, String eventId) {
+    final matchesRaw = calendarId == rawScheduleId && eventId == rawEventId;
+    final matchesNormalized =
+        calendarId == scheduleId && eventId == this.eventId;
+    return matchesRaw || matchesNormalized;
   }
+
+  bool matchesStart(String startDateTimeIso) {
+    return _sameOccurrenceStart(startDateTimeIso, rawStartDateTimeIso) ||
+        _sameOccurrenceStart(startDateTimeIso, this.startDateTimeIso);
+  }
+
+  bool mapsToSameIds({required String calendarId, required String eventId}) {
+    return scheduleId == calendarId && this.eventId == eventId;
+  }
+}
+
+bool _sameOccurrenceStart(String left, String right) {
+  if (left == right) {
+    return true;
+  }
+  final leftParsed = tryParseStrictIsoDateTime(left);
+  final rightParsed = tryParseStrictIsoDateTime(right);
+  return leftParsed != null &&
+      rightParsed != null &&
+      leftParsed.isAtSameMomentAs(rightParsed);
 }
 
 Set<String> _generalEventIds(Iterable<GeneralSchedule> schedules) {

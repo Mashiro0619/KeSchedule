@@ -688,6 +688,62 @@ void main() {
       }
     });
 
+    test(
+      'normalized data remaps reminder keys for duplicate raw event ids',
+      () {
+        const firstStart = '2026-05-22T09:00:00.000';
+        const secondStart = '2026-05-23T09:00:00.000';
+        final data = GeneralScheduleData(
+          activeScheduleId: 'dup',
+          schedules: [
+            GeneralSchedule(
+              id: 'dup',
+              name: 'First',
+              events: [
+                GeneralEvent(
+                  id: 'evt',
+                  calendarId: 'dup',
+                  title: 'First event',
+                  startDateTimeIso: firstStart,
+                  endDateTimeIso: '2026-05-22T10:00:00.000',
+                ),
+              ],
+            ),
+            GeneralSchedule(
+              id: 'dup',
+              name: 'Second',
+              events: [
+                GeneralEvent(
+                  id: 'evt',
+                  calendarId: 'dup',
+                  title: 'Second event',
+                  startDateTimeIso: secondStart,
+                  endDateTimeIso: '2026-05-23T10:00:00.000',
+                ),
+              ],
+            ),
+          ],
+          reminderAcknowledgements: const [
+            GeneralReminderAcknowledgement(
+              occurrenceKey: 'dup|evt|2026-05-23T09:00:00.000',
+              updatedAtIso: '2026-05-23T08:55:00.000',
+            ),
+          ],
+        );
+
+        final normalized = data.normalized();
+
+        expect(normalized.schedules.map((item) => item.id), [
+          'dup',
+          'dup_copy',
+        ]);
+        expect(
+          normalized.reminderAcknowledgements.single.occurrenceKey,
+          'v2|dup_copy|evt_copy|2026-05-23T09%3A00%3A00.000',
+        );
+      },
+    );
+
     test('normalized data assigns stable ids for missing ids', () {
       final data = GeneralScheduleData(
         activeScheduleId: '',

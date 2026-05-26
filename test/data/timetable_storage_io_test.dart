@@ -112,6 +112,48 @@ void main() {
       expect(await tempFile().exists(), isFalse);
     });
 
+    test('promotes valid .tmp when save crashed before rotation', () async {
+      final mainData = buildAppData(AppMode.student);
+      final tempData = buildAppData(AppMode.general);
+      await mainFile().writeAsString(mainData.encode());
+      await tempFile().writeAsString(tempData.encode());
+
+      final result = await storage.load();
+
+      expect(result.data!.activeMode, equals(AppMode.general));
+      expect(result.recoveryStatus, equals(RecoveryStatus.none));
+      expect(await tempFile().exists(), isFalse);
+      expect(
+        AppData.decode(await mainFile().readAsString()).activeMode,
+        equals(AppMode.general),
+      );
+      expect(
+        AppData.decode(await backupFile().readAsString()).activeMode,
+        equals(AppMode.student),
+      );
+    });
+
+    test('promotes valid .tmp when save crashed after main rotation', () async {
+      final backupData = buildAppData(AppMode.student);
+      final tempData = buildAppData(AppMode.general);
+      await backupFile().writeAsString(backupData.encode());
+      await tempFile().writeAsString(tempData.encode());
+
+      final result = await storage.load();
+
+      expect(result.data!.activeMode, equals(AppMode.general));
+      expect(result.recoveryStatus, equals(RecoveryStatus.none));
+      expect(await tempFile().exists(), isFalse);
+      expect(
+        AppData.decode(await mainFile().readAsString()).activeMode,
+        equals(AppMode.general),
+      );
+      expect(
+        AppData.decode(await backupFile().readAsString()).activeMode,
+        equals(AppMode.student),
+      );
+    });
+
     test('falls back to .bak when main file is corrupted', () async {
       final v1 = buildAppData(AppMode.student);
       final v2 = buildAppData(AppMode.general);
