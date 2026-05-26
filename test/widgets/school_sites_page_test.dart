@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +10,7 @@ import 'package:sked/models/timetable_models.dart';
 import 'package:sked/providers/timetable_provider.dart';
 import 'package:sked/screens/school_html_import_page.dart';
 import 'package:sked/screens/school_sites_page.dart';
+import 'package:sked/services/export_service.dart';
 import 'package:sked/services/privacy_service.dart';
 import 'package:sked/services/school_site_service.dart';
 import 'package:sked/services/school_site_store.dart';
@@ -54,6 +57,19 @@ class _NoopPrivacyService extends PrivacyService {
   Future<String?> fetchCurrentPrivacyPolicyVersion() async => null;
 }
 
+class _CompletingExportService extends ExportService {
+  final started = Completer<void>();
+  final result = Completer<ExportSaveResult>();
+
+  @override
+  Future<ExportSaveResult> saveFile(ExportPayload payload) {
+    if (!started.isCompleted) {
+      started.complete();
+    }
+    return result.future;
+  }
+}
+
 Future<TimetableProvider> _createProvider() async {
   final provider = TimetableProvider(
     storage: _MemoryTimetableStorage(
@@ -71,8 +87,9 @@ Future<TimetableProvider> _createProvider() async {
 
 Future<void> _pumpSchoolSitesPage(
   WidgetTester tester,
-  TimetableProvider provider,
-) async {
+  TimetableProvider provider, {
+  ExportService? exportService,
+}) async {
   final siteService = SchoolSiteService(store: _MemorySchoolSiteStore('[]'));
   await tester.pumpWidget(
     ChangeNotifierProvider<TimetableProvider>.value(
@@ -81,7 +98,10 @@ Future<void> _pumpSchoolSitesPage(
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: SchoolSitesPage(siteService: siteService),
+        home: SchoolSitesPage(
+          siteService: siteService,
+          exportService: exportService,
+        ),
       ),
     ),
   );
@@ -128,5 +148,28 @@ void main() {
       find.byType(SchoolHtmlImportPage, skipOffstage: false),
       findsOneWidget,
     );
+  });
+
+  testWidgets('JSON save ignores results after the page is disposed', (
+    tester,
+  ) async {
+    final provider = await _createProvider();
+    final exportService = _CompletingExportService();
+    await _pumpSchoolSitesPage(tester, provider, exportService: exportService);
+
+    final l10n = AppLocalizations.of(tester.element(find.byType(Scaffold)));
+    await tester.tap(find.byTooltip(l10n.importExport));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.schoolSitesSaveJson));
+    await tester.pump();
+    await exportService.started.future;
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    exportService.result.complete(
+      const ExportSaveResult(status: ExportSaveStatus.permissionDenied),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
   });
 }

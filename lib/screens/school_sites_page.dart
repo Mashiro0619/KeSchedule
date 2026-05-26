@@ -533,6 +533,9 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
         content: await _siteService.exportSites(_sites),
       ),
     );
+    if (!mounted) {
+      return;
+    }
 
     switch (result.status) {
       case ExportSaveStatus.saved:

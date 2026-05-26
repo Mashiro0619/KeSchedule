@@ -33,6 +33,7 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
   bool _isParsing = false;
   bool _isLoadingSchools = true;
   bool _canGoBack = false;
+  bool _hasRequestedSchoolsLoad = false;
   bool _hasStartedInitialLoad = false;
   String _currentUrl = '';
   String _currentTitle = '';
@@ -49,9 +50,12 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
           defaultTargetPlatform == TargetPlatform.windows);
 
   @override
-  void initState() {
-    super.initState();
-    _loadSchools();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasRequestedSchoolsLoad) {
+      _hasRequestedSchoolsLoad = true;
+      unawaited(_loadSchools());
+    }
   }
 
   @override

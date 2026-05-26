@@ -21,22 +21,27 @@ enum _PeriodTimesMenuAction {
 
 /// 这块单独拆页，不塞进设置弹窗里，不然一口气改多节时间会很难操作。
 class PeriodTimesPage extends StatefulWidget {
-  const PeriodTimesPage({super.key, required this.periodTimeSetId});
+  const PeriodTimesPage({
+    super.key,
+    required this.periodTimeSetId,
+    ExportService? exportService,
+  }) : exportService = exportService ?? const ExportService();
 
   final String periodTimeSetId;
+  final ExportService exportService;
 
   @override
   State<PeriodTimesPage> createState() => _PeriodTimesPageState();
 }
 
 class _PeriodTimesPageState extends State<PeriodTimesPage> {
-  static const _exportService = ExportService();
-
   late final TextEditingController _nameController;
   late List<CoursePeriodTime> _periodTimes;
   var _loading = true;
   var _timePickerOpen = false;
   var _menuActionInProgress = false;
+
+  ExportService get _exportService => widget.exportService;
 
   @override
   void initState() {
@@ -448,6 +453,9 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
         content: encodePeriodTimesEnvelope(_periodTimes),
       ),
     );
+    if (!mounted) {
+      return;
+    }
 
     switch (result.status) {
       case ExportSaveStatus.saved:

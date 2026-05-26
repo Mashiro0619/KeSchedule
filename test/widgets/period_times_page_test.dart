@@ -10,6 +10,7 @@ import 'package:sked/l10n/app_localizations.dart';
 import 'package:sked/models/timetable_models.dart';
 import 'package:sked/providers/timetable_provider.dart';
 import 'package:sked/screens/period_times_page.dart';
+import 'package:sked/services/export_service.dart';
 
 class _MemoryTimetableStorage implements TimetableStorage {
   _MemoryTimetableStorage(this.data);
@@ -29,6 +30,19 @@ class _MemoryTimetableStorage implements TimetableStorage {
   Future<String?> filePath() async => 'memory://period-times-page-test';
 }
 
+class _CompletingExportService extends ExportService {
+  final started = Completer<void>();
+  final result = Completer<ExportSaveResult>();
+
+  @override
+  Future<ExportSaveResult> saveFile(ExportPayload payload) {
+    if (!started.isCompleted) {
+      started.complete();
+    }
+    return result.future;
+  }
+}
+
 Future<TimetableProvider> _createProvider() async {
   final provider = TimetableProvider(
     storage: _MemoryTimetableStorage(
@@ -45,16 +59,20 @@ Future<TimetableProvider> _createProvider() async {
 
 Future<void> _pumpPeriodTimesPage(
   WidgetTester tester,
-  TimetableProvider provider,
-) async {
+  TimetableProvider provider, {
+  ExportService? exportService,
+}) async {
   await tester.pumpWidget(
     ChangeNotifierProvider<TimetableProvider>.value(
       value: provider,
-      child: const MaterialApp(
-        locale: Locale('en'),
+      child: MaterialApp(
+        locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: PeriodTimesPage(periodTimeSetId: defaultPeriodTimeSetId),
+        home: PeriodTimesPage(
+          periodTimeSetId: defaultPeriodTimeSetId,
+          exportService: exportService,
+        ),
       ),
     ),
   );
@@ -144,5 +162,28 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Import period template'), findsOneWidget);
+  });
+
+  testWidgets('save template ignores results after the page is disposed', (
+    tester,
+  ) async {
+    final provider = await _createProvider();
+    final exportService = _CompletingExportService();
+    await _pumpPeriodTimesPage(tester, provider, exportService: exportService);
+
+    final l10n = AppLocalizations.of(tester.element(find.byType(Scaffold)));
+    await tester.tap(find.byTooltip(l10n.importExport));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.saveTemplateToFile));
+    await tester.pump();
+    await exportService.started.future;
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    exportService.result.complete(
+      const ExportSaveResult(status: ExportSaveStatus.permissionDenied),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
   });
 }
