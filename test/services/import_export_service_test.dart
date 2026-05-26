@@ -827,6 +827,63 @@ END:VCALENDAR
       expect(normalized.studentMode.conflictDisplayCourseIds, isEmpty);
     });
 
+    test('keeps versioned conflict preferences for ids with separators', () {
+      final firstCourse = course(id: 'course,one', name: 'Comma');
+      final secondCourse = course(id: 'course|two', name: 'Pipe');
+      final conflictKey = buildConflictKeyForCourses('table|raw', 1, [
+        firstCourse,
+        secondCourse,
+      ]);
+      final source = AppData(
+        activeMode: AppMode.student,
+        studentMode: StudentModeData(
+          activeTimetableId: 'table|raw',
+          timetables: [
+            timetable(id: 'table|raw', courses: [firstCourse, secondCourse]),
+          ],
+          periodTimeSets: [periodSet(id: 'set1')],
+          conflictDisplayCourseIds: {conflictKey: secondCourse.id},
+        ),
+        generalMode: GeneralScheduleData.createDefault(),
+      );
+
+      final normalized = service.normalizeAppData(
+        source,
+        localeCode: defaultLocaleCode,
+      );
+
+      expect(normalized.studentMode.conflictDisplayCourseIds, {
+        conflictKey: secondCourse.id,
+      });
+    });
+
+    test('drops malformed versioned conflict preference keys', () {
+      final source = AppData(
+        activeMode: AppMode.student,
+        studentMode: StudentModeData(
+          activeTimetableId: 'table1',
+          timetables: [
+            timetable(
+              id: 'table1',
+              courses: [course(id: 'course1')],
+            ),
+          ],
+          periodTimeSets: [periodSet(id: 'set1')],
+          conflictDisplayCourseIds: const {
+            'v2|table1|1|480|525|course%ZZ': 'course1',
+          },
+        ),
+        generalMode: GeneralScheduleData.createDefault(),
+      );
+
+      final normalized = service.normalizeAppData(
+        source,
+        localeCode: defaultLocaleCode,
+      );
+
+      expect(normalized.studentMode.conflictDisplayCourseIds, isEmpty);
+    });
+
     test(
       'normalizes unsafe general ids and migrates reminder acknowledgement keys',
       () {

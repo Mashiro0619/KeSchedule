@@ -173,16 +173,16 @@ class UpdateService {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Invalid custom update response.');
     }
-    final version = normalizeUpdateVersion(
-      decoded['version']?.toString() ?? '',
+    final version = _readRemoteVersionField(
+      decoded,
+      'version',
+      invalidMessage: 'Invalid custom update response.',
+      emptyMessage: 'Custom update version is empty.',
     );
-    if (version.isEmpty) {
-      throw const FormatException('Custom update version is empty.');
-    }
     return _RemoteUpdateInfo(
       version: version,
       releaseUrl: latestReleaseUrl,
-      updateContent: decoded['updateContent']?.toString().trim() ?? '',
+      updateContent: _optionalStringField(decoded, 'updateContent'),
     );
   }
 
@@ -204,17 +204,39 @@ class UpdateService {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Invalid latest release response.');
     }
-    final tagName = decoded['tag_name']?.toString() ?? '';
-    final version = normalizeUpdateVersion(tagName);
-    if (version.isEmpty) {
-      throw const FormatException('Latest release version is empty.');
-    }
+    final version = _readRemoteVersionField(
+      decoded,
+      'tag_name',
+      invalidMessage: 'Invalid latest release response.',
+      emptyMessage: 'Latest release version is empty.',
+    );
+    final releaseUrl = _optionalStringField(decoded, 'html_url');
     return _RemoteUpdateInfo(
       version: version,
-      releaseUrl: decoded['html_url']?.toString().trim().isNotEmpty == true
-          ? decoded['html_url'].toString().trim()
-          : latestReleaseUrl,
-      updateContent: decoded['body']?.toString().trim() ?? '',
+      releaseUrl: releaseUrl.isNotEmpty ? releaseUrl : latestReleaseUrl,
+      updateContent: _optionalStringField(decoded, 'body'),
     );
   }
+}
+
+String _readRemoteVersionField(
+  Map<String, dynamic> json,
+  String key, {
+  required String invalidMessage,
+  required String emptyMessage,
+}) {
+  final raw = json[key];
+  if (raw is! String) {
+    throw FormatException(invalidMessage);
+  }
+  final version = normalizeUpdateVersion(raw);
+  if (version.isEmpty) {
+    throw FormatException(emptyMessage);
+  }
+  return version;
+}
+
+String _optionalStringField(Map<String, dynamic> json, String key) {
+  final raw = json[key];
+  return raw is String ? raw.trim() : '';
 }

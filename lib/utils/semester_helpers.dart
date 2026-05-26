@@ -14,7 +14,9 @@ String formatDayOfWeekLabel(
   String localeCode = defaultLocaleCode,
 }) {
   final normalizedDay = normalizeDayOfWeek(dayOfWeek);
-  return AppStrings.forLocaleCode(localeCode).formatDayOfWeekLabel(normalizedDay);
+  return AppStrings.forLocaleCode(
+    localeCode,
+  ).formatDayOfWeekLabel(normalizedDay);
 }
 
 String formatWeekdayShortLabel(
@@ -22,7 +24,9 @@ String formatWeekdayShortLabel(
   String localeCode = defaultLocaleCode,
 }) {
   final normalizedDay = normalizeDayOfWeek(dayOfWeek);
-  return AppStrings.forLocaleCode(localeCode).formatWeekdayShortLabel(normalizedDay);
+  return AppStrings.forLocaleCode(
+    localeCode,
+  ).formatWeekdayShortLabel(normalizedDay);
 }
 
 String formatMonthLabel(int month, {String localeCode = defaultLocaleCode}) {
@@ -138,13 +142,15 @@ TimetableLiveCourseTarget? _courseTargetForDay({
   required String? Function(String conflictKey)? displayedCourseIdForConflict,
   int? nowMinutes,
 }) {
-  final dayCourses = timetable.courses
-      .where(
-        (course) =>
-            course.dayOfWeek == weekday && matchesSemesterWeek(course, targetWeek),
-      )
-      .toList()
-    ..sort(_compareCoursesByStart);
+  final dayCourses =
+      timetable.courses
+          .where(
+            (course) =>
+                course.dayOfWeek == weekday &&
+                matchesSemesterWeek(course, targetWeek),
+          )
+          .toList()
+        ..sort(_compareCoursesByStart);
   if (dayCourses.isEmpty) {
     return null;
   }
@@ -153,7 +159,8 @@ TimetableLiveCourseTarget? _courseTargetForDay({
     final currentCourses = dayCourses
         .where(
           (course) =>
-              course.startMinutes <= nowMinutes && nowMinutes < course.endMinutes,
+              course.startMinutes <= nowMinutes &&
+              nowMinutes < course.endMinutes,
         )
         .toList();
     if (currentCourses.isNotEmpty) {
@@ -240,7 +247,8 @@ String _resolveDisplayedCourseId(
       displayedCourseIdForConflict?.call(conflictKey),
     ).id;
   }
-  final prioritizedCourses = [...sortedCourses]..sort(compareCoursePaintPriority);
+  final prioritizedCourses = [...sortedCourses]
+    ..sort(compareCoursePaintPriority);
   return prioritizedCourses.first.id;
 }
 
@@ -320,7 +328,86 @@ String buildConflictKeyForCourses(
   final endMinutes = courses
       .map((item) => item.endMinutes)
       .reduce((a, b) => a > b ? a : b);
-  return '$timetableId|$weekday|$startMinutes|$endMinutes|${courseIds.join(',')}';
+  return [
+    'v2',
+    Uri.encodeComponent(timetableId),
+    weekday.toString(),
+    startMinutes.toString(),
+    endMinutes.toString(),
+    courseIds.map(Uri.encodeComponent).join(','),
+  ].join('|');
+}
+
+class ConflictKeyParts {
+  const ConflictKeyParts({
+    required this.timetableId,
+    required this.weekday,
+    required this.startMinutes,
+    required this.endMinutes,
+    required this.courseIds,
+  });
+
+  final String timetableId;
+  final int weekday;
+  final int startMinutes;
+  final int endMinutes;
+  final Set<String> courseIds;
+}
+
+ConflictKeyParts? parseConflictKey(String key) {
+  final parts = key.split('|');
+  if (parts.length == 6 && parts.first == 'v2') {
+    return _parseVersionedConflictKey(parts);
+  }
+  if (parts.length == 5) {
+    return _parseLegacyConflictKey(parts);
+  }
+  return null;
+}
+
+ConflictKeyParts? _parseVersionedConflictKey(List<String> parts) {
+  final weekday = int.tryParse(parts[2]);
+  final startMinutes = int.tryParse(parts[3]);
+  final endMinutes = int.tryParse(parts[4]);
+  if (weekday == null || startMinutes == null || endMinutes == null) {
+    return null;
+  }
+  try {
+    return ConflictKeyParts(
+      timetableId: Uri.decodeComponent(parts[1]),
+      weekday: weekday,
+      startMinutes: startMinutes,
+      endMinutes: endMinutes,
+      courseIds: parts[5]
+          .split(',')
+          .where((courseId) => courseId.trim().isNotEmpty)
+          .map(Uri.decodeComponent)
+          .toSet(),
+    );
+  } on FormatException {
+    return null;
+  } on ArgumentError {
+    return null;
+  }
+}
+
+ConflictKeyParts? _parseLegacyConflictKey(List<String> parts) {
+  final weekday = int.tryParse(parts[1]);
+  final startMinutes = int.tryParse(parts[2]);
+  final endMinutes = int.tryParse(parts[3]);
+  if (weekday == null || startMinutes == null || endMinutes == null) {
+    return null;
+  }
+  return ConflictKeyParts(
+    timetableId: parts[0],
+    weekday: weekday,
+    startMinutes: startMinutes,
+    endMinutes: endMinutes,
+    courseIds: parts[4]
+        .split(',')
+        .where((courseId) => courseId.trim().isNotEmpty)
+        .toSet(),
+  );
 }
 
 int compareCoursePaintPriority(CourseItem a, CourseItem b) {

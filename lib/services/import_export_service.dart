@@ -978,8 +978,12 @@ Set<String> _courseIdsForTimetables(
 }
 
 bool _conflictKeyContainsTimetable(String conflictKey, String timetableId) {
-  final parts = conflictKey.split('|');
-  return parts.isNotEmpty && parts.first == timetableId;
+  final parsed = parseConflictKey(conflictKey);
+  if (parsed != null) {
+    return parsed.timetableId == timetableId;
+  }
+  final legacyParts = conflictKey.split('|');
+  return legacyParts.isNotEmpty && legacyParts.first == timetableId;
 }
 
 Map<String, String> _filterConflictDisplayCourseIds(
@@ -991,18 +995,15 @@ Map<String, String> _filterConflictDisplayCourseIds(
       timetable.id: timetable.courses.map((course) => course.id).toSet(),
   };
   preferences.removeWhere((key, value) {
-    final parts = key.split('|');
-    if (parts.length < 5) {
+    final parsed = parseConflictKey(key);
+    if (parsed == null) {
       return true;
     }
-    final timetableCourseIds = courseIdsByTimetable[parts.first];
+    final timetableCourseIds = courseIdsByTimetable[parsed.timetableId];
     if (timetableCourseIds == null || !timetableCourseIds.contains(value)) {
       return true;
     }
-    final keyedCourseIds = parts.last
-        .split(',')
-        .where((courseId) => courseId.trim().isNotEmpty)
-        .toSet();
+    final keyedCourseIds = parsed.courseIds;
     return keyedCourseIds.isEmpty ||
         keyedCourseIds.any(
           (courseId) => !timetableCourseIds.contains(courseId),

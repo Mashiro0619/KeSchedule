@@ -985,7 +985,7 @@ List<CourseLayout> _buildDayLayouts({
   final layouts = <CourseLayout>[];
   for (final group in buildOverlapGroups(dayCourses)) {
     if (_isFullConflictGroup(group.courses)) {
-      final conflictKey = _buildConflictKey(
+      final conflictKey = buildConflictKeyForCourses(
         timetable.id,
         weekday,
         group.courses,
@@ -1267,19 +1267,6 @@ int _compareDisplayedCourseChoice(CourseItem a, CourseItem b) {
     return startCompare;
   }
   return a.id.compareTo(b.id);
-}
-
-String _buildConflictKey(
-  String timetableId,
-  int weekday,
-  List<CourseItem> courses,
-) {
-  final courseIds = courses.map((item) => item.id).toList()..sort();
-  final startMinutes = courses
-      .map((item) => item.startMinutes)
-      .reduce(math.min);
-  final endMinutes = courses.map((item) => item.endMinutes).reduce(math.max);
-  return '$timetableId|$weekday|$startMinutes|$endMinutes|${courseIds.join(',')}';
 }
 
 /// 晚开始的课压在上层，更符合肉眼对重叠关系的直觉；开始时间一样时再优先短课。

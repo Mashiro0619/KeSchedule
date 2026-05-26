@@ -272,16 +272,39 @@ void main() {
     test('stores the displayed course choice for a conflict', () {
       final source = data();
 
+      final conflictKey = buildConflictKeyForCourses('table1', 1, [
+        course(id: 'course1'),
+        course(id: 'course2'),
+      ]);
       final updated = service.setDisplayedCourseForConflict(
         source,
-        'table1|1|480|525|course1,course2',
+        conflictKey,
         'course2',
       );
 
-      expect(
-        updated.conflictDisplayCourseIds['table1|1|480|525|course1,course2'],
-        'course2',
-      );
+      expect(updated.conflictDisplayCourseIds[conflictKey], 'course2');
+    });
+
+    test('builds parseable conflict keys for ids with separators', () {
+      final conflictKey = buildConflictKeyForCourses('table|1', 1, [
+        course(id: 'course,1'),
+        course(id: 'course|2'),
+      ]);
+      final parsed = parseConflictKey(conflictKey)!;
+
+      expect(conflictKey, 'v2|table%7C1|1|480|525|course%2C1,course%7C2');
+      expect(parsed.timetableId, 'table|1');
+      expect(parsed.weekday, 1);
+      expect(parsed.startMinutes, 480);
+      expect(parsed.endMinutes, 525);
+      expect(parsed.courseIds, {'course,1', 'course|2'});
+    });
+
+    test('still parses legacy conflict keys', () {
+      final parsed = parseConflictKey('table1|1|480|525|course1,course2')!;
+
+      expect(parsed.timetableId, 'table1');
+      expect(parsed.courseIds, {'course1', 'course2'});
     });
   });
 }

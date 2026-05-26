@@ -86,6 +86,98 @@ void main() {
       },
     );
 
+    test('falls back when GitHub version field is malformed', () async {
+      final service = UpdateService(
+        client: MockClient((request) async {
+          if (request.url.toString().contains('/releases/latest')) {
+            return http.Response(
+              jsonEncode({
+                'tag_name': {'version': 'v2.0.0'},
+                'html_url': ['https://example.test/release'],
+                'body': {'notes': 'bad shape'},
+              }),
+              200,
+            );
+          }
+          if (request.url.toString() == AppConfig.updateVersionUrl) {
+            return http.Response(
+              jsonEncode({
+                'version': '2.0.0',
+                'updateContent': ['bad'],
+              }),
+              200,
+            );
+          }
+          return http.Response('not found', 404);
+        }),
+      );
+
+      final result = await service.checkForUpdates(
+        preferredLocale: const Locale('en'),
+      );
+
+      expect(result.remoteVersion, '2.0.0');
+      expect(result.updateContent, isEmpty);
+      expect(result.hasUpdate, isTrue);
+    });
+
+    test('ignores malformed GitHub optional release fields', () async {
+      final service = UpdateService(
+        client: MockClient((request) async {
+          if (request.url.toString().contains('/releases/latest')) {
+            return http.Response(
+              jsonEncode({
+                'tag_name': 'v2.0.0',
+                'html_url': {'url': 'https://example.test/release'},
+                'body': ['bad notes'],
+              }),
+              200,
+            );
+          }
+          return http.Response('not found', 404);
+        }),
+      );
+
+      final result = await service.checkForUpdates(
+        preferredLocale: const Locale('en'),
+      );
+
+      expect(result.remoteVersion, '2.0.0');
+      expect(result.releaseUrl, UpdateService.latestReleaseUrl);
+      expect(result.updateContent, isEmpty);
+      expect(result.hasUpdate, isTrue);
+    });
+
+    test('rejects malformed configured update version fields', () async {
+      final service = UpdateService(
+        client: MockClient((request) async {
+          if (request.url.toString().contains('/releases/latest')) {
+            return http.Response('not found', 404);
+          }
+          if (request.url.toString() == AppConfig.updateVersionUrl) {
+            return http.Response(
+              jsonEncode({
+                'version': {'value': '2.0.0'},
+              }),
+              200,
+            );
+          }
+          return http.Response('not found', 404);
+        }),
+      );
+
+      expect(
+        () => service.checkForUpdates(preferredLocale: const Locale('en')),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Invalid custom update response.',
+          ),
+        ),
+      );
+    });
+
     test('falls back after the preferred update source times out', () async {
       final service = UpdateService(
         requestTimeout: const Duration(milliseconds: 1),
