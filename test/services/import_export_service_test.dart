@@ -54,6 +54,7 @@ void main() {
     String id = 'course',
     String name = 'Algebra',
     int dayOfWeek = 1,
+    List<int> semesterWeeks = const [1],
     List<int> periods = const [1],
     int startMinutes = 8 * 60,
     int endMinutes = (8 * 60) + 45,
@@ -65,7 +66,7 @@ void main() {
       teacher: '',
       location: '',
       dayOfWeek: dayOfWeek,
-      semesterWeeks: const [1],
+      semesterWeeks: semesterWeeks,
       periods: periods,
       startMinutes: startMinutes,
       endMinutes: endMinutes,
@@ -92,6 +93,7 @@ void main() {
     String id = 'table1',
     String name = 'Table 1',
     String periodTimeSetId = 'set1',
+    int totalWeeks = 18,
     List<CourseItem>? courses,
   }) {
     return TimetableData(
@@ -99,7 +101,7 @@ void main() {
       config: TimetableConfig(
         name: name,
         startDate: DateTime(2026, 2, 23),
-        totalWeeks: 18,
+        totalWeeks: totalWeeks,
         periodTimeSetId: periodTimeSetId,
       ),
       courses: courses ?? [course()],
@@ -129,11 +131,13 @@ void main() {
   SchoolImportResponse schoolResponse({
     String timetableName = 'Imported school table',
     String periodSetName = 'Imported periods',
+    int totalWeeks = 18,
     List<Map<String, int>> periodTimes = const [
       {'index': 1, 'startMinutes': 480, 'endMinutes': 525},
       {'index': 2, 'startMinutes': 530, 'endMinutes': 575},
     ],
     Map<String, dynamic> customFields = const {'courseCode': 'CS101'},
+    List<int> semesterWeeks = const [1, 2],
     List<int> periods = const [1],
     int startMinutes = 0,
     int endMinutes = 0,
@@ -148,7 +152,7 @@ void main() {
       timetable: SchoolImportTimetableDraft(
         name: timetableName,
         startDate: DateTime(2026, 2, 23),
-        totalWeeks: 18,
+        totalWeeks: totalWeeks,
         periodTimeSet: ImportedPeriodTimeSetDraft(
           name: periodSetName,
           periodTimes: [
@@ -166,7 +170,7 @@ void main() {
             teacher: 'Teacher',
             location: 'Room 1',
             dayOfWeek: 1,
-            semesterWeeks: const [1, 2],
+            semesterWeeks: semesterWeeks,
             periods: periods,
             startMinutes: startMinutes,
             endMinutes: endMinutes,
@@ -827,6 +831,33 @@ END:VCALENDAR
       expect(normalized.studentMode.conflictDisplayCourseIds, isEmpty);
     });
 
+    test('drops course weeks beyond each timetable total week count', () {
+      final source = AppData(
+        activeMode: AppMode.student,
+        studentMode: studentData(
+          timetables: [
+            timetable(
+              totalWeeks: 4,
+              courses: [
+                course(id: 'course1', semesterWeeks: const [1, 4, 5, 99]),
+              ],
+            ),
+          ],
+          periodTimeSets: [periodSet(id: 'set1')],
+        ),
+        generalMode: GeneralScheduleData.createDefault(),
+      );
+
+      final normalized = service.normalizeAppData(
+        source,
+        localeCode: defaultLocaleCode,
+      );
+
+      final normalizedTimetable = normalized.studentMode.timetables.single;
+      expect(normalizedTimetable.config.totalWeeks, 4);
+      expect(normalizedTimetable.courses.single.semesterWeeks, [1, 4]);
+    });
+
     test('keeps versioned conflict preferences for ids with separators', () {
       final firstCourse = course(id: 'course,one', name: 'Comma');
       final secondCourse = course(id: 'course|two', name: 'Pipe');
@@ -1258,6 +1289,27 @@ END:VCALENDAR
       expect(course.startMinutes, 530);
       expect(course.endMinutes, 575);
       expect(course.timeRange, '08:50 - 09:35');
+    });
+
+    test('drops imported semester weeks outside the timetable range', () {
+      final current = studentData();
+
+      final mutation = service.applySchoolImportRequest(
+        current,
+        SchoolImportApplyRequest(
+          response: schoolResponse(
+            totalWeeks: 4,
+            semesterWeeks: const [1, 2, 4, 5, 99],
+          ),
+          mode: TimetableImportMode.addAsNew,
+          importBundledPeriodTimeSet: true,
+        ),
+        localeCode: defaultLocaleCode,
+      );
+
+      final imported = mutation.selectedTimetable!;
+      expect(imported.config.totalWeeks, 4);
+      expect(imported.courses.single.semesterWeeks, [1, 2, 4]);
     });
 
     test('adds as new without bundled periods by reusing target set', () {

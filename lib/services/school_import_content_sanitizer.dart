@@ -8,6 +8,10 @@ class SchoolImportContentSanitizer {
     r'<(?:script|style|noscript|svg|canvas|iframe|template|nav|header|footer|aside|form|object|embed|applet)\b[^>]*>[\s\S]*?<\/(?:script|style|noscript|svg|canvas|iframe|template|nav|header|footer|aside|form|object|embed|applet)>',
     caseSensitive: false,
   );
+  static final RegExp _danglingBlockStartRe = RegExp(
+    r'<(?:script|style|noscript|svg|canvas|iframe|template|object|embed|applet)\b[^>]*>[\s\S]*?(?=<\s*(?:body|main|section|article|div|table|tbody|thead|tfoot|tr|td|th|p|ul|ol|li)\b|$)',
+    caseSensitive: false,
+  );
 
   // Void/empty tags that should be removed entirely.
   static final RegExp _voidTagRe = RegExp(
@@ -46,6 +50,9 @@ class SchoolImportContentSanitizer {
 
     // 1. Strip entire blocks that are never timetable content.
     cleaned = _stripAll(cleaned, _blockRemoveRe);
+    // Also remove malformed dangling unsafe blocks without swallowing the next
+    // likely content container.
+    cleaned = cleaned.replaceAll(_danglingBlockStartRe, '');
 
     // 2. Strip HTML comments.
     cleaned = cleaned.replaceAll(RegExp(r'<!--[\s\S]*?-->'), '');

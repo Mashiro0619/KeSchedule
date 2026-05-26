@@ -331,6 +331,54 @@ void main() {
       expect(result.response.timetable.name, 'Segmented Timetable');
     });
 
+    test('custom import rejects error-shaped model responses', () async {
+      final api = SchoolImportApi(
+        client: _StreamingClient((request) async {
+          return http.StreamedResponse(
+            Stream<List<int>>.fromIterable([
+              utf8.encode(
+                jsonEncode({
+                  'choices': [
+                    {
+                      'message': {
+                        'content': jsonEncode({'error': 'No timetable'}),
+                      },
+                    },
+                  ],
+                }),
+              ),
+            ]),
+            200,
+          );
+        }),
+      );
+
+      await expectLater(
+        api.importCurrentPageWithRawResponse(
+          const SchoolImportPagePayload(
+            url: 'https://example.test/page',
+            title: 'Example page',
+            html: '<table>demo</table>',
+            locale: 'zh',
+            sourceHint: schoolImportParserSourceCustomOpenAi,
+          ),
+          parserSettings: const SchoolImportParserSettings(
+            source: schoolImportParserSourceCustomOpenAi,
+            customBaseUrl: 'https://api.example.com/v1',
+            customApiKey: 'sk-test',
+            customModel: 'gpt-4.1-mini',
+          ),
+        ),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Import response parse failed.\n\nNo timetable',
+          ),
+        ),
+      );
+    });
+
     test('official stream reports connection timeout clearly', () async {
       final api = const SchoolImportApi(
         requestTimeout: Duration(milliseconds: 1),
@@ -386,6 +434,70 @@ void main() {
       expect(events, hasLength(1));
       expect(events.single, isA<ParseError>());
       expect((events.single as ParseError).message, 'Import stream timed out.');
+    });
+
+    test(
+      'official stream times out while reading non-2xx error bodies',
+      () async {
+        final api = const SchoolImportApi(
+          streamIdleTimeout: Duration(milliseconds: 1),
+        );
+        final client = _StreamingClient((request) async {
+          return http.StreamedResponse(
+            Stream<List<int>>.periodic(
+              const Duration(milliseconds: 50),
+              (_) => utf8.encode('still failing'),
+            ),
+            500,
+          );
+        });
+
+        final events = await api
+            .importCurrentPageStream(
+              const SchoolImportPagePayload(
+                url: 'https://example.test/page',
+                title: 'Example page',
+                html: '<table>demo</table>',
+                locale: 'zh',
+              ),
+              client: client,
+            )
+            .toList();
+
+        expect(events, hasLength(1));
+        expect(events.single, isA<ParseError>());
+        expect(
+          (events.single as ParseError).message,
+          'Import error response timed out.',
+        );
+      },
+    );
+
+    test('official stream truncates oversized non-2xx error bodies', () async {
+      final oversizedBody = 'x' * (40 * 1024);
+      final client = _StreamingClient((request) async {
+        return http.StreamedResponse(
+          Stream<List<int>>.fromIterable([utf8.encode(oversizedBody)]),
+          500,
+        );
+      });
+
+      final events = await const SchoolImportApi()
+          .importCurrentPageStream(
+            const SchoolImportPagePayload(
+              url: 'https://example.test/page',
+              title: 'Example page',
+              html: '<table>demo</table>',
+              locale: 'zh',
+            ),
+            client: client,
+          )
+          .toList();
+
+      final message = (events.single as ParseError).message;
+      expect(message, startsWith('Import request failed (500).'));
+      expect(message, contains('[response body truncated]'));
+      expect(message.length, lessThan(34 * 1024));
     });
 
     test('official stream handles non-string delta and error values', () async {
@@ -502,6 +614,54 @@ void main() {
       expect(done.response.meta.parser, 'custom-openai:gpt-4.1-mini');
       expect(done.response.timetable.name, 'Streamed Timetable');
       expect(done.response.timetable.courses.single.name, 'Streamed Course');
+    });
+
+    test('custom stream rejects EOF before done marker', () async {
+      final responseJson = {
+        'ok': true,
+        'timetable': {
+          'name': 'Truncated Timetable',
+          'startDate': '2026-02-23',
+          'courses': [],
+        },
+      };
+      final sseBody =
+          'data: ${jsonEncode({
+            'choices': [
+              {
+                'delta': {'content': jsonEncode(responseJson)},
+              },
+            ],
+          })}\n\n';
+      final client = _StreamingClient((request) async {
+        return http.StreamedResponse(
+          Stream<List<int>>.fromIterable([utf8.encode(sseBody)]),
+          200,
+        );
+      });
+
+      final events = await const SchoolImportApi()
+          .importCurrentPageStream(
+            const SchoolImportPagePayload(
+              url: 'https://example.test/page',
+              title: 'Example page',
+              html: '<table>demo</table>',
+              locale: 'zh',
+              sourceHint: schoolImportParserSourceCustomOpenAi,
+            ),
+            parserSettings: const SchoolImportParserSettings(
+              source: schoolImportParserSourceCustomOpenAi,
+              customBaseUrl: 'https://api.example.com/v1',
+              customApiKey: 'sk-test',
+              customModel: 'gpt-4.1-mini',
+            ),
+            client: client,
+          )
+          .toList();
+
+      expect(events.whereType<ParseDone>(), isEmpty);
+      final error = events.whereType<ParseError>().single;
+      expect(error.message, 'Connection closed unexpectedly.');
     });
 
     test('custom stream parses array content delta parts', () async {

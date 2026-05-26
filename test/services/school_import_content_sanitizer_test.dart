@@ -32,5 +32,18 @@ void main() {
       expect(sanitized, isNot(contains('alert')));
       expect(sanitized.length, SchoolImportContentSanitizer.maxContentLength);
     });
+
+    test('removes dangling unsafe block tags', () {
+      const source = '''
+<table><tr><td>Math</td></tr></table>
+<script>window.leak = "not timetable";
+''';
+
+      final sanitized = SchoolImportContentSanitizer.sanitize(source);
+
+      expect(sanitized, contains('Math'));
+      expect(sanitized, isNot(contains('window.leak')));
+      expect(sanitized, isNot(contains('not timetable')));
+    });
   });
 }

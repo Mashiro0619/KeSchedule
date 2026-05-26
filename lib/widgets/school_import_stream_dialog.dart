@@ -118,7 +118,7 @@ class _SchoolImportStreamDialogState extends State<SchoolImportStreamDialog> {
 
     try {
       if (json.containsKey('timetable')) {
-        _response = SchoolImportResponse.fromJson(json);
+        _response = SchoolImportApi.buildResponseFromPhpDone(json);
       } else if (json.containsKey('name') || json.containsKey('courses')) {
         _response = SchoolImportApi.buildResponseFromPhpDone(json);
       } else {

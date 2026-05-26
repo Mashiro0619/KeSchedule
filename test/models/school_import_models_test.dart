@@ -22,8 +22,8 @@ void main() {
           'courses': [
             {
               'name': 'Valid',
-              'semesterWeeks': [1, 'bad', 3],
-              'periods': [1, null, 2],
+              'semesterWeeks': [3, 1, 'bad', 3, 0, -1, 2.5],
+              'periods': [2, 1, null, 2, 0, -1, double.infinity],
             },
             'bad',
             null,
@@ -38,16 +38,40 @@ void main() {
       expect(response.timetable.courses.single.periods, [1, 2]);
     });
 
-    test('treats malformed timetable and meta objects as empty objects', () {
+    test('uses safe defaults for malformed meta objects', () {
       final response = SchoolImportResponse.fromJson({
         'ok': true,
         'meta': 'bad',
-        'timetable': 'bad',
+        'timetable': {'name': 'Imported'},
       });
 
       expect(response.meta.sourceUrl, '');
-      expect(response.timetable.name, '');
+      expect(response.timetable.name, 'Imported');
       expect(response.timetable.courses, isEmpty);
+    });
+
+    test('rejects successful responses without a timetable payload', () {
+      expect(
+        () => SchoolImportResponse.fromJson({'ok': true}),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Import response format is invalid.',
+          ),
+        ),
+      );
+      expect(
+        () => SchoolImportResponse.fromJson({'ok': true, 'timetable': 'bad'}),
+        throwsA(isA<FormatException>()),
+      );
+      expect(
+        () => SchoolImportResponse.fromJson({
+          'ok': 'true',
+          'timetable': {'name': 'Imported'},
+        }),
+        throwsA(isA<FormatException>()),
+      );
     });
 
     test('rejects invalid start dates instead of rolling them forward', () {

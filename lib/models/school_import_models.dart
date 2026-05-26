@@ -1,3 +1,4 @@
+import '../utils/constants.dart';
 import '../utils/time_utils.dart';
 
 Map<String, dynamic> _asStringKeyedMap(Object? value) {
@@ -14,11 +15,18 @@ Map<String, dynamic> _asStringKeyedMap(Object? value) {
   return result;
 }
 
-List<int> _intList(Object? value) {
+List<int> _positiveIntList(Object? value, {required int maxValue}) {
   if (value is! List) {
     return const [];
   }
-  return value.whereType<num>().map((item) => item.toInt()).toList();
+  final result = <int>{};
+  for (final item in value.whereType<num>()) {
+    if (!item.isFinite || item <= 0 || item > maxValue || item % 1 != 0) {
+      continue;
+    }
+    result.add(item.toInt());
+  }
+  return result.toList()..sort();
 }
 
 List<dynamic> _listValue(Object? value) {
@@ -39,6 +47,14 @@ double? _doubleValue(Object? value) {
 
 bool? _boolValue(Object? value) {
   return value is bool ? value : null;
+}
+
+bool _hasTimetablePayload(Map<String, dynamic> json) {
+  return json.containsKey('name') ||
+      json.containsKey('startDate') ||
+      json.containsKey('totalWeeks') ||
+      json.containsKey('periodTimeSet') ||
+      json.containsKey('courses');
 }
 
 enum TimetableImportMode { addAsNew, replaceActive }
@@ -229,8 +245,11 @@ class ImportedCourseDraft {
       teacher: _stringValue(json['teacher']),
       location: _stringValue(json['location']),
       dayOfWeek: _intValue(json['dayOfWeek']) ?? 1,
-      semesterWeeks: _intList(json['semesterWeeks']),
-      periods: _intList(json['periods']),
+      semesterWeeks: _positiveIntList(
+        json['semesterWeeks'],
+        maxValue: maxTimetableWeeks,
+      ),
+      periods: _positiveIntList(json['periods'], maxValue: 999),
       startMinutes: _intValue(json['startMinutes']) ?? 0,
       endMinutes: _intValue(json['endMinutes']) ?? 0,
       credit: _doubleValue(json['credit']) ?? 0,
@@ -296,15 +315,24 @@ class SchoolImportResponse {
   final SchoolImportTimetableDraft timetable;
 
   factory SchoolImportResponse.fromJson(Map<String, dynamic> json) {
-    final ok = _boolValue(json['ok']) ?? false;
+    final ok = _boolValue(json['ok']);
+    if (ok == null) {
+      throw const FormatException('Import response format is invalid.');
+    }
     if (!ok) {
       throw FormatException(_stringValue(json['message'], 'Import failed.'));
     }
+    final rawTimetable = json['timetable'];
+    if (rawTimetable is! Map) {
+      throw const FormatException('Import response format is invalid.');
+    }
+    final timetableJson = _asStringKeyedMap(rawTimetable);
+    if (!_hasTimetablePayload(timetableJson)) {
+      throw const FormatException('Import response format is invalid.');
+    }
     return SchoolImportResponse(
       meta: SchoolImportMeta.fromJson(_asStringKeyedMap(json['meta'])),
-      timetable: SchoolImportTimetableDraft.fromJson(
-        _asStringKeyedMap(json['timetable']),
-      ),
+      timetable: SchoolImportTimetableDraft.fromJson(timetableJson),
     );
   }
 
