@@ -418,16 +418,79 @@ class GeneralScheduleExportData {
       );
     }
     final raw = _listValue(json['schedules']);
-    final schedules = raw
+    final scheduleMaps = raw
         .map(_asStringKeyedMap)
         .whereType<Map<String, dynamic>>()
-        .map((s) => GeneralSchedule.fromJson(s).normalized())
         .toList();
+    final usedScheduleIds = <String>{};
+    final schedules = <GeneralSchedule>[];
+    for (var i = 0; i < scheduleMaps.length; i++) {
+      final schedule = GeneralSchedule.fromJson(scheduleMaps[i]);
+      final scheduleId = _normalizeGeneralScheduleImportId(
+        schedule.id,
+        fallbackPrefix: 'calendar',
+        existingIds: usedScheduleIds,
+      );
+      usedScheduleIds.add(scheduleId);
+      schedules.add(
+        schedule
+            .copyWith(
+              id: scheduleId,
+              sortOrder: schedule.sortOrder < 0 ? i : schedule.sortOrder,
+              events: [
+                for (final event in schedule.events)
+                  event.copyWith(calendarId: scheduleId),
+              ],
+            )
+            .normalized(sortOrderFallback: i),
+      );
+    }
     if (raw.isNotEmpty && schedules.isEmpty) {
       throw const FormatException('General schedule JSON format is invalid.');
     }
     return GeneralScheduleExportData(schedules: schedules);
   }
+}
+
+String _normalizeGeneralScheduleImportId(
+  String rawId, {
+  required String fallbackPrefix,
+  required Set<String> existingIds,
+}) {
+  final sanitized = _sanitizeGeneralScheduleImportId(rawId);
+  final candidate = sanitized.isEmpty ? fallbackPrefix : sanitized;
+  if (!existingIds.contains(candidate)) {
+    return candidate;
+  }
+  final base = sanitized.isEmpty
+      ? fallbackPrefix
+      : _copyImportIdBase(sanitized);
+  var next = base;
+  var suffix = 1;
+  while (existingIds.contains(next)) {
+    next = '${base}_${suffix++}';
+  }
+  return next;
+}
+
+String _sanitizeGeneralScheduleImportId(String rawId) {
+  final source = rawId.trim();
+  if (source.isEmpty) {
+    return '';
+  }
+  final safe = source
+      .replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_')
+      .replaceAll(RegExp(r'_+'), '_')
+      .replaceAll(RegExp(r'^_+|_+$'), '');
+  if (safe.isEmpty) {
+    return '';
+  }
+  return safe.length > 96 ? safe.substring(0, 96) : safe;
+}
+
+String _copyImportIdBase(String id) {
+  final match = RegExp(r'^(.*_copy)(?:_\d+)?$').firstMatch(id);
+  return match == null ? '${id}_copy' : match.group(1)!;
 }
 
 String encodeGeneralScheduleDataEnvelope(GeneralScheduleExportData data) {

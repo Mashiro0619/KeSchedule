@@ -726,9 +726,14 @@ class ImportExportService {
     List<String> scheduleIds, {
     required String localeCode,
   }) {
-    final selectedIdSet = scheduleIds.toSet();
+    final selectedIdSet = scheduleIds.map((id) => id.trim()).toSet();
     final selected = imported
-        .where((s) => selectedIdSet.contains(s.id))
+        .where(
+          (schedule) => selectedIdSet.any(
+            (requestedId) =>
+                _matchesImportedGeneralScheduleId(schedule.id, requestedId),
+          ),
+        )
         .toList();
     if (selected.isEmpty) {
       throw FormatException(
@@ -791,10 +796,11 @@ class ImportExportService {
     final existingEventIds = _generalEventIds(data.schedules);
     final appended = <GeneralSchedule>[];
     for (final schedule in selected) {
-      var nextId = _sanitizeImportedGeneralId(schedule.id);
-      if (nextId.isEmpty || existingIds.contains(nextId)) {
-        nextId = _nextImportedScheduleId(existingIds);
-      }
+      final nextId = _normalizeImportedGeneralId(
+        schedule.id,
+        fallbackPrefix: 'schedule_import',
+        existingIds: existingIds,
+      );
       existingIds.add(nextId);
       appended.add(
         _sanitizeImportedGeneralSchedule(
@@ -823,16 +829,26 @@ class ImportExportService {
     Set<String> existingIds, {
     required String localeCode,
   }) {
-    var nextId = periodTimeSet.id.trim();
-    if (nextId.isEmpty || existingIds.contains(nextId)) {
-      nextId = _nextPeriodTimeSetId(existingIds);
-    }
+    final nextId = _normalizeUniqueId(
+      periodTimeSet.id,
+      fallbackPrefix: 'period_set',
+      existingIds: existingIds,
+    );
     existingIds.add(nextId);
     return normalizePeriodTimeSet(
       periodTimeSet.copyWith(id: nextId),
       localeCode: localeCode,
     );
   }
+}
+
+bool _matchesImportedGeneralScheduleId(
+  String normalizedId,
+  String requestedId,
+) {
+  final trimmed = requestedId.trim();
+  return normalizedId == trimmed ||
+      normalizedId == _sanitizeImportedGeneralId(trimmed);
 }
 
 void _ensureStudentImportAppDataShape(Map<String, dynamic> data) {
@@ -884,10 +900,11 @@ TimetableData _copyImportedTimetableWithUniqueId(
   TimetableData timetable,
   Set<String> existingIds,
 ) {
-  var nextId = timetable.id.trim();
-  if (nextId.isEmpty || existingIds.contains(nextId)) {
-    nextId = _nextImportedTimetableId(existingIds);
-  }
+  final nextId = _normalizeUniqueId(
+    timetable.id,
+    fallbackPrefix: 'table_import',
+    existingIds: existingIds,
+  );
   existingIds.add(nextId);
   return timetable.copyWith(id: nextId);
 }
@@ -994,32 +1011,16 @@ Map<String, String> _filterConflictDisplayCourseIds(
   return preferences;
 }
 
-String _nextImportedTimetableId(Set<String> existingIds) {
-  var stamp = DateTime.now().microsecondsSinceEpoch;
-  var candidate = 'table_import_$stamp';
-  while (existingIds.contains(candidate)) {
-    stamp += 1;
-    candidate = 'table_import_$stamp';
-  }
-  return candidate;
-}
-
-String _nextPeriodTimeSetId(Set<String> existingIds) {
-  var stamp = DateTime.now().microsecondsSinceEpoch;
-  var candidate = 'period_set_$stamp';
-  while (existingIds.contains(candidate)) {
-    stamp += 1;
-    candidate = 'period_set_$stamp';
-  }
-  return candidate;
-}
-
 PeriodTimeSet _createImportedFallbackPeriodTimeSet(
   TimetableData timetable,
   Set<String> existingIds, {
   required String localeCode,
 }) {
-  final fallbackId = _nextPeriodTimeSetId(existingIds);
+  final fallbackId = _normalizeUniqueId(
+    '',
+    fallbackPrefix: 'period_set',
+    existingIds: existingIds,
+  );
   return PeriodTimeSet(
     id: fallbackId,
     name: importedPeriodTimeSetName(
@@ -1165,8 +1166,9 @@ TimetableData _buildSchoolImportedTimetable(
   required String localeCode,
 }) {
   final draft = response.timetable;
-  var courseSeed = DateTime.now().microsecondsSinceEpoch;
-  final courses = draft.courses.map((item) {
+  final courses = <CourseItem>[];
+  for (var courseIndex = 0; courseIndex < draft.courses.length; courseIndex++) {
+    final item = draft.courses[courseIndex];
     final rawStartMinutes = item.startMinutes;
     final rawEndMinutes = item.endMinutes;
     final explicitPeriods = _normalizeImportedCoursePeriods(
@@ -1188,27 +1190,29 @@ TimetableData _buildSchoolImportedTimetable(
     );
     final startMinutes = resolvedTimeRange.$1;
     final endMinutes = resolvedTimeRange.$2;
-    return CourseItem(
-      id: 'school_course_${courseSeed++}',
-      name: item.name.trim(),
-      teacher: item.teacher.trim(),
-      location: item.location.trim(),
-      dayOfWeek: normalizeDayOfWeek(item.dayOfWeek),
-      semesterWeeks: normalizeSemesterWeeks(item.semesterWeeks),
-      periods: periods,
-      startMinutes: startMinutes,
-      endMinutes: endMinutes,
-      timeRange: buildTimeRange(startMinutes, endMinutes),
-      credit: item.credit,
-      remarks: item.remarks.trim(),
-      customFields: Map<String, dynamic>.from(item.customFields),
+    courses.add(
+      CourseItem(
+        id: courseIndex == 0 ? 'school_course' : 'school_course_$courseIndex',
+        name: item.name.trim(),
+        teacher: item.teacher.trim(),
+        location: item.location.trim(),
+        dayOfWeek: normalizeDayOfWeek(item.dayOfWeek),
+        semesterWeeks: normalizeSemesterWeeks(item.semesterWeeks),
+        periods: periods,
+        startMinutes: startMinutes,
+        endMinutes: endMinutes,
+        timeRange: buildTimeRange(startMinutes, endMinutes),
+        credit: item.credit,
+        remarks: item.remarks.trim(),
+        customFields: Map<String, dynamic>.from(item.customFields),
+      ),
     );
-  }).toList();
+  }
   final timetableName = draft.name.trim().isEmpty
       ? untitledTimetableName(localeCode: localeCode)
       : draft.name.trim();
   return TimetableData(
-    id: 'school_import_table_${DateTime.now().microsecondsSinceEpoch}',
+    id: 'school_import_table',
     config: TimetableConfig(
       name: timetableName,
       startDate: normalizeDateOnly(draft.startDate),
@@ -1219,68 +1223,110 @@ TimetableData _buildSchoolImportedTimetable(
   );
 }
 
-String _nextImportedScheduleId(Set<String> existingIds) {
-  var stamp = DateTime.now().microsecondsSinceEpoch;
-  var candidate = 'schedule_import_$stamp';
-  while (existingIds.contains(candidate)) {
-    stamp += 1;
-    candidate = 'schedule_import_$stamp';
-  }
-  return candidate;
-}
-
 GeneralScheduleData _normalizeGeneralScheduleData(GeneralScheduleData data) {
-  final normalized = data.normalized();
+  final sourceSchedules = data.schedules.isEmpty
+      ? const [
+          GeneralSchedule(
+            id: 'schedule_import',
+            name: 'My calendar',
+            events: [],
+          ),
+        ]
+      : data.schedules;
+  final requestedActiveScheduleId = data.activeScheduleId.trim();
   final scheduleIds = <String>{};
   final eventIds = <String>{};
   final occurrencePrefixMap = <String, String>{};
   final schedules = <GeneralSchedule>[];
   String? activeScheduleId;
 
-  for (final schedule in normalized.schedules) {
+  for (
+    var scheduleIndex = 0;
+    scheduleIndex < sourceSchedules.length;
+    scheduleIndex++
+  ) {
+    final schedule = sourceSchedules[scheduleIndex];
     final rawScheduleId = schedule.id.trim();
-    var scheduleId = _sanitizeImportedGeneralId(rawScheduleId);
-    if (scheduleId.isEmpty || scheduleIds.contains(scheduleId)) {
-      scheduleId = _nextImportedScheduleId(scheduleIds);
-    }
+    final scheduleId = _normalizeImportedGeneralId(
+      rawScheduleId,
+      fallbackPrefix: 'schedule_import',
+      existingIds: scheduleIds,
+    );
     scheduleIds.add(scheduleId);
-    if (rawScheduleId == normalized.activeScheduleId) {
+    if (activeScheduleId == null &&
+        _matchesGeneralActiveScheduleId(
+          rawScheduleId: rawScheduleId,
+          normalizedScheduleId: scheduleId,
+          requestedActiveScheduleId: requestedActiveScheduleId,
+        )) {
       activeScheduleId = scheduleId;
     }
 
     final events = <GeneralEvent>[];
     for (final event in schedule.events) {
       final rawEventId = event.id.trim();
-      var eventId = _sanitizeImportedGeneralId(rawEventId);
-      if (eventId.isEmpty || eventIds.contains(eventId)) {
-        eventId = _nextImportedGeneralEventId(eventIds);
-      }
+      final eventId = _normalizeImportedGeneralId(
+        rawEventId,
+        fallbackPrefix: 'evt_import',
+        existingIds: eventIds,
+      );
       eventIds.add(eventId);
-      occurrencePrefixMap['$rawScheduleId|$rawEventId|'] =
-          '$scheduleId|$eventId|';
+      occurrencePrefixMap.putIfAbsent(
+        '$rawScheduleId|$rawEventId|',
+        () => '$scheduleId|$eventId|',
+      );
       events.add(event.copyWith(id: eventId, calendarId: scheduleId));
     }
 
-    schedules.add(schedule.copyWith(id: scheduleId, events: events));
+    schedules.add(
+      schedule
+          .copyWith(
+            id: scheduleId,
+            sortOrder: schedule.sortOrder < 0
+                ? scheduleIndex
+                : schedule.sortOrder,
+            events: events,
+          )
+          .normalized(sortOrderFallback: scheduleIndex)
+          .copyWith(sortOrder: schedules.length),
+    );
   }
 
-  final acknowledgements = [
-    for (final acknowledgement in normalized.reminderAcknowledgements)
+  final acknowledgements = <GeneralReminderAcknowledgement>[];
+  for (final acknowledgement in data.reminderAcknowledgements) {
+    final normalizedAcknowledgement = acknowledgement.normalized();
+    if (normalizedAcknowledgement.occurrenceKey.isEmpty) {
+      continue;
+    }
+    acknowledgements.add(
       GeneralReminderAcknowledgement(
         occurrenceKey: _remapGeneralOccurrenceKey(
-          acknowledgement.occurrenceKey,
+          normalizedAcknowledgement.occurrenceKey,
           occurrencePrefixMap,
         ),
-        isHandled: acknowledgement.isHandled,
-        updatedAtIso: acknowledgement.updatedAtIso,
+        isHandled: normalizedAcknowledgement.isHandled,
+        updatedAtIso: normalizedAcknowledgement.updatedAtIso,
       ),
-  ];
+    );
+  }
 
-  return normalized.copyWith(
+  return data.copyWith(
     activeScheduleId: activeScheduleId ?? schedules.first.id,
     schedules: schedules,
     reminderAcknowledgements: acknowledgements,
   );
+}
+
+bool _matchesGeneralActiveScheduleId({
+  required String rawScheduleId,
+  required String normalizedScheduleId,
+  required String requestedActiveScheduleId,
+}) {
+  if (requestedActiveScheduleId.isEmpty) {
+    return false;
+  }
+  return rawScheduleId == requestedActiveScheduleId ||
+      normalizedScheduleId == requestedActiveScheduleId;
 }
 
 String _remapGeneralOccurrenceKey(
@@ -1303,6 +1349,25 @@ Set<String> _generalEventIds(Iterable<GeneralSchedule> schedules) {
   };
 }
 
+String _normalizeImportedGeneralId(
+  String rawId, {
+  required String fallbackPrefix,
+  required Set<String> existingIds,
+}) {
+  final sanitized = _sanitizeImportedGeneralId(rawId);
+  final candidate = sanitized.isEmpty ? fallbackPrefix : sanitized;
+  if (!existingIds.contains(candidate)) {
+    return candidate;
+  }
+  final base = sanitized.isEmpty ? fallbackPrefix : _copyIdBase(sanitized);
+  var next = base;
+  var suffix = 1;
+  while (existingIds.contains(next)) {
+    next = '${base}_${suffix++}';
+  }
+  return next;
+}
+
 GeneralSchedule _sanitizeImportedGeneralSchedule(
   GeneralSchedule schedule, {
   required String scheduleId,
@@ -1310,10 +1375,11 @@ GeneralSchedule _sanitizeImportedGeneralSchedule(
 }) {
   final events = <GeneralEvent>[];
   for (final event in schedule.events) {
-    var eventId = _sanitizeImportedGeneralId(event.id);
-    if (eventId.isEmpty || existingEventIds.contains(eventId)) {
-      eventId = _nextImportedGeneralEventId(existingEventIds);
-    }
+    final eventId = _normalizeImportedGeneralId(
+      event.id,
+      fallbackPrefix: 'evt_import',
+      existingIds: existingEventIds,
+    );
     existingEventIds.add(eventId);
     events.add(event.copyWith(id: eventId, calendarId: scheduleId));
   }
@@ -1333,16 +1399,6 @@ String _sanitizeImportedGeneralId(String rawId) {
     return '';
   }
   return safe.length > 96 ? safe.substring(0, 96) : safe;
-}
-
-String _nextImportedGeneralEventId(Set<String> existingIds) {
-  var stamp = DateTime.now().microsecondsSinceEpoch;
-  var candidate = 'evt_import_$stamp';
-  while (existingIds.contains(candidate)) {
-    stamp += 1;
-    candidate = 'evt_import_$stamp';
-  }
-  return candidate;
 }
 
 bool _reminderKeyContainsSchedule(String occurrenceKey, String scheduleId) {

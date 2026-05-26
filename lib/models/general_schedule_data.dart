@@ -182,7 +182,7 @@ class GeneralScheduleData {
         _listValue(json['schedules'])
             .map(_asStringKeyedMap)
             .whereType<Map<String, dynamic>>()
-            .map((s) => GeneralSchedule.fromJson(s).normalized())
+            .map(GeneralSchedule.fromJson)
             .toList()
           ..sort((a, b) {
             final order = a.sortOrder.compareTo(b.sortOrder);
@@ -266,33 +266,43 @@ class GeneralScheduleData {
   GeneralScheduleData normalized() {
     final rawSchedules = schedules.isEmpty
         ? <GeneralSchedule>[createDefaultGeneralSchedule()]
-        : [
-            for (var i = 0; i < schedules.length; i++)
-              schedules[i].normalized(sortOrderFallback: i),
-          ];
+        : schedules;
     final usedScheduleIds = <String>{};
     final usedEventIds = <String>{};
     final normalizedSchedules = <GeneralSchedule>[];
-    for (final schedule in rawSchedules) {
-      var scheduleId = schedule.id.trim();
-      if (scheduleId.isEmpty || usedScheduleIds.contains(scheduleId)) {
-        scheduleId = _generateUniqueId('calendar', usedScheduleIds);
-      }
+    for (
+      var scheduleIndex = 0;
+      scheduleIndex < rawSchedules.length;
+      scheduleIndex++
+    ) {
+      final schedule = rawSchedules[scheduleIndex];
+      final scheduleId = _normalizeUniqueId(
+        schedule.id,
+        fallbackPrefix: 'calendar',
+        existingIds: usedScheduleIds,
+      );
       usedScheduleIds.add(scheduleId);
       final normalizedEvents = <GeneralEvent>[];
       for (final event in schedule.events) {
-        var eventId = event.id.trim();
-        if (eventId.isEmpty || usedEventIds.contains(eventId)) {
-          eventId = _generateUniqueId('evt', usedEventIds);
-        }
+        final normalizedEvent = event.normalized(
+          fallbackCalendarId: scheduleId,
+        );
+        final eventId = _normalizeUniqueId(
+          normalizedEvent.id,
+          fallbackPrefix: 'evt',
+          existingIds: usedEventIds,
+        );
         usedEventIds.add(eventId);
         normalizedEvents.add(
-          event.copyWith(id: eventId, calendarId: scheduleId),
+          normalizedEvent.copyWith(id: eventId, calendarId: scheduleId),
         );
       }
       normalizedSchedules.add(
         schedule.copyWith(
           id: scheduleId,
+          name: schedule.name.trim().isEmpty
+              ? 'My calendar'
+              : schedule.name.trim(),
           sortOrder: normalizedSchedules.length,
           events: normalizedEvents,
         ),
@@ -361,14 +371,28 @@ int _normalizeGridMinutes(int? value) {
   }
 }
 
-String _generateUniqueId(String prefix, Set<String> existingIds) {
-  var stamp = DateTime.now().microsecondsSinceEpoch;
-  var candidate = '${prefix}_$stamp';
-  while (existingIds.contains(candidate)) {
-    stamp += 1;
-    candidate = '${prefix}_$stamp';
+String _normalizeUniqueId(
+  String rawId, {
+  required String fallbackPrefix,
+  required Set<String> existingIds,
+}) {
+  final trimmed = rawId.trim();
+  final candidate = trimmed.isEmpty ? fallbackPrefix : trimmed;
+  if (!existingIds.contains(candidate)) {
+    return candidate;
   }
-  return candidate;
+  final base = trimmed.isEmpty ? fallbackPrefix : _copyIdBase(trimmed);
+  var next = base;
+  var suffix = 1;
+  while (existingIds.contains(next)) {
+    next = '${base}_${suffix++}';
+  }
+  return next;
+}
+
+String _copyIdBase(String id) {
+  final match = RegExp(r'^(.*_copy)(?:_\d+)?$').firstMatch(id);
+  return match == null ? '${id}_copy' : match.group(1)!;
 }
 
 const Symbol _keepNullable = #keep;

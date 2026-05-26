@@ -633,17 +633,58 @@ void main() {
       );
 
       final normalized = data.normalized();
-      final scheduleIds = normalized.schedules.map((s) => s.id).toSet();
+      final scheduleIds = normalized.schedules.map((s) => s.id).toList();
       final eventIds = normalized.schedules
           .expand((s) => s.events)
           .map((e) => e.id)
-          .toSet();
+          .toList();
 
-      expect(scheduleIds.length, 2);
-      expect(eventIds.length, 2);
+      expect(scheduleIds, ['dup', 'dup_copy']);
+      expect(eventIds, ['evt', 'evt_copy']);
       for (final schedule in normalized.schedules) {
         expect(schedule.events.single.calendarId, schedule.id);
       }
+    });
+
+    test('normalized data assigns stable ids for missing ids', () {
+      final data = GeneralScheduleData(
+        activeScheduleId: '',
+        schedules: [
+          GeneralSchedule(
+            id: '',
+            name: 'First',
+            events: [
+              GeneralEvent(
+                id: '',
+                title: 'First event',
+                startDateTimeIso: '2026-05-22T09:00:00.000',
+                endDateTimeIso: '2026-05-22T10:00:00.000',
+              ),
+            ],
+          ),
+          GeneralSchedule(
+            id: '',
+            name: 'Second',
+            events: [
+              GeneralEvent(
+                id: '',
+                title: 'Second event',
+                startDateTimeIso: '2026-05-23T09:00:00.000',
+                endDateTimeIso: '2026-05-23T10:00:00.000',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final normalized = data.normalized();
+
+      expect(normalized.schedules.map((s) => s.id), ['calendar', 'calendar_1']);
+      expect(normalized.schedules.expand((s) => s.events).map((e) => e.id), [
+        'evt',
+        'evt_1',
+      ]);
+      expect(normalized.activeScheduleId, 'calendar');
     });
 
     test('fromJson filters malformed schedules and acknowledgements', () {

@@ -270,6 +270,82 @@ void main() {
       );
     });
 
+    test('keeps preview ids unique for duplicate calendar ids', () {
+      final source = envelope([
+        schedule(id: 'shared', name: 'First'),
+        schedule(id: 'shared', name: 'Second'),
+        schedule(id: 'shared_copy', name: 'Third'),
+      ]);
+
+      final preview = service.previewImportGeneralSchedules(
+        source,
+        localeCode: defaultLocaleCode,
+      );
+
+      expect(preview.map((item) => item.id), [
+        'shared',
+        'shared_copy',
+        'shared_copy_1',
+      ]);
+    });
+
+    test('imports only the selected duplicate preview calendar id', () {
+      final current = data(
+        schedules: [schedule(id: 'current', name: 'Current')],
+        activeScheduleId: 'current',
+      );
+      final source = envelope([
+        schedule(id: 'shared', name: 'First'),
+        schedule(id: 'shared', name: 'Second'),
+      ]);
+      final preview = service.previewImportGeneralSchedules(
+        source,
+        localeCode: defaultLocaleCode,
+      );
+
+      final mutation = service.importSelectedGeneralSchedulesJson(
+        current,
+        source,
+        scheduleIds: [preview.last.id],
+        mode: GeneralScheduleImportMode.addAsNew,
+        localeCode: defaultLocaleCode,
+      );
+
+      expect(mutation.result.importedCount, 1);
+      expect(mutation.result.scheduleNames, ['Second']);
+      expect(mutation.data.schedules.last.name, 'Second');
+    });
+
+    test(
+      'keeps missing calendar ids stable between preview and replace import',
+      () {
+        final current = data(
+          schedules: [schedule(id: 'active', name: 'Active')],
+          activeScheduleId: 'active',
+        );
+        final source = envelope([
+          schedule(id: '', name: 'First'),
+          schedule(id: '', name: 'Second'),
+        ]);
+        final preview = service.previewImportGeneralSchedules(
+          source,
+          localeCode: defaultLocaleCode,
+        );
+
+        final mutation = service.importSelectedGeneralSchedulesJson(
+          current,
+          source,
+          scheduleIds: [preview.last.id],
+          mode: GeneralScheduleImportMode.replaceActive,
+          localeCode: defaultLocaleCode,
+        );
+
+        expect(preview.map((item) => item.id), ['calendar', 'calendar_1']);
+        expect(mutation.result.importedCount, 1);
+        expect(mutation.data.activeSchedule.name, 'Second');
+      },
+    );
+
     test('adds selected calendars as new and de-duplicates ids', () {
       final current = data(
         schedules: [schedule(id: 'work', name: 'Work')],
@@ -291,10 +367,11 @@ void main() {
       expect(mutation.result.importedCount, 2);
       expect(mutation.result.scheduleNames, ['Imported Work', 'Imported Home']);
       expect(mutation.data.schedules, hasLength(3));
-      expect(
-        mutation.data.schedules.map((item) => item.id).toSet(),
-        hasLength(3),
-      );
+      expect(mutation.data.schedules.map((item) => item.id), [
+        'work',
+        'work_copy',
+        'home',
+      ]);
       expect(mutation.data.activeScheduleId, mutation.data.schedules.last.id);
     });
 
@@ -341,7 +418,7 @@ void main() {
         hasLength(imported.events.length),
       );
       expect(imported.events.first.id, 'a_b');
-      expect(imported.events.last.id, startsWith('evt_import_'));
+      expect(imported.events.last.id, 'a_b_copy');
       expect(
         imported.events.map((item) => item.calendarId),
         everyElement(imported.id),
@@ -793,10 +870,7 @@ END:VCALENDAR
         expect(general.activeScheduleId, 'shared_calendar');
         expect(general.schedules.single.id, 'shared_calendar');
         expect(general.schedules.single.events.first.id, 'a_b');
-        expect(
-          general.schedules.single.events.last.id,
-          startsWith('evt_import_'),
-        );
+        expect(general.schedules.single.events.last.id, 'a_b_copy');
         expect(
           general.schedules.single.events.map((item) => item.calendarId),
           everyElement('shared_calendar'),
@@ -877,8 +951,8 @@ END:VCALENDAR
       expect(mutation.importedCount, 1);
       expect(mutation.data.timetables, hasLength(2));
       expect(mutation.data.periodTimeSets, hasLength(2));
-      expect(appended.id, isNot('table1'));
-      expect(appended.config.periodTimeSetId, isNot('set1'));
+      expect(appended.id, 'table1_copy');
+      expect(appended.config.periodTimeSetId, 'set1_copy');
       expect(
         mutation.data.periodTimeSets.map((item) => item.id),
         contains(appended.config.periodTimeSetId),
@@ -1051,12 +1125,51 @@ END:VCALENDAR
       );
       expect(mutation.data.timetables, hasLength(2));
       expect(mutation.data.periodTimeSets, hasLength(2));
+      expect(imported.id, 'school_import_table');
+      expect(imported.config.periodTimeSetId, 'period_set');
       expect(imported.config.name, 'Imported school table');
+      expect(imported.courses.single.id, 'school_course');
       expect(imported.courses.single.customFields['courseCode'], 'CS101');
       expect(imported.courses.single.startMinutes, 480);
       expect(imported.courses.single.endMinutes, 525);
       expect(importedSet.name, 'Imported periods');
       expect(importedSet.periodTimes, hasLength(2));
+    });
+
+    test('adds as new with stable ids when generated ids already exist', () {
+      final current = studentData(
+        timetables: [
+          timetable(
+            id: 'school_import_table',
+            name: 'Existing',
+            periodTimeSetId: 'period_set',
+            courses: [course(id: 'school_course', name: 'Existing Course')],
+          ),
+        ],
+        periodTimeSets: [periodSet(id: 'period_set')],
+        activeTimetableId: 'school_import_table',
+      );
+
+      final mutation = service.applySchoolImportRequest(
+        current,
+        SchoolImportApplyRequest(
+          response: schoolResponse(),
+          mode: TimetableImportMode.addAsNew,
+          importBundledPeriodTimeSet: true,
+        ),
+        localeCode: defaultLocaleCode,
+      );
+
+      final imported = mutation.selectedTimetable!;
+      expect(mutation.data.timetables, hasLength(2));
+      expect(mutation.data.periodTimeSets.map((item) => item.id), [
+        'period_set',
+        'period_set_1',
+      ]);
+      expect(imported.id, 'school_import_table_copy');
+      expect(imported.config.periodTimeSetId, 'period_set_1');
+      expect(imported.courses.single.id, 'school_course_copy');
+      expect(mutation.data.activeTimetableId, imported.id);
     });
 
     test('sanitizes malformed school imported periods and time ranges', () {
