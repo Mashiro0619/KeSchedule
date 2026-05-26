@@ -200,6 +200,103 @@ void main() {
       expect(updated.reminderAcknowledgements, isEmpty);
     });
 
+    test(
+      'deletes an event and removes legacy reminder keys with separators',
+      () {
+        final start = DateTime(2026, 5, 25, 9);
+        final event = buildEvent(
+          id: 'event|raw',
+          calendarId: 'cal|raw',
+          start: start,
+        );
+        final data = buildData(
+          activeScheduleId: 'cal|raw',
+          schedules: [
+            GeneralSchedule(id: 'cal|raw', name: 'Work', events: [event]),
+          ],
+          acknowledgements: [
+            GeneralReminderAcknowledgement(
+              occurrenceKey: 'cal|raw|event|raw|${start.toIso8601String()}',
+              updatedAtIso: '2026-05-25T08:55:00.000',
+            ),
+          ],
+        );
+
+        final updated = service.deleteEvent(data, 'event|raw');
+
+        expect(updated.activeSchedule.events, isEmpty);
+        expect(updated.reminderAcknowledgements, isEmpty);
+      },
+    );
+
+    test('deleting an event does not remove similarly prefixed keys', () {
+      final start = DateTime(2026, 5, 25, 9);
+      final event = buildEvent(id: 'event', calendarId: 'cal', start: start);
+      final data = buildData(
+        schedules: [
+          GeneralSchedule(id: 'cal', name: 'Work', events: [event]),
+          GeneralSchedule(
+            id: 'cal|raw',
+            name: 'Other',
+            events: [
+              buildEvent(id: 'other', calendarId: 'cal|raw', start: start),
+            ],
+          ),
+        ],
+        acknowledgements: [
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'cal|event|${start.toIso8601String()}',
+            updatedAtIso: '2026-05-25T08:55:00.000',
+          ),
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'cal|raw|other|${start.toIso8601String()}',
+            updatedAtIso: '2026-05-25T08:56:00.000',
+          ),
+        ],
+      );
+
+      final updated = service.deleteEvent(data, 'event');
+
+      expect(
+        updated.reminderAcknowledgements.map((item) => item.occurrenceKey),
+        ['cal|raw|other|${start.toIso8601String()}'],
+      );
+    });
+
+    test('deleting a calendar does not remove similarly prefixed keys', () {
+      final start = DateTime(2026, 5, 25, 9);
+      final event = buildEvent(id: 'event', calendarId: 'cal', start: start);
+      final otherEvent = buildEvent(
+        id: 'event',
+        calendarId: 'cal|raw',
+        start: start,
+      );
+      final data = buildData(
+        schedules: [
+          GeneralSchedule(id: 'cal', name: 'Work', events: [event]),
+          GeneralSchedule(id: 'cal|raw', name: 'Other', events: [otherEvent]),
+        ],
+        acknowledgements: [
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'cal|event|${start.toIso8601String()}',
+            updatedAtIso: '2026-05-25T08:55:00.000',
+          ),
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'cal|raw|event|${start.toIso8601String()}',
+            updatedAtIso: '2026-05-25T08:56:00.000',
+          ),
+        ],
+      );
+
+      final updated = service.deleteSchedule(data, 'cal');
+
+      expect(updated.schedules.map((item) => item.id), ['cal|raw']);
+      expect(
+        updated.reminderAcknowledgements.map((item) => item.occurrenceKey),
+        ['cal|raw|event|${start.toIso8601String()}'],
+      );
+    });
+
     test('keeps handled reminder records when editing event details only', () {
       final event = buildEvent();
       final data = buildData(
@@ -273,6 +370,41 @@ void main() {
           updated.reminderAcknowledgements.map((item) => item.occurrenceKey),
           ['cal|other|2026-05-25T09:00:00.000'],
         );
+      },
+    );
+
+    test(
+      'clears stale legacy reminder keys with separators when occurrence moves',
+      () {
+        final start = DateTime(2026, 5, 25, 9);
+        final event = buildEvent(
+          id: 'event|raw',
+          calendarId: 'cal|raw',
+          start: start,
+        );
+        final data = buildData(
+          activeScheduleId: 'cal|raw',
+          schedules: [
+            GeneralSchedule(id: 'cal|raw', name: 'Work', events: [event]),
+          ],
+          acknowledgements: [
+            GeneralReminderAcknowledgement(
+              occurrenceKey: 'cal|raw|event|raw|${start.toIso8601String()}',
+              updatedAtIso: '2026-05-25T08:55:00.000',
+            ),
+          ],
+        );
+
+        final updated = service.saveEvent(
+          data,
+          event.copyWith(
+            startDateTimeIso: DateTime(2026, 5, 25, 11).toIso8601String(),
+            endDateTimeIso: DateTime(2026, 5, 25, 12).toIso8601String(),
+          ),
+        );
+
+        expect(updated.activeSchedule.events.single.id, 'event|raw');
+        expect(updated.reminderAcknowledgements, isEmpty);
       },
     );
 

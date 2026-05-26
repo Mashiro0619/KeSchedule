@@ -935,9 +935,16 @@ END:VCALENDAR
         expect(
           general.reminderAcknowledgements.map((item) => item.occurrenceKey),
           containsAll([
-            'shared_calendar|a_b|2026-05-25T09:00:00.000',
-            'shared_calendar|$remappedDuplicateEventId|'
-                '2026-05-25T09:00:00.000',
+            buildGeneralOccurrenceKey(
+              'shared_calendar',
+              'a_b',
+              '2026-05-25T09:00:00.000',
+            ),
+            buildGeneralOccurrenceKey(
+              'shared_calendar',
+              remappedDuplicateEventId,
+              '2026-05-25T09:00:00.000',
+            ),
           ]),
         );
       },

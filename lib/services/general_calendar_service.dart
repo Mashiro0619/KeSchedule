@@ -78,6 +78,10 @@ class GeneralCalendarService {
     GeneralScheduleData data,
     String scheduleId,
   ) {
+    final deletedSchedule = _scheduleById(data, scheduleId);
+    if (deletedSchedule == null) {
+      return data;
+    }
     var remaining = data.schedules.where((s) => s.id != scheduleId).toList();
     if (remaining.isEmpty) {
       remaining = [createDefaultGeneralSchedule()];
@@ -90,8 +94,10 @@ class GeneralCalendarService {
       schedules: remaining,
       reminderAcknowledgements: data.reminderAcknowledgements
           .where(
-            (item) =>
-                !_reminderKeyContainsSchedule(item.occurrenceKey, scheduleId),
+            (item) => !_reminderKeyBelongsToSchedule(
+              item.occurrenceKey,
+              deletedSchedule,
+            ),
           )
           .toList(),
     );
@@ -176,6 +182,14 @@ class GeneralCalendarService {
   }
 
   GeneralScheduleData deleteEvent(GeneralScheduleData data, String eventId) {
+    final deletedLocations = <({GeneralSchedule schedule, GeneralEvent event})>[
+      for (final schedule in data.schedules)
+        for (final event in schedule.events)
+          if (event.id == eventId) (schedule: schedule, event: event),
+    ];
+    if (deletedLocations.isEmpty) {
+      return data;
+    }
     return data.copyWith(
       schedules: [
         for (final schedule in data.schedules)
@@ -185,7 +199,13 @@ class GeneralCalendarService {
       ],
       reminderAcknowledgements: data.reminderAcknowledgements
           .where(
-            (item) => !_reminderKeyContainsEvent(item.occurrenceKey, eventId),
+            (item) => !deletedLocations.any(
+              (location) => _reminderKeyMatchesEventInSchedule(
+                item.occurrenceKey,
+                location.schedule.id,
+                location.event.id,
+              ),
+            ),
           )
           .toList(),
     );
@@ -230,7 +250,10 @@ class GeneralCalendarService {
     );
     return withException.copyWith(
       reminderAcknowledgements: withException.reminderAcknowledgements
-          .where((item) => item.occurrenceKey != occurrence.occurrenceKey)
+          .where(
+            (item) =>
+                !_reminderKeyMatchesOccurrence(item.occurrenceKey, occurrence),
+          )
           .toList(),
     );
   }
@@ -260,6 +283,7 @@ class GeneralCalendarService {
           .where(
             (item) => !_reminderKeyMatchesEventAtOrAfter(
               item.occurrenceKey,
+              occurrence.calendar.id,
               event.id,
               occurrence.start,
             ),
@@ -281,7 +305,8 @@ class GeneralCalendarService {
     return data.copyWith(
       reminderAcknowledgements: [
         ...data.reminderAcknowledgements.where(
-          (item) => item.occurrenceKey != key,
+          (item) =>
+              !_reminderKeyMatchesOccurrence(item.occurrenceKey, occurrence),
         ),
         acknowledgement,
       ],
@@ -294,7 +319,10 @@ class GeneralCalendarService {
   ) {
     return data.copyWith(
       reminderAcknowledgements: data.reminderAcknowledgements
-          .where((item) => item.occurrenceKey != occurrence.occurrenceKey)
+          .where(
+            (item) =>
+                !_reminderKeyMatchesOccurrence(item.occurrenceKey, occurrence),
+          )
           .toList(),
     );
   }
@@ -383,14 +411,25 @@ String _nextEventId(GeneralScheduleData data) {
   return candidate;
 }
 
-bool _reminderKeyContainsSchedule(String occurrenceKey, String scheduleId) {
+bool _reminderKeyBelongsToSchedule(
+  String occurrenceKey,
+  GeneralSchedule schedule,
+) {
+  final parsed = parseGeneralOccurrenceKey(occurrenceKey);
+  if (parsed != null) {
+    return parsed.calendarId == schedule.id;
+  }
+  for (final event in schedule.events) {
+    if (_reminderKeyMatchesEventInSchedule(
+      occurrenceKey,
+      schedule.id,
+      event.id,
+    )) {
+      return true;
+    }
+  }
   final parts = occurrenceKey.split('|');
-  return parts.isNotEmpty && parts.first == scheduleId;
-}
-
-bool _reminderKeyContainsEvent(String occurrenceKey, String eventId) {
-  final parts = occurrenceKey.split('|');
-  return parts.length >= 2 && parts[1] == eventId;
+  return parts.length == 3 && parts.first == schedule.id;
 }
 
 bool _reminderKeyMatchesEventInSchedule(
@@ -398,18 +437,60 @@ bool _reminderKeyMatchesEventInSchedule(
   String scheduleId,
   String eventId,
 ) {
-  return occurrenceKey.startsWith('$scheduleId|$eventId|');
+  final parsed = parseGeneralOccurrenceKey(occurrenceKey);
+  if (parsed != null) {
+    return parsed.calendarId == scheduleId && parsed.eventId == eventId;
+  }
+  return _legacyReminderKeyStart(
+        occurrenceKey,
+        scheduleId: scheduleId,
+        eventId: eventId,
+      ) !=
+      null;
 }
 
 bool _reminderKeyMatchesEventAtOrAfter(
   String occurrenceKey,
+  String scheduleId,
   String eventId,
   DateTime startInclusive,
 ) {
-  final parts = occurrenceKey.split('|');
-  if (parts.length < 3 || parts[1] != eventId) {
-    return false;
+  final parsed = parseGeneralOccurrenceKey(occurrenceKey);
+  if (parsed != null) {
+    if (parsed.calendarId != scheduleId || parsed.eventId != eventId) {
+      return false;
+    }
+    final start = tryParseStrictIsoDateTime(parsed.startDateTimeIso);
+    return start != null && !start.isBefore(startInclusive);
   }
-  final start = tryParseStrictIsoDateTime(parts[2]);
+  final start = _legacyReminderKeyStart(
+    occurrenceKey,
+    scheduleId: scheduleId,
+    eventId: eventId,
+  );
   return start != null && !start.isBefore(startInclusive);
+}
+
+bool _reminderKeyMatchesOccurrence(
+  String occurrenceKey,
+  GeneralEventOccurrence occurrence,
+) {
+  return generalOccurrenceKeyMatches(
+    occurrenceKey,
+    calendarId: occurrence.calendar.id,
+    eventId: occurrence.event.id,
+    startDateTimeIso: occurrence.start.toIso8601String(),
+  );
+}
+
+DateTime? _legacyReminderKeyStart(
+  String occurrenceKey, {
+  required String scheduleId,
+  required String eventId,
+}) {
+  final prefix = '$scheduleId|$eventId|';
+  if (!occurrenceKey.startsWith(prefix)) {
+    return null;
+  }
+  return tryParseStrictIsoDateTime(occurrenceKey.substring(prefix.length));
 }

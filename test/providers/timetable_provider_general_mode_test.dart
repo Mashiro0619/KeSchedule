@@ -11,10 +11,8 @@ class _MemoryTimetableStorage implements TimetableStorage {
   AppData? data;
 
   @override
-  Future<StorageLoadResult> load() async => StorageLoadResult(
-    data: data,
-    recoveryStatus: RecoveryStatus.none,
-  );
+  Future<StorageLoadResult> load() async =>
+      StorageLoadResult(data: data, recoveryStatus: RecoveryStatus.none);
 
   @override
   Future<void> save(AppData data) async {
@@ -410,7 +408,13 @@ void main() {
         storage.data!.generalMode.reminderAcknowledgements.map(
           (item) => item.occurrenceKey,
         ),
-        ['cal1|repeat1|2026-05-18T09:00:00.000'],
+        [
+          buildGeneralOccurrenceKey(
+            'cal1',
+            'repeat1',
+            '2026-05-18T09:00:00.000',
+          ),
+        ],
       );
     },
   );

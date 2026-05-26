@@ -21,9 +21,80 @@ class GeneralEventOccurrence {
       normalizeDateOnly(start).toIso8601String().split('T').first;
 
   String get occurrenceKey =>
-      '${calendar.id}|${event.id}|${start.toIso8601String()}';
+      buildGeneralOccurrenceKey(calendar.id, event.id, start.toIso8601String());
 
   bool get isAllDay => event.isAllDay;
+}
+
+class GeneralOccurrenceKeyParts {
+  const GeneralOccurrenceKeyParts({
+    required this.calendarId,
+    required this.eventId,
+    required this.startDateTimeIso,
+  });
+
+  final String calendarId;
+  final String eventId;
+  final String startDateTimeIso;
+}
+
+String buildGeneralOccurrenceKey(
+  String calendarId,
+  String eventId,
+  String startDateTimeIso,
+) {
+  return [
+    'v2',
+    Uri.encodeComponent(calendarId),
+    Uri.encodeComponent(eventId),
+    Uri.encodeComponent(startDateTimeIso),
+  ].join('|');
+}
+
+GeneralOccurrenceKeyParts? parseGeneralOccurrenceKey(String key) {
+  final parts = key.split('|');
+  if (parts.length == 4 && parts.first == 'v2') {
+    return _parseVersionedGeneralOccurrenceKey(parts);
+  }
+  if (parts.length == 3) {
+    return GeneralOccurrenceKeyParts(
+      calendarId: parts[0],
+      eventId: parts[1],
+      startDateTimeIso: parts[2],
+    );
+  }
+  return null;
+}
+
+bool generalOccurrenceKeyMatches(
+  String key, {
+  required String calendarId,
+  required String eventId,
+  required String startDateTimeIso,
+}) {
+  final parsed = parseGeneralOccurrenceKey(key);
+  if (parsed != null) {
+    return parsed.calendarId == calendarId &&
+        parsed.eventId == eventId &&
+        parsed.startDateTimeIso == startDateTimeIso;
+  }
+  return key == '$calendarId|$eventId|$startDateTimeIso';
+}
+
+GeneralOccurrenceKeyParts? _parseVersionedGeneralOccurrenceKey(
+  List<String> parts,
+) {
+  try {
+    return GeneralOccurrenceKeyParts(
+      calendarId: Uri.decodeComponent(parts[1]),
+      eventId: Uri.decodeComponent(parts[2]),
+      startDateTimeIso: Uri.decodeComponent(parts[3]),
+    );
+  } on FormatException {
+    return null;
+  } on ArgumentError {
+    return null;
+  }
 }
 
 enum GeneralReminderStatus { upcoming, overdue }

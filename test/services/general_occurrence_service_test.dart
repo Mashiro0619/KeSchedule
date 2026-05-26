@@ -134,6 +134,85 @@ void main() {
   });
 
   group('GeneralOccurrenceService.isReminderHandled', () {
+    test('matches versioned acknowledgement keys with encoded ids', () {
+      final start = DateTime(2026, 5, 24, 10);
+      final event = buildEvent(
+        id: 'a|1',
+        title: 'x',
+        start: start,
+      ).copyWith(calendarId: 'cal|main');
+      final calendar = GeneralSchedule(
+        id: 'cal|main',
+        name: 'Work',
+        events: [event],
+      );
+      final occurrenceKey = buildGeneralOccurrenceKey(
+        'cal|main',
+        'a|1',
+        start.toIso8601String(),
+      );
+      final data = GeneralScheduleData(
+        activeScheduleId: 'cal|main',
+        schedules: [calendar],
+        reminderAcknowledgements: [
+          GeneralReminderAcknowledgement(
+            occurrenceKey: occurrenceKey,
+            updatedAtIso: DateTime.now().toIso8601String(),
+          ),
+        ],
+      );
+      final occurrence = service
+          .occurrencesForQuery(
+            data,
+            GeneralOccurrenceQuery(
+              startInclusive: DateTime(2026, 5, 24),
+              endExclusive: DateTime(2026, 5, 25),
+            ),
+          )
+          .single;
+      final parsed = parseGeneralOccurrenceKey(occurrenceKey)!;
+
+      expect(occurrenceKey, 'v2|cal%7Cmain|a%7C1|2026-05-24T10%3A00%3A00.000');
+      expect(parsed.calendarId, 'cal|main');
+      expect(parsed.eventId, 'a|1');
+      expect(service.isReminderHandled(data, occurrence), isTrue);
+    });
+
+    test('still matches legacy acknowledgement keys', () {
+      final start = DateTime(2026, 5, 24, 10);
+      final event = buildEvent(
+        id: 'a|1',
+        title: 'x',
+        start: start,
+      ).copyWith(calendarId: 'cal|main');
+      final calendar = GeneralSchedule(
+        id: 'cal|main',
+        name: 'Work',
+        events: [event],
+      );
+      final data = GeneralScheduleData(
+        activeScheduleId: 'cal|main',
+        schedules: [calendar],
+        reminderAcknowledgements: [
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'cal|main|a|1|${start.toIso8601String()}',
+            updatedAtIso: DateTime.now().toIso8601String(),
+          ),
+        ],
+      );
+      final occurrence = service
+          .occurrencesForQuery(
+            data,
+            GeneralOccurrenceQuery(
+              startInclusive: DateTime(2026, 5, 24),
+              endExclusive: DateTime(2026, 5, 25),
+            ),
+          )
+          .single;
+
+      expect(service.isReminderHandled(data, occurrence), isTrue);
+    });
+
     test('returns true when acknowledgement is marked handled for the key', () {
       final start = DateTime(2026, 5, 24, 10);
       final event = buildEvent(id: 'a', title: 'x', start: start);

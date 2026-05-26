@@ -774,9 +774,9 @@ class ImportExportService {
           .copyWith(
             reminderAcknowledgements: data.reminderAcknowledgements
                 .where(
-                  (item) => !_reminderKeyContainsSchedule(
+                  (item) => !_reminderKeyBelongsToSchedule(
                     item.occurrenceKey,
-                    current.id,
+                    current,
                   ),
                 )
                 .toList(),
@@ -1237,7 +1237,7 @@ GeneralScheduleData _normalizeGeneralScheduleData(GeneralScheduleData data) {
   final requestedActiveScheduleId = data.activeScheduleId.trim();
   final scheduleIds = <String>{};
   final eventIds = <String>{};
-  final occurrencePrefixMap = <String, String>{};
+  final occurrenceKeyRemaps = <_GeneralOccurrenceKeyRemap>[];
   final schedules = <GeneralSchedule>[];
   String? activeScheduleId;
 
@@ -1272,9 +1272,13 @@ GeneralScheduleData _normalizeGeneralScheduleData(GeneralScheduleData data) {
         existingIds: eventIds,
       );
       eventIds.add(eventId);
-      occurrencePrefixMap.putIfAbsent(
-        '$rawScheduleId|$rawEventId|',
-        () => '$scheduleId|$eventId|',
+      occurrenceKeyRemaps.add(
+        _GeneralOccurrenceKeyRemap(
+          rawScheduleId: rawScheduleId,
+          rawEventId: rawEventId,
+          scheduleId: scheduleId,
+          eventId: eventId,
+        ),
       );
       events.add(event.copyWith(id: eventId, calendarId: scheduleId));
     }
@@ -1303,7 +1307,7 @@ GeneralScheduleData _normalizeGeneralScheduleData(GeneralScheduleData data) {
       GeneralReminderAcknowledgement(
         occurrenceKey: _remapGeneralOccurrenceKey(
           normalizedAcknowledgement.occurrenceKey,
-          occurrencePrefixMap,
+          occurrenceKeyRemaps,
         ),
         isHandled: normalizedAcknowledgement.isHandled,
         updatedAtIso: normalizedAcknowledgement.updatedAtIso,
@@ -1332,14 +1336,55 @@ bool _matchesGeneralActiveScheduleId({
 
 String _remapGeneralOccurrenceKey(
   String occurrenceKey,
-  Map<String, String> occurrencePrefixMap,
+  List<_GeneralOccurrenceKeyRemap> remaps,
 ) {
-  for (final entry in occurrencePrefixMap.entries) {
-    if (occurrenceKey.startsWith(entry.key)) {
-      return '${entry.value}${occurrenceKey.substring(entry.key.length)}';
+  final parsed = parseGeneralOccurrenceKey(occurrenceKey);
+  if (parsed != null) {
+    for (final remap in remaps) {
+      if (remap.matches(parsed.calendarId, parsed.eventId)) {
+        return buildGeneralOccurrenceKey(
+          remap.scheduleId,
+          remap.eventId,
+          parsed.startDateTimeIso,
+        );
+      }
+    }
+    return buildGeneralOccurrenceKey(
+      parsed.calendarId,
+      parsed.eventId,
+      parsed.startDateTimeIso,
+    );
+  }
+  for (final remap in remaps) {
+    final legacyPrefix = '${remap.rawScheduleId}|${remap.rawEventId}|';
+    if (occurrenceKey.startsWith(legacyPrefix)) {
+      return buildGeneralOccurrenceKey(
+        remap.scheduleId,
+        remap.eventId,
+        occurrenceKey.substring(legacyPrefix.length),
+      );
     }
   }
   return occurrenceKey;
+}
+
+class _GeneralOccurrenceKeyRemap {
+  const _GeneralOccurrenceKeyRemap({
+    required this.rawScheduleId,
+    required this.rawEventId,
+    required this.scheduleId,
+    required this.eventId,
+  });
+
+  final String rawScheduleId;
+  final String rawEventId;
+  final String scheduleId;
+  final String eventId;
+
+  bool matches(String calendarId, String eventId) {
+    return (calendarId == rawScheduleId || calendarId == scheduleId) &&
+        (eventId == rawEventId || eventId == this.eventId);
+  }
 }
 
 Set<String> _generalEventIds(Iterable<GeneralSchedule> schedules) {
@@ -1402,9 +1447,24 @@ String _sanitizeImportedGeneralId(String rawId) {
   return safe.length > 96 ? safe.substring(0, 96) : safe;
 }
 
-bool _reminderKeyContainsSchedule(String occurrenceKey, String scheduleId) {
+bool _reminderKeyBelongsToSchedule(
+  String occurrenceKey,
+  GeneralSchedule schedule,
+) {
+  final parsed = parseGeneralOccurrenceKey(occurrenceKey);
+  if (parsed != null) {
+    return parsed.calendarId == schedule.id;
+  }
+  for (final event in schedule.events) {
+    final prefix = '${schedule.id}|${event.id}|';
+    if (occurrenceKey.startsWith(prefix) &&
+        tryParseStrictIsoDateTime(occurrenceKey.substring(prefix.length)) !=
+            null) {
+      return true;
+    }
+  }
   final parts = occurrenceKey.split('|');
-  return parts.isNotEmpty && parts.first == scheduleId;
+  return parts.length == 3 && parts.first == schedule.id;
 }
 
 String _generalIcsImportErrorMessage(

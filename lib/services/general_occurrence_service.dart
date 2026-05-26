@@ -55,9 +55,15 @@ class GeneralOccurrenceService {
     GeneralScheduleData general,
     GeneralEventOccurrence occurrence,
   ) {
-    final key = occurrence.occurrenceKey;
     return general.reminderAcknowledgements.any(
-      (item) => item.occurrenceKey == key && item.isHandled,
+      (item) =>
+          item.isHandled &&
+          generalOccurrenceKeyMatches(
+            item.occurrenceKey,
+            calendarId: occurrence.calendar.id,
+            eventId: occurrence.event.id,
+            startDateTimeIso: occurrence.start.toIso8601String(),
+          ),
     );
   }
 
@@ -92,34 +98,36 @@ class GeneralOccurrenceService {
     GeneralOccurrenceQuery? occurrenceFilter,
   }) {
     final anchor = now ?? DateTime.now();
-    final upcoming = occurrencesForRange(
-      general,
-      startInclusive: anchor,
-      endExclusive: anchor.add(upcomingHorizon),
-    )
-        .where((o) => occurrenceFilter?.matches(o) ?? true)
-        .where((o) => !isReminderHandled(general, o))
-        .where((o) => isInReminderWindow(o, anchor))
-        .map(
-          (o) => GeneralReminderItem(
-            occurrence: o,
-            status: GeneralReminderStatus.upcoming,
-          ),
-        );
-    final overdue = occurrencesForRange(
-      general,
-      startInclusive: anchor.subtract(overdueWindow),
-      endExclusive: anchor,
-    )
-        .where((o) => occurrenceFilter?.matches(o) ?? true)
-        .where((o) => !isReminderHandled(general, o))
-        .where((o) => o.end.isBefore(anchor))
-        .map(
-          (o) => GeneralReminderItem(
-            occurrence: o,
-            status: GeneralReminderStatus.overdue,
-          ),
-        );
+    final upcoming =
+        occurrencesForRange(
+              general,
+              startInclusive: anchor,
+              endExclusive: anchor.add(upcomingHorizon),
+            )
+            .where((o) => occurrenceFilter?.matches(o) ?? true)
+            .where((o) => !isReminderHandled(general, o))
+            .where((o) => isInReminderWindow(o, anchor))
+            .map(
+              (o) => GeneralReminderItem(
+                occurrence: o,
+                status: GeneralReminderStatus.upcoming,
+              ),
+            );
+    final overdue =
+        occurrencesForRange(
+              general,
+              startInclusive: anchor.subtract(overdueWindow),
+              endExclusive: anchor,
+            )
+            .where((o) => occurrenceFilter?.matches(o) ?? true)
+            .where((o) => !isReminderHandled(general, o))
+            .where((o) => o.end.isBefore(anchor))
+            .map(
+              (o) => GeneralReminderItem(
+                occurrence: o,
+                status: GeneralReminderStatus.overdue,
+              ),
+            );
     return [...upcoming, ...overdue]..sort((a, b) {
       final statusCompare = a.status.index.compareTo(b.status.index);
       if (statusCompare != 0) return statusCompare;
