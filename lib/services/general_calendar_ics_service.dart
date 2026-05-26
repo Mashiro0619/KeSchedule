@@ -259,21 +259,29 @@ class GeneralCalendarIcsService {
     final ignoredSupportedFields = <String>[];
     var adjustedEnd = false;
     var end = endField == null ? null : _parseIcsDateTime(endField);
-    if (endField != null && end == null) {
-      adjustedEnd = true;
-    }
+    final hasInvalidEnd = endField != null && end == null;
     if (durationField != null) {
-      if (endField == null) {
+      if (endField == null || hasInvalidEnd) {
         final duration = _parseIcsDuration(durationField.value);
         if (duration == null) {
           ignoredSupportedFields.add('DURATION');
           adjustedEnd = true;
         } else {
           end = start.add(duration);
+          adjustedEnd = adjustedEnd || hasInvalidEnd;
         }
       } else {
         ignoredSupportedFields.add('DURATION');
       }
+    } else if (hasInvalidEnd) {
+      adjustedEnd = true;
+    }
+    if (end != null && isAllDay) {
+      final normalizedEnd = normalizeDateOnly(end);
+      if (normalizedEnd != end) {
+        adjustedEnd = true;
+      }
+      end = normalizedEnd;
     }
     end ??= isAllDay
         ? normalizeDateOnly(start).add(const Duration(days: 1))
@@ -298,6 +306,7 @@ class GeneralCalendarIcsService {
     final description = fields['DESCRIPTION']?.value.trim() ?? '';
     final unsupportedFields = [
       ..._unsupportedFields(fields.keys),
+      ..._unsupportedFieldParameters(fields.values),
       ...unsupportedComponents,
       ...ignoredSupportedFields,
     ]..sort();
@@ -369,9 +378,9 @@ class _IcsField {
     for (final part in parts.skip(1)) {
       final separator = part.indexOf('=');
       if (separator <= 0) continue;
-      params[part.substring(0, separator).toUpperCase()] = part
-          .substring(separator + 1)
-          .toUpperCase();
+      params[part.substring(0, separator).toUpperCase()] = part.substring(
+        separator + 1,
+      );
     }
     return _IcsField(
       name: parts.first.toUpperCase(),
@@ -552,7 +561,7 @@ DateTime? _parseIcsDateTime(_IcsField field) {
 
 bool _isIcsDateOnly(_IcsField field) {
   final value = field.value.trim();
-  return field.params['VALUE'] == 'DATE' ||
+  return field.params['VALUE']?.toUpperCase() == 'DATE' ||
       RegExp(r'^\d{8}$').hasMatch(value) ||
       RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value);
 }
@@ -902,6 +911,17 @@ List<String> _unsupportedFields(Iterable<String> fields) {
     'RRULE',
   };
   return fields.where((field) => !supported.contains(field)).toList()..sort();
+}
+
+List<String> _unsupportedFieldParameters(Iterable<_IcsField> fields) {
+  final unsupported = <String>[];
+  for (final field in fields) {
+    final timezoneId = field.params['TZID']?.trim();
+    if (timezoneId != null && timezoneId.isNotEmpty) {
+      unsupported.add('${field.name};TZID=$timezoneId');
+    }
+  }
+  return unsupported..sort();
 }
 
 String _generateEventId() => 'evt_${DateTime.now().microsecondsSinceEpoch}';

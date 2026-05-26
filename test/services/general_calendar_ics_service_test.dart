@@ -113,6 +113,16 @@ END:VCALENDAR
     expect(event.location, 'Room G');
     expect(event.recurrenceRule.type, GeneralEventRecurrence.weekly);
     expect(event.recurrenceRule.untilDateIso, '2026-06-15');
+    expect(
+      imported.warningItems
+          .singleWhere(
+            (item) =>
+                item.code == GeneralCalendarIcsWarningCode.unsupportedFields,
+          )
+          .values,
+      ['DTEND;TZID=Asia/Shanghai', 'DTSTART;TZID=Asia/Shanghai'],
+    );
+    expect(event.notes, contains('DTSTART;TZID=Asia/Shanghai'));
   });
 
   test('imports basic date-times with numeric offsets', () {
@@ -229,6 +239,70 @@ END:VCALENDAR
     final event = imported.schedules.single.events.single;
 
     expect(event.endDateTimeIso, startsWith('2026-05-25T10:00:00'));
+    expect(
+      imported.warningItems.map((item) => item.code),
+      containsAll([
+        GeneralCalendarIcsWarningCode.adjustedEnd,
+        GeneralCalendarIcsWarningCode.unsupportedFields,
+      ]),
+    );
+    expect(
+      imported.warningItems
+          .singleWhere(
+            (item) =>
+                item.code == GeneralCalendarIcsWarningCode.unsupportedFields,
+          )
+          .values,
+      ['DURATION'],
+    );
+  });
+
+  test('uses all-day DURATION when DTEND is invalid', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:all-day-bad-end-duration
+SUMMARY:All-day with duration
+DTSTART;VALUE=DATE:20260525
+DTEND;VALUE=DATE:20260540
+DURATION:P2D
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.isAllDay, true);
+    expect(event.startDateTimeIso, startsWith('2026-05-25'));
+    expect(event.endDateTimeIso, startsWith('2026-05-27'));
+    expect(
+      imported.warningItems.single.code,
+      GeneralCalendarIcsWarningCode.adjustedEnd,
+    );
+  });
+
+  test('defaults all-day end when DTEND and DURATION are invalid', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:all-day-bad-end-bad-duration
+SUMMARY:All-day bad duration
+DTSTART;VALUE=DATE:20260525
+DTEND;VALUE=DATE:20260540
+DURATION:P
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.isAllDay, true);
+    expect(event.startDateTimeIso, startsWith('2026-05-25'));
+    expect(event.endDateTimeIso, startsWith('2026-05-26'));
     expect(
       imported.warningItems.map((item) => item.code),
       containsAll([

@@ -23,6 +23,16 @@ void main() {
       expect(compareUpdateVersions('1.2.3-beta.1', '1.2.3'), 0);
       expect(compareUpdateVersions('1.2.4', '1.2.3-beta.1'), greaterThan(0));
     });
+
+    test('rejects malformed version strings during comparison', () {
+      for (final value in ['future', '1.x', '1..2']) {
+        expect(
+          () => compareUpdateVersions(value, '1.0.0'),
+          throwsFormatException,
+          reason: value,
+        );
+      }
+    });
   });
 
   group('UpdateService.checkForUpdates', () {
@@ -121,6 +131,38 @@ void main() {
       expect(result.hasUpdate, isTrue);
     });
 
+    test('falls back when GitHub version string is malformed', () async {
+      final service = UpdateService(
+        client: MockClient((request) async {
+          if (request.url.toString().contains('/releases/latest')) {
+            return http.Response(
+              jsonEncode({
+                'tag_name': 'future',
+                'html_url':
+                    'https://github.com/Mashiro0619/KeSchedule/releases/tag/future',
+                'body': 'bad version',
+              }),
+              200,
+            );
+          }
+          if (request.url.toString() == AppConfig.updateVersionUrl) {
+            return http.Response(
+              jsonEncode({'version': '2.0.0', 'updateContent': 'notes'}),
+              200,
+            );
+          }
+          return http.Response('not found', 404);
+        }),
+      );
+
+      final result = await service.checkForUpdates(
+        preferredLocale: const Locale('en'),
+      );
+
+      expect(result.remoteVersion, '2.0.0');
+      expect(result.hasUpdate, isTrue);
+    });
+
     test('ignores malformed GitHub optional release fields', () async {
       final service = UpdateService(
         client: MockClient((request) async {
@@ -177,6 +219,63 @@ void main() {
         ),
       );
     });
+
+    test('rejects malformed configured update version strings', () async {
+      final service = UpdateService(
+        client: MockClient((request) async {
+          if (request.url.toString().contains('/releases/latest')) {
+            return http.Response('not found', 404);
+          }
+          if (request.url.toString() == AppConfig.updateVersionUrl) {
+            return http.Response(jsonEncode({'version': '1.x'}), 200);
+          }
+          return http.Response('not found', 404);
+        }),
+      );
+
+      expect(
+        () => service.checkForUpdates(preferredLocale: const Locale('en')),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Invalid custom update response.',
+          ),
+        ),
+      );
+    });
+
+    test(
+      'falls back when configured update version string is malformed',
+      () async {
+        final service = UpdateService(
+          client: MockClient((request) async {
+            if (request.url.toString() == AppConfig.updateVersionUrl) {
+              return http.Response(jsonEncode({'version': '1..2'}), 200);
+            }
+            if (request.url.toString().contains('/releases/latest')) {
+              return http.Response(
+                jsonEncode({
+                  'tag_name': 'v2.0.0',
+                  'html_url':
+                      'https://github.com/Mashiro0619/KeSchedule/releases/tag/v2.0.0',
+                  'body': 'notes',
+                }),
+                200,
+              );
+            }
+            return http.Response('not found', 404);
+          }),
+        );
+
+        final result = await service.checkForUpdates(
+          preferredLocale: const Locale('zh'),
+        );
+
+        expect(result.remoteVersion, '2.0.0');
+        expect(result.hasUpdate, isTrue);
+      },
+    );
 
     test('falls back after the preferred update source times out', () async {
       final service = UpdateService(

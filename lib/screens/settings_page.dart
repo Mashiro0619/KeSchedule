@@ -750,9 +750,20 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _currentVersion = currentVersion);
     final provider = context.read<TimetableProvider>();
     final availableUpdateVersion = provider.availableUpdateVersion;
-    if (availableUpdateVersion != null &&
-        availableUpdateVersion.isNotEmpty &&
-        compareUpdateVersions(availableUpdateVersion, currentVersion) <= 0) {
+    if (availableUpdateVersion == null || availableUpdateVersion.isEmpty) {
+      return;
+    }
+    int comparison;
+    try {
+      comparison = compareUpdateVersions(
+        availableUpdateVersion,
+        currentVersion,
+      );
+    } on FormatException {
+      await provider.updateAvailableUpdateVersion(null);
+      return;
+    }
+    if (comparison <= 0) {
       await provider.updateAvailableUpdateVersion(null);
     }
   }
@@ -771,7 +782,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (_currentVersion.isEmpty) {
       return true;
     }
-    return compareUpdateVersions(version, _currentVersion) > 0;
+    try {
+      return compareUpdateVersions(version, _currentVersion) > 0;
+    } on FormatException {
+      return false;
+    }
   }
 
   Future<void> _openGithubRepo() async {

@@ -43,6 +43,10 @@ bool prefersConfiguredUpdateSourceForLocale(Locale? locale) {
 }
 
 String normalizeUpdateVersion(String value) {
+  return _normalizeUpdateVersionOrNull(value) ?? '';
+}
+
+String? _normalizeUpdateVersionOrNull(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) {
     return '';
@@ -50,6 +54,11 @@ String normalizeUpdateVersion(String value) {
   final withoutPrefix = trimmed.startsWith('v') || trimmed.startsWith('V')
       ? trimmed.substring(1)
       : trimmed;
+  if (!RegExp(
+    r'^\d+(?:\.\d+)*(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$',
+  ).hasMatch(withoutPrefix)) {
+    return null;
+  }
   return withoutPrefix.split('+').first.split('-').first.trim();
 }
 
@@ -70,15 +79,19 @@ int compareUpdateVersions(String a, String b) {
 }
 
 List<int> _versionParts(String value) {
-  return normalizeUpdateVersion(value)
-      .split('.')
-      .map((item) => int.tryParse(item) ?? _leadingNumber(item))
-      .toList();
-}
-
-int _leadingNumber(String value) {
-  final match = RegExp(r'^\d+').firstMatch(value.trim());
-  return match == null ? 0 : int.parse(match.group(0)!);
+  final normalized = _normalizeUpdateVersionOrNull(value);
+  if (normalized == null || normalized.isEmpty) {
+    throw FormatException('Invalid update version: $value');
+  }
+  final parts = <int>[];
+  for (final item in normalized.split('.')) {
+    final part = int.tryParse(item);
+    if (part == null) {
+      throw FormatException('Invalid update version: $value');
+    }
+    parts.add(part);
+  }
+  return parts;
 }
 
 class UpdateService {
@@ -229,7 +242,10 @@ String _readRemoteVersionField(
   if (raw is! String) {
     throw FormatException(invalidMessage);
   }
-  final version = normalizeUpdateVersion(raw);
+  final version = _normalizeUpdateVersionOrNull(raw);
+  if (version == null) {
+    throw FormatException(invalidMessage);
+  }
   if (version.isEmpty) {
     throw FormatException(emptyMessage);
   }
