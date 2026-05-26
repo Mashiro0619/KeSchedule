@@ -14,10 +14,8 @@ class _MemoryTimetableStorage implements TimetableStorage {
   AppData? data;
 
   @override
-  Future<StorageLoadResult> load() async => StorageLoadResult(
-    data: data,
-    recoveryStatus: RecoveryStatus.none,
-  );
+  Future<StorageLoadResult> load() async =>
+      StorageLoadResult(data: data, recoveryStatus: RecoveryStatus.none);
 
   @override
   Future<void> save(AppData data) async {
@@ -95,26 +93,24 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) {
-            importLabel = AppLocalizations.of(
-              context,
-            ).importAsNewTimetable;
+            importLabel = AppLocalizations.of(context).importAsNewTimetable;
             return Scaffold(
               body: Center(
                 child: TextButton(
                   onPressed: () async {
                     final outcome =
                         await showModalBottomSheet<SchoolImportApplyRequest>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => SchoolWebImportResultSheet(
-                        response: response,
-                        canReplaceCurrent: false,
-                        periodTimeSets: periodTimeSets,
-                        initialPeriodTimeSetId: initialPeriodTimeSetId,
-                        provider: provider,
-                      ),
-                    );
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => SchoolWebImportResultSheet(
+                            response: response,
+                            canReplaceCurrent: false,
+                            periodTimeSets: periodTimeSets,
+                            initialPeriodTimeSetId: initialPeriodTimeSetId,
+                            provider: provider,
+                          ),
+                        );
                     results.add(outcome);
                   },
                   child: const Text('Open'),
@@ -137,12 +133,14 @@ void main() {
     );
 
     await tester.tap(importButton);
+    await tester.tap(importButton, warnIfMissed: false);
     await tester.pump();
 
     expect(
       (tester.widget(importButton) as OutlinedButton).onPressed,
       isNull,
-      reason: 'After first tap, import button must be disabled to block re-entry.',
+      reason:
+          'After first tap, import button must be disabled to block re-entry.',
     );
 
     await tester.pumpAndSettle();
@@ -155,8 +153,9 @@ void main() {
   testWidgets('cancel button cannot trigger a second pop', (tester) async {
     final provider = await _createProvider();
     final periodTimeSets = provider.periodTimeSets;
-    final initialPeriodTimeSetId =
-        periodTimeSets.isEmpty ? '' : periodTimeSets.first.id;
+    final initialPeriodTimeSetId = periodTimeSets.isEmpty
+        ? ''
+        : periodTimeSets.first.id;
     final response = _buildResponse();
 
     final results = <SchoolImportApplyRequest?>[];
@@ -175,17 +174,17 @@ void main() {
                   onPressed: () async {
                     final outcome =
                         await showModalBottomSheet<SchoolImportApplyRequest>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => SchoolWebImportResultSheet(
-                        response: response,
-                        canReplaceCurrent: false,
-                        periodTimeSets: periodTimeSets,
-                        initialPeriodTimeSetId: initialPeriodTimeSetId,
-                        provider: provider,
-                      ),
-                    );
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => SchoolWebImportResultSheet(
+                            response: response,
+                            canReplaceCurrent: false,
+                            periodTimeSets: periodTimeSets,
+                            initialPeriodTimeSetId: initialPeriodTimeSetId,
+                            provider: provider,
+                          ),
+                        );
                     results.add(outcome);
                   },
                   child: const Text('Open'),
@@ -204,12 +203,14 @@ void main() {
     expect(cancelButton, findsOneWidget);
 
     await tester.tap(cancelButton);
+    await tester.tap(cancelButton, warnIfMissed: false);
     await tester.pump();
 
     expect(
       (tester.widget(cancelButton) as TextButton).onPressed,
       isNull,
-      reason: 'Cancel button must be disabled after first tap to block re-entry.',
+      reason:
+          'Cancel button must be disabled after first tap to block re-entry.',
     );
 
     await tester.pumpAndSettle();
@@ -221,8 +222,9 @@ void main() {
   ) async {
     final provider = await _createProvider();
     final periodTimeSets = provider.periodTimeSets;
-    final initialPeriodTimeSetId =
-        periodTimeSets.isEmpty ? '' : periodTimeSets.first.id;
+    final initialPeriodTimeSetId = periodTimeSets.isEmpty
+        ? ''
+        : periodTimeSets.first.id;
     final response = _buildResponse(withCourses: false);
 
     late String importLabel;
@@ -281,5 +283,67 @@ void main() {
       isNull,
       reason: 'Replace button must also be disabled when 0 courses.',
     );
+  });
+
+  testWidgets('start date picker ignores rapid duplicate taps', (tester) async {
+    final provider = await _createProvider();
+    final periodTimeSets = provider.periodTimeSets;
+    final response = _buildResponse();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () async {
+                  await showModalBottomSheet<SchoolImportApplyRequest>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => SchoolWebImportResultSheet(
+                      response: response,
+                      canReplaceCurrent: false,
+                      periodTimeSets: periodTimeSets,
+                      initialPeriodTimeSetId: periodTimeSets.first.id,
+                      provider: provider,
+                    ),
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(SchoolWebImportResultSheet)),
+    );
+    final startDateTile = find.widgetWithText(ListTile, l10n.semesterStartDate);
+    expect(startDateTile, findsOneWidget);
+
+    await tester.tap(startDateTile);
+    await tester.tap(startDateTile, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(DatePickerDialog),
+        matching: find.widgetWithText(TextButton, l10n.cancel),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DatePickerDialog), findsNothing);
+    expect(find.byType(SchoolWebImportResultSheet), findsOneWidget);
   });
 }

@@ -3,10 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../l10n/app_localizations.dart';
 
-typedef TextImportSubmit = Future<bool> Function(
-  BuildContext context,
-  String content,
-);
+typedef TextImportSubmit =
+    Future<bool> Function(BuildContext context, String content);
 
 class TextImportPage extends StatefulWidget {
   const TextImportPage({
@@ -84,6 +82,9 @@ class _TextImportPageState extends State<TextImportPage> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final content = _controller.text.trim();
     if (content.isEmpty) {
@@ -92,13 +93,15 @@ class _TextImportPageState extends State<TextImportPage> {
     }
 
     setState(() => _isSubmitting = true);
+    var shouldResetSubmitting = true;
     try {
       final imported = await widget.onSubmit(context, content);
       if (imported && mounted) {
+        shouldResetSubmitting = false;
         Navigator.of(context).pop();
       }
     } finally {
-      if (mounted) {
+      if (shouldResetSubmitting && mounted) {
         setState(() => _isSubmitting = false);
       }
     }
@@ -108,7 +111,9 @@ class _TextImportPageState extends State<TextImportPage> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -121,6 +126,13 @@ Future<void> showTextExportDialog(
     context: context,
     builder: (dialogContext) {
       final l10n = AppLocalizations.of(dialogContext);
+      var popped = false;
+      void popOnce() {
+        if (popped) return;
+        popped = true;
+        Navigator.of(dialogContext).pop();
+      }
+
       return AlertDialog(
         title: Text(title),
         content: SizedBox(
@@ -128,17 +140,14 @@ Future<void> showTextExportDialog(
           child: SingleChildScrollView(child: SelectableText(content)),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(l10n.cancel),
-          ),
+          TextButton(onPressed: popOnce, child: Text(l10n.cancel)),
           FilledButton(
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: content));
               if (dialogContext.mounted) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(content: Text(l10n.copiedToClipboard)),
-                );
+                ScaffoldMessenger.of(
+                  dialogContext,
+                ).showSnackBar(SnackBar(content: Text(l10n.copiedToClipboard)));
               }
             },
             child: Text(l10n.copyText),

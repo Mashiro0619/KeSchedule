@@ -61,24 +61,28 @@ void main() {
             body: Center(
               child: TextButton(
                 onPressed: () async {
-                  final outcome = await showModalBottomSheet<
-                      GeneralEventEditorResult>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => GeneralEventEditorSheet(
-                      calendars: const [
-                        GeneralSchedule(id: 'work', name: 'Work', events: []),
-                      ],
-                      activeCalendarId: 'work',
-                      initialEvent: GeneralEvent(
-                        id: 'event',
-                        calendarId: 'work',
-                        title: 'Meeting',
-                        startDateTimeIso: '2026-05-25T09:00:00.000',
-                        endDateTimeIso: '2026-05-25T10:00:00.000',
-                      ),
-                    ),
-                  );
+                  final outcome =
+                      await showModalBottomSheet<GeneralEventEditorResult>(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (_) => GeneralEventEditorSheet(
+                          calendars: const [
+                            GeneralSchedule(
+                              id: 'work',
+                              name: 'Work',
+                              events: [],
+                            ),
+                          ],
+                          activeCalendarId: 'work',
+                          initialEvent: GeneralEvent(
+                            id: 'event',
+                            calendarId: 'work',
+                            title: 'Meeting',
+                            startDateTimeIso: '2026-05-25T09:00:00.000',
+                            endDateTimeIso: '2026-05-25T10:00:00.000',
+                          ),
+                        ),
+                      );
                   results.add(outcome);
                 },
                 child: const Text('Open'),
@@ -99,6 +103,7 @@ void main() {
     expect(cancelFinder, findsOneWidget);
 
     await tester.tap(cancelFinder);
+    await tester.tap(cancelFinder, warnIfMissed: false);
     await tester.pump();
 
     expect(
@@ -112,7 +117,41 @@ void main() {
 
     expect(results, hasLength(1));
     expect(results.single, isNull);
-    expect(find.text('Open'), findsOneWidget,
-        reason: 'Parent route must remain after double-tap on cancel.');
+    expect(
+      find.text('Open'),
+      findsOneWidget,
+      reason: 'Parent route must remain after double-tap on cancel.',
+    );
+  });
+
+  testWidgets('date picker ignores rapid duplicate taps', (tester) async {
+    await tester.pumpWidget(
+      _localizedApp(
+        GeneralEventEditorSheet(
+          calendars: const [
+            GeneralSchedule(id: 'work', name: 'Work', events: []),
+          ],
+          activeCalendarId: 'work',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final pickDateButton = find.byTooltip('Pick date').first;
+    await tester.tap(pickDateButton);
+    await tester.tap(pickDateButton, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(DatePickerDialog),
+        matching: find.widgetWithText(TextButton, 'Cancel'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DatePickerDialog), findsNothing);
   });
 }

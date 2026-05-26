@@ -21,54 +21,90 @@ extension _HomeScreenPrivacy on _HomeScreenState {
           barrierDismissible: false,
           builder: (dialogContext) {
             final l10n = AppLocalizations.of(dialogContext);
-            return PopScope(
-              canPop: false,
-              child: AlertDialog(
-                title: Text(l10n.privacyGateTitle),
-                content: SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.privacyPolicyIntro),
-                        const SizedBox(height: 16),
-                        _PrivacySummaryRow(
-                          text: l10n.privacyGateSummaryStorage,
+            var isAccepting = false;
+            var popped = false;
+
+            Future<void> acceptPrivacy(StateSetter setDialogState) async {
+              if (isAccepting || popped) {
+                return;
+              }
+              setDialogState(() => isAccepting = true);
+              try {
+                await provider.acceptPrivacyPolicyCurrentVersion();
+                if (!dialogContext.mounted || popped) {
+                  return;
+                }
+                popped = true;
+                Navigator.of(dialogContext).pop();
+              } catch (_) {
+                if (dialogContext.mounted) {
+                  setDialogState(() => isAccepting = false);
+                }
+                rethrow;
+              }
+            }
+
+            return StatefulBuilder(
+              builder: (context, setDialogState) {
+                return PopScope(
+                  canPop: false,
+                  child: AlertDialog(
+                    title: Text(l10n.privacyGateTitle),
+                    content: SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l10n.privacyPolicyIntro),
+                            const SizedBox(height: 16),
+                            _PrivacySummaryRow(
+                              text: l10n.privacyGateSummaryStorage,
+                            ),
+                            const SizedBox(height: 8),
+                            _PrivacySummaryRow(
+                              text: l10n.privacyGateSummaryImportExport,
+                            ),
+                            const SizedBox(height: 8),
+                            _PrivacySummaryRow(
+                              text: l10n.privacyGateSummaryUpdates,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        _PrivacySummaryRow(
-                          text: l10n.privacyGateSummaryImportExport,
-                        ),
-                        const SizedBox(height: 8),
-                        _PrivacySummaryRow(
-                          text: l10n.privacyGateSummaryUpdates,
-                        ),
-                      ],
+                      ),
                     ),
+                    actions: [
+                      TextButton(
+                        onPressed: isAccepting
+                            ? null
+                            : () => _openPrivacyPolicyPage(),
+                        child: Text(l10n.privacyViewFullPolicy),
+                      ),
+                      TextButton(
+                        onPressed: isAccepting
+                            ? null
+                            : () => _declinePrivacyPolicy(dialogContext),
+                        child: Text(l10n.privacyDecline),
+                      ),
+                      FilledButton(
+                        onPressed: isAccepting
+                            ? null
+                            : () => acceptPrivacy(setDialogState),
+                        child: isAccepting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(l10n.privacyAgreeAndContinue),
+                      ),
+                    ],
                   ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => _openPrivacyPolicyPage(),
-                    child: Text(l10n.privacyViewFullPolicy),
-                  ),
-                  TextButton(
-                    onPressed: () => _declinePrivacyPolicy(dialogContext),
-                    child: Text(l10n.privacyDecline),
-                  ),
-                  FilledButton(
-                    onPressed: () async {
-                      await provider.acceptPrivacyPolicyCurrentVersion();
-                      if (dialogContext.mounted) {
-                        Navigator.of(dialogContext).pop();
-                      }
-                    },
-                    child: Text(l10n.privacyAgreeAndContinue),
-                  ),
-                ],
-              ),
+                );
+              },
             );
           },
         );

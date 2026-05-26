@@ -15,6 +15,8 @@ class LanguageSettingsPage extends StatefulWidget {
 class _LanguageSettingsPageState extends State<LanguageSettingsPage> {
   String _query = '';
   bool _isSearchVisible = false;
+  bool _isSelectingLanguage = false;
+  bool _languageSelectionPopped = false;
 
   @override
   Widget build(BuildContext context) {
@@ -66,22 +68,36 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage> {
                   ),
                   child: SearchBar(
                     hintText: l10n.language,
-                    leading: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
+                    leading: Icon(
+                      Icons.search,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                     trailing: _query.isEmpty
                         ? null
                         : [
                             IconButton(
-                              tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
+                              tooltip: MaterialLocalizations.of(
+                                context,
+                              ).clearButtonTooltip,
                               onPressed: () => setState(() => _query = ''),
-                              icon: Icon(Icons.close, color: colorScheme.onSurfaceVariant),
+                              icon: Icon(
+                                Icons.close,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ],
                     backgroundColor: const WidgetStatePropertyAll(
                       Colors.transparent,
                     ),
-                    overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-                    shadowColor: const WidgetStatePropertyAll(Colors.transparent),
-                    surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+                    overlayColor: const WidgetStatePropertyAll(
+                      Colors.transparent,
+                    ),
+                    shadowColor: const WidgetStatePropertyAll(
+                      Colors.transparent,
+                    ),
+                    surfaceTintColor: const WidgetStatePropertyAll(
+                      Colors.transparent,
+                    ),
                     shape: const WidgetStatePropertyAll(
                       RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                     ),
@@ -102,15 +118,21 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage> {
               Card.outlined(
                 child: Column(
                   children: [
-                    for (var index = 0; index < filteredOptions.length; index++) ...[
+                    for (
+                      var index = 0;
+                      index < filteredOptions.length;
+                      index++
+                    ) ...[
                       _LanguageOptionTile(
                         option: filteredOptions[index],
                         selected: filteredOptions[index].code == currentCode,
-                        onTap: () => _selectLanguage(
-                          context,
-                          provider,
-                          filteredOptions[index].code,
-                        ),
+                        onTap: _isSelectingLanguage || _languageSelectionPopped
+                            ? null
+                            : () => _selectLanguage(
+                                context,
+                                provider,
+                                filteredOptions[index].code,
+                              ),
                       ),
                       if (index != filteredOptions.length - 1)
                         const Divider(height: 1),
@@ -130,13 +152,30 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage> {
     TimetableProvider provider,
     String localeCode,
   ) async {
+    if (_isSelectingLanguage || _languageSelectionPopped) {
+      return;
+    }
     final normalizedCode = normalizeLocaleCode(localeCode);
     if (normalizedCode == normalizeLocaleCode(provider.localeCode)) {
       return;
     }
-    await provider.updateLocaleCode(normalizedCode);
-    if (context.mounted) {
+    setState(() => _isSelectingLanguage = true);
+    var shouldResetSelecting = true;
+    try {
+      await provider.updateLocaleCode(normalizedCode);
+      if (!context.mounted) {
+        return;
+      }
+      shouldResetSelecting = false;
+      setState(() {
+        _isSelectingLanguage = false;
+        _languageSelectionPopped = true;
+      });
       Navigator.of(context).pop();
+    } finally {
+      if (shouldResetSelecting && mounted) {
+        setState(() => _isSelectingLanguage = false);
+      }
     }
   }
 }
@@ -150,7 +189,7 @@ class _LanguageOptionTile extends StatelessWidget {
 
   final AppLanguageOption option;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

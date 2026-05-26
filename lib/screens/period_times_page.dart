@@ -35,6 +35,8 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
   late final TextEditingController _nameController;
   late List<CoursePeriodTime> _periodTimes;
   var _loading = true;
+  var _timePickerOpen = false;
+  var _menuActionInProgress = false;
 
   @override
   void initState() {
@@ -80,6 +82,7 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
         actions: [
           PopupMenuButton<_PeriodTimesMenuAction>(
             tooltip: l10n.importExport,
+            enabled: !_menuActionInProgress,
             onSelected: _handleMenuAction,
             itemBuilder: (context) => [
               PopupMenuItem(
@@ -176,7 +179,9 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
                   child: _TimeCell(
                     label: l10n.startTime,
                     value: formatMinutes(period.startMinutes),
-                    onTap: () => _pickPeriodTime(index, isStart: true),
+                    onTap: _timePickerOpen
+                        ? null
+                        : () => _pickPeriodTime(index, isStart: true),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -184,7 +189,9 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
                   child: _TimeCell(
                     label: l10n.endTime,
                     value: formatMinutes(period.endMinutes),
-                    onTap: () => _pickPeriodTime(index, isStart: false),
+                    onTap: _timePickerOpen
+                        ? null
+                        : () => _pickPeriodTime(index, isStart: false),
                   ),
                 ),
               ],
@@ -217,25 +224,41 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
   }
 
   Future<void> _handleMenuAction(_PeriodTimesMenuAction action) async {
-    switch (action) {
-      case _PeriodTimesMenuAction.importTemplate:
-        await _importTemplate();
-        return;
-      case _PeriodTimesMenuAction.importTemplateText:
-        await _importTemplateFromText();
-        return;
-      case _PeriodTimesMenuAction.exportTemplate:
-        await _shareTemplate();
-        return;
-      case _PeriodTimesMenuAction.saveTemplate:
-        await _saveTemplateToFile();
-        return;
-      case _PeriodTimesMenuAction.exportTemplateText:
-        await _exportTemplateAsText();
-        return;
-      case _PeriodTimesMenuAction.deleteSet:
-        await _deleteSet();
-        return;
+    if (_menuActionInProgress) {
+      return;
+    }
+    _setMenuActionInProgress(true);
+    try {
+      switch (action) {
+        case _PeriodTimesMenuAction.importTemplate:
+          await _importTemplate();
+          return;
+        case _PeriodTimesMenuAction.importTemplateText:
+          await _importTemplateFromText();
+          return;
+        case _PeriodTimesMenuAction.exportTemplate:
+          await _shareTemplate();
+          return;
+        case _PeriodTimesMenuAction.saveTemplate:
+          await _saveTemplateToFile();
+          return;
+        case _PeriodTimesMenuAction.exportTemplateText:
+          await _exportTemplateAsText();
+          return;
+        case _PeriodTimesMenuAction.deleteSet:
+          await _deleteSet();
+          return;
+      }
+    } finally {
+      _setMenuActionInProgress(false);
+    }
+  }
+
+  void _setMenuActionInProgress(bool value) {
+    if (mounted) {
+      setState(() => _menuActionInProgress = value);
+    } else {
+      _menuActionInProgress = value;
     }
   }
 
@@ -292,6 +315,7 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
           popped = true;
           Navigator.of(context).pop(value);
         }
+
         return AlertDialog(
           title: Text(l10n.deletePeriodTimeSetTitle),
           content: Text(l10n.deletePeriodTimeSetMessage(name)),
@@ -504,6 +528,7 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
           popped = true;
           Navigator.of(context).pop(value);
         }
+
         return AlertDialog(
           title: Text(title),
           content: Text(message),
@@ -535,6 +560,7 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
           popped = true;
           Navigator.of(context).pop(value);
         }
+
         return AlertDialog(
           title: Text(title),
           content: Text(message),
@@ -554,37 +580,49 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
   }
 
   Future<void> _pickPeriodTime(int index, {required bool isStart}) async {
+    if (_timePickerOpen || index < 0 || index >= _periodTimes.length) {
+      return;
+    }
+    setState(() => _timePickerOpen = true);
     // 这里先只改草稿，等用户点保存时再整体写回，避免改到一半就影响正在用的课表。
     final period = _periodTimes[index];
     final initialMinutes = normalizeMinuteOfDay(
       isStart ? period.startMinutes : period.endMinutes,
     );
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(
-        hour: initialMinutes ~/ 60,
-        minute: initialMinutes % 60,
-      ),
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!,
-        );
-      },
-    );
-    if (!mounted ||
-        picked == null ||
-        index < 0 ||
-        index >= _periodTimes.length) {
-      return;
+    try {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay(
+          hour: initialMinutes ~/ 60,
+          minute: initialMinutes % 60,
+        ),
+        builder: (context, child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child!,
+          );
+        },
+      );
+      if (!mounted ||
+          picked == null ||
+          index < 0 ||
+          index >= _periodTimes.length) {
+        return;
+      }
+      final minutes = (picked.hour * 60) + picked.minute;
+      setState(() {
+        final currentPeriod = _periodTimes[index];
+        _periodTimes[index] = isStart
+            ? currentPeriod.copyWith(startMinutes: minutes)
+            : currentPeriod.copyWith(endMinutes: minutes);
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _timePickerOpen = false);
+      } else {
+        _timePickerOpen = false;
+      }
     }
-    final minutes = (picked.hour * 60) + picked.minute;
-    setState(() {
-      final currentPeriod = _periodTimes[index];
-      _periodTimes[index] = isStart
-          ? currentPeriod.copyWith(startMinutes: minutes)
-          : currentPeriod.copyWith(endMinutes: minutes);
-    });
   }
 }
 
@@ -597,7 +635,7 @@ class _TimeCell extends StatelessWidget {
 
   final String label;
   final String value;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

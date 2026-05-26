@@ -24,7 +24,8 @@ const _themeSeedOptions = <int>[
   0xFF546E7A,
 ];
 
-bool _isPresetThemeColor(int colorValue) => _themeSeedOptions.contains(colorValue);
+bool _isPresetThemeColor(int colorValue) =>
+    _themeSeedOptions.contains(colorValue);
 
 String _formatColorHex(int colorValue) {
   final rgb = colorValue & 0x00FFFFFF;
@@ -70,7 +71,7 @@ int _effectiveUiColorValue(
       provider.colorfulUiColorValues[key] ?? colorScheme.tertiary.toARGB32(),
     colorfulCourseTextColorKey =>
       provider.colorfulUiColorValues[key] ??
-      colorScheme.onSecondaryContainer.toARGB32(),
+          colorScheme.onSecondaryContainer.toARGB32(),
     _ => provider.colorfulUiColorValues[key] ?? colorScheme.primary.toARGB32(),
   };
 }
@@ -111,7 +112,8 @@ class ThemeSettingsPage extends StatelessWidget {
               _ThemeColorSettingsCard(
                 provider: provider,
                 hasCustomColor: hasCustomColor,
-                onPickCustomColor: () => _openCustomColorDialog(context, provider),
+                onPickCustomColor: () =>
+                    _openCustomColorDialog(context, provider),
                 onPickUiColor: (key) {
                   if (key == colorfulCourseTextColorKey) {
                     _openCourseTextColorDialog(context, provider);
@@ -121,7 +123,11 @@ class ThemeSettingsPage extends StatelessWidget {
                     context,
                     title: _uiColorLabel(context, key),
                     previewTitle: l10n.themeColorUiColors,
-                    initialColorValue: _effectiveUiColorValue(context, provider, key),
+                    initialColorValue: _effectiveUiColorValue(
+                      context,
+                      provider,
+                      key,
+                    ),
                     onApply: (colorValue) =>
                         provider.updateColorfulUiColorValue(key, colorValue),
                   );
@@ -133,8 +139,10 @@ class ThemeSettingsPage extends StatelessWidget {
                   initialColorValue:
                       provider.courseNameColorValues[courseName] ??
                       provider.themeSeedColorValue,
-                  onApply: (colorValue) =>
-                      provider.updateCourseNameColorValue(courseName, colorValue),
+                  onApply: (colorValue) => provider.updateCourseNameColorValue(
+                    courseName,
+                    colorValue,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -160,6 +168,14 @@ class ThemeSettingsPage extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (context) {
+        var popped = false;
+        var busy = false;
+        void popOnce() {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop();
+        }
+
         return StatefulBuilder(
           builder: (context, setState) {
             final colorValue = selectedColor.toARGB32();
@@ -199,16 +215,19 @@ class ThemeSettingsPage extends StatelessWidget {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: (busy || popped) ? null : popOnce,
                   child: Text(l10n.cancel),
                 ),
                 FilledButton(
-                  onPressed: () async {
-                    await provider.updateThemeSeedColorValue(colorValue);
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  },
+                  onPressed: (busy || popped)
+                      ? null
+                      : () async {
+                          if (busy || popped) return;
+                          setState(() => busy = true);
+                          await provider.updateThemeSeedColorValue(colorValue);
+                          if (!context.mounted) return;
+                          popOnce();
+                        },
                   child: Text(l10n.themeApplyCustomColor),
                 ),
               ],
@@ -231,6 +250,14 @@ class ThemeSettingsPage extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (context) {
+        var popped = false;
+        var busy = false;
+        void popOnce() {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop();
+        }
+
         return StatefulBuilder(
           builder: (context, setState) {
             final colorValue = selectedColor.toARGB32();
@@ -270,16 +297,19 @@ class ThemeSettingsPage extends StatelessWidget {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: (busy || popped) ? null : popOnce,
                   child: Text(l10n.cancel),
                 ),
                 FilledButton(
-                  onPressed: () async {
-                    await onApply(colorValue);
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  },
+                  onPressed: (busy || popped)
+                      ? null
+                      : () async {
+                          if (busy || popped) return;
+                          setState(() => busy = true);
+                          await onApply(colorValue);
+                          if (!context.mounted) return;
+                          popOnce();
+                        },
                   child: Text(l10n.themeApplySettings),
                 ),
               ],
@@ -304,6 +334,14 @@ class ThemeSettingsPage extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (context) {
+        var popped = false;
+        var busy = false;
+        void popOnce() {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop();
+        }
+
         return StatefulBuilder(
           builder: (context, setState) {
             final modeLabel = mode == colorfulCourseTextColorModeCustom
@@ -338,7 +376,8 @@ class ThemeSettingsPage extends StatelessWidget {
                             children: [
                               _SelectableOptionTile(
                                 title: l10n.themeColorCourseTextAuto,
-                                selected: mode == colorfulCourseTextColorModeAuto,
+                                selected:
+                                    mode == colorfulCourseTextColorModeAuto,
                                 onTap: () => setState(() {
                                   mode = colorfulCourseTextColorModeAuto;
                                 }),
@@ -346,7 +385,8 @@ class ThemeSettingsPage extends StatelessWidget {
                               const SizedBox(height: 8),
                               _SelectableOptionTile(
                                 title: l10n.themeColorCourseTextCustom,
-                                selected: mode == colorfulCourseTextColorModeCustom,
+                                selected:
+                                    mode == colorfulCourseTextColorModeCustom,
                                 onTap: () => setState(() {
                                   mode = colorfulCourseTextColorModeCustom;
                                 }),
@@ -359,22 +399,29 @@ class ThemeSettingsPage extends StatelessWidget {
                                   duration: const Duration(milliseconds: 180),
                                   switchInCurve: Curves.easeOut,
                                   switchOutCurve: Curves.easeIn,
-                                  child: mode == colorfulCourseTextColorModeCustom
+                                  child:
+                                      mode == colorfulCourseTextColorModeCustom
                                       ? Padding(
                                           key: const ValueKey(
                                             'course-text-color-picker',
                                           ),
-                                          padding: const EdgeInsets.only(top: 12),
+                                          padding: const EdgeInsets.only(
+                                            top: 12,
+                                          ),
                                           child: _CompactColorPicker(
                                             colorValue: colorValue,
                                             onColorChanged:
-                                                (updatedColorValue) => setState(() {
-                                                  colorValue = updatedColorValue;
-                                                }),
+                                                (updatedColorValue) =>
+                                                    setState(() {
+                                                      colorValue =
+                                                          updatedColorValue;
+                                                    }),
                                           ),
                                         )
                                       : const SizedBox.shrink(
-                                          key: ValueKey('course-text-color-auto'),
+                                          key: ValueKey(
+                                            'course-text-color-auto',
+                                          ),
                                         ),
                                 ),
                               ),
@@ -388,22 +435,27 @@ class ThemeSettingsPage extends StatelessWidget {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: (busy || popped) ? null : popOnce,
                   child: Text(l10n.cancel),
                 ),
                 FilledButton(
-                  onPressed: () async {
-                    if (mode == colorfulCourseTextColorModeCustom) {
-                      await provider.updateColorfulUiColorValue(
-                        colorfulCourseTextColorKey,
-                        colorValue,
-                      );
-                    }
-                    await provider.updateColorfulCourseTextColorMode(mode);
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  },
+                  onPressed: (busy || popped)
+                      ? null
+                      : () async {
+                          if (busy || popped) return;
+                          setState(() => busy = true);
+                          if (mode == colorfulCourseTextColorModeCustom) {
+                            await provider.updateColorfulUiColorValue(
+                              colorfulCourseTextColorKey,
+                              colorValue,
+                            );
+                          }
+                          await provider.updateColorfulCourseTextColorMode(
+                            mode,
+                          );
+                          if (!context.mounted) return;
+                          popOnce();
+                        },
                   child: Text(l10n.themeApplySettings),
                 ),
               ],
@@ -432,6 +484,14 @@ class ThemeSettingsPage extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (context) {
+        var popped = false;
+        var busy = false;
+        void popOnce() {
+          if (popped) return;
+          popped = true;
+          Navigator.of(context).pop();
+        }
+
         return StatefulBuilder(
           builder: (context, setState) {
             final effectiveColorValue = followTheme
@@ -473,9 +533,10 @@ class ThemeSettingsPage extends StatelessWidget {
                             ),
                             Divider(
                               height: 1,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outlineVariant.withValues(alpha: 0.4),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outlineVariant
+                                  .withValues(alpha: 0.4),
                             ),
                             SwitchListTile.adaptive(
                               contentPadding: const EdgeInsets.symmetric(
@@ -512,7 +573,8 @@ class ThemeSettingsPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 12),
                               _SelectableOptionTile(
-                                title: l10n.liveCourseOutlineTargetCurrentOrNext,
+                                title:
+                                    l10n.liveCourseOutlineTargetCurrentOrNext,
                                 selected:
                                     outlineMode ==
                                     liveCourseOutlineModeCurrentOrNext,
@@ -550,7 +612,10 @@ class ThemeSettingsPage extends StatelessWidget {
                                 min: minLiveCourseOutlineWidth,
                                 max: maxLiveCourseOutlineWidth,
                                 divisions: 6,
-                                label: _formatOutlineWidthValue(context, outlineWidth),
+                                label: _formatOutlineWidthValue(
+                                  context,
+                                  outlineWidth,
+                                ),
                                 onChanged: (value) => setState(() {
                                   outlineWidth = value;
                                 }),
@@ -561,7 +626,9 @@ class ThemeSettingsPage extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       l10n.liveCourseOutlineCustomColor,
-                                      style: Theme.of(context).textTheme.titleSmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleSmall,
                                     ),
                                   ),
                                   _OutlineColorPreview(
@@ -588,19 +655,24 @@ class ThemeSettingsPage extends StatelessWidget {
                                   switchOutCurve: Curves.easeIn,
                                   child: followTheme
                                       ? const SizedBox.shrink(
-                                          key: ValueKey('outline-custom-hidden'),
+                                          key: ValueKey(
+                                            'outline-custom-hidden',
+                                          ),
                                         )
                                       : Padding(
                                           key: const ValueKey(
                                             'outline-custom-picker',
                                           ),
-                                          padding: const EdgeInsets.only(top: 12),
+                                          padding: const EdgeInsets.only(
+                                            top: 12,
+                                          ),
                                           child: _CompactColorPicker(
                                             colorValue: customColorValue,
-                                            onColorChanged: (colorValue) => setState(() {
-                                              customColorValue = colorValue;
-                                              customColorInitialized = true;
-                                            }),
+                                            onColorChanged: (colorValue) =>
+                                                setState(() {
+                                                  customColorValue = colorValue;
+                                                  customColorInitialized = true;
+                                                }),
                                           ),
                                         ),
                                 ),
@@ -615,23 +687,26 @@ class ThemeSettingsPage extends StatelessWidget {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: (busy || popped) ? null : popOnce,
                   child: Text(l10n.cancel),
                 ),
                 FilledButton(
-                  onPressed: () async {
-                    await provider.updateLiveCourseOutlineSettings(
-                      enabled: enabled,
-                      followTheme: followTheme,
-                      colorValue: customColorValue,
-                      customColorInitialized: customColorInitialized,
-                      mode: outlineMode,
-                      width: outlineWidth,
-                    );
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  },
+                  onPressed: (busy || popped)
+                      ? null
+                      : () async {
+                          if (busy || popped) return;
+                          setState(() => busy = true);
+                          await provider.updateLiveCourseOutlineSettings(
+                            enabled: enabled,
+                            followTheme: followTheme,
+                            colorValue: customColorValue,
+                            customColorInitialized: customColorInitialized,
+                            mode: outlineMode,
+                            width: outlineWidth,
+                          );
+                          if (!context.mounted) return;
+                          popOnce();
+                        },
                   child: Text(l10n.themeApplySettings),
                 ),
               ],
@@ -711,7 +786,10 @@ class _ThemeColorSettingsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.themeColor, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              l10n.themeColor,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             _SelectableOptionTile(
               title: l10n.themeColorModeSingle,
@@ -722,7 +800,8 @@ class _ThemeColorSettingsCard extends StatelessWidget {
             _SelectableOptionTile(
               title: l10n.themeColorModeColorful,
               selected: !isSingleMode,
-              onTap: () => provider.updateThemeColorMode(themeColorModeColorful),
+              onTap: () =>
+                  provider.updateThemeColorMode(themeColorModeColorful),
             ),
             const SizedBox(height: 16),
             AnimatedSwitcher(
@@ -859,7 +938,8 @@ class _ColorfulThemeSection extends StatelessWidget {
                   for (final courseName in courseNames)
                     _ColorValueTile(
                       title: courseName,
-                      colorValue: provider.courseNameColorValues[courseName] ??
+                      colorValue:
+                          provider.courseNameColorValues[courseName] ??
                           provider.themeSeedColorValue,
                       onTap: () => onPickCourseColor(courseName),
                     ),
@@ -912,10 +992,7 @@ class _ColorValueTile extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       title: Text(title),
       subtitle: Text(_formatColorHex(colorValue)),
-      trailing: _ThemeColorPreview(
-        colorValue: colorValue,
-        selected: false,
-      ),
+      trailing: _ThemeColorPreview(colorValue: colorValue, selected: false),
       onTap: onTap,
     );
   }
@@ -1114,8 +1191,8 @@ class _ThemeColorPreview extends StatelessWidget {
       child: selected
           ? Icon(
               Icons.check,
-              color: ThemeData.estimateBrightnessForColor(color) ==
-                      Brightness.dark
+              color:
+                  ThemeData.estimateBrightnessForColor(color) == Brightness.dark
                   ? Colors.white
                   : Colors.black,
             )

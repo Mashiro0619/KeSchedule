@@ -48,6 +48,7 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
   late List<int> _reminders;
   late List<GeneralSchedule> _calendarOptions;
   bool _hasPopped = false;
+  bool _pickerOpen = false;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -320,25 +321,33 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                     date: _startDate,
                     time: _startTime,
                     showTime: !_isAllDay,
-                    onPickDate: () async {
-                      final picked = await _pickDate(context, _startDate);
-                      if (!mounted || picked == null) {
-                        return;
-                      }
-                      setState(() {
-                        _startDate = picked;
-                        if (_endDate.isBefore(_startDate)) {
-                          _endDate = _startDate;
-                        }
-                      });
-                    },
-                    onPickTime: () async {
-                      final picked = await _pickTime(context, _startTime);
-                      if (!mounted || picked == null) {
-                        return;
-                      }
-                      setState(() => _startTime = picked);
-                    },
+                    onPickDate: (_pickerOpen || _hasPopped)
+                        ? null
+                        : () async {
+                            final picked = await _runPicker(
+                              () => _pickDate(context, _startDate),
+                            );
+                            if (!mounted || picked == null) {
+                              return;
+                            }
+                            setState(() {
+                              _startDate = picked;
+                              if (_endDate.isBefore(_startDate)) {
+                                _endDate = _startDate;
+                              }
+                            });
+                          },
+                    onPickTime: (_pickerOpen || _hasPopped)
+                        ? null
+                        : () async {
+                            final picked = await _runPicker(
+                              () => _pickTime(context, _startTime),
+                            );
+                            if (!mounted || picked == null) {
+                              return;
+                            }
+                            setState(() => _startTime = picked);
+                          },
                   ),
                   _DateTimeRow(
                     icon: Icons.stop_outlined,
@@ -346,20 +355,28 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                     date: _endDate,
                     time: _endTime,
                     showTime: !_isAllDay,
-                    onPickDate: () async {
-                      final picked = await _pickDate(context, _endDate);
-                      if (!mounted || picked == null) {
-                        return;
-                      }
-                      setState(() => _endDate = picked);
-                    },
-                    onPickTime: () async {
-                      final picked = await _pickTime(context, _endTime);
-                      if (!mounted || picked == null) {
-                        return;
-                      }
-                      setState(() => _endTime = picked);
-                    },
+                    onPickDate: (_pickerOpen || _hasPopped)
+                        ? null
+                        : () async {
+                            final picked = await _runPicker(
+                              () => _pickDate(context, _endDate),
+                            );
+                            if (!mounted || picked == null) {
+                              return;
+                            }
+                            setState(() => _endDate = picked);
+                          },
+                    onPickTime: (_pickerOpen || _hasPopped)
+                        ? null
+                        : () async {
+                            final picked = await _runPicker(
+                              () => _pickTime(context, _endTime),
+                            );
+                            if (!mounted || picked == null) {
+                              return;
+                            }
+                            setState(() => _endTime = picked);
+                          },
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<GeneralEventRecurrence>(
@@ -407,17 +424,21 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
                           setState(() => _interval = value),
                       onUnitChanged: (value) =>
                           setState(() => _customUnit = value),
-                      onPickUntil: () async {
-                        final picked = await _pickDate(
-                          context,
-                          _untilDate ??
-                              _startDate.add(const Duration(days: 90)),
-                        );
-                        if (!mounted || picked == null) {
-                          return;
-                        }
-                        setState(() => _untilDate = picked);
-                      },
+                      onPickUntil: (_pickerOpen || _hasPopped)
+                          ? null
+                          : () async {
+                              final picked = await _runPicker(
+                                () => _pickDate(
+                                  context,
+                                  _untilDate ??
+                                      _startDate.add(const Duration(days: 90)),
+                                ),
+                              );
+                              if (!mounted || picked == null) {
+                                return;
+                              }
+                              setState(() => _untilDate = picked);
+                            },
                       onClearUntil: () => setState(() => _untilDate = null),
                     ),
                   ],
@@ -504,6 +525,22 @@ class _GeneralEventEditorSheetState extends State<GeneralEventEditorSheet> {
       ),
     );
   }
+
+  Future<T?> _runPicker<T>(Future<T?> Function() picker) async {
+    if (_pickerOpen || _hasPopped) {
+      return null;
+    }
+    setState(() => _pickerOpen = true);
+    try {
+      return await picker();
+    } finally {
+      if (mounted) {
+        setState(() => _pickerOpen = false);
+      } else {
+        _pickerOpen = false;
+      }
+    }
+  }
 }
 
 class _DateTimeRow extends StatelessWidget {
@@ -522,8 +559,8 @@ class _DateTimeRow extends StatelessWidget {
   final DateTime date;
   final TimeOfDay time;
   final bool showTime;
-  final VoidCallback onPickDate;
-  final VoidCallback onPickTime;
+  final VoidCallback? onPickDate;
+  final VoidCallback? onPickTime;
 
   @override
   Widget build(BuildContext context) {
@@ -573,7 +610,7 @@ class _RepeatOptions extends StatelessWidget {
   final TextEditingController repeatCountController;
   final ValueChanged<int> onIntervalChanged;
   final ValueChanged<GeneralEventRecurrenceUnit> onUnitChanged;
-  final VoidCallback onPickUntil;
+  final VoidCallback? onPickUntil;
   final VoidCallback onClearUntil;
 
   @override

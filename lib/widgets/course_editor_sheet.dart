@@ -52,6 +52,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
   late TimeOfDay _endTime;
   late List<int> _selectedPeriods;
   bool _hasPopped = false;
+  bool _pickerOpen = false;
 
   @override
   void initState() {
@@ -174,7 +175,10 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                                 ),
                               ),
                               trailing: const Icon(Icons.today_outlined),
-                              onTap: _pickDayOfWeek,
+                              enabled: !_pickerOpen && !_hasPopped,
+                              onTap: (_pickerOpen || _hasPopped)
+                                  ? null
+                                  : _pickDayOfWeek,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -192,7 +196,10 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                                 ),
                               ),
                               trailing: const Icon(Icons.edit_calendar),
-                              onTap: _pickSemesterWeeks,
+                              enabled: !_pickerOpen && !_hasPopped,
+                              onTap: (_pickerOpen || _hasPopped)
+                                  ? null
+                                  : _pickSemesterWeeks,
                             ),
                           ),
                         ],
@@ -206,7 +213,10 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                               title: Text(l10n.startTime),
                               subtitle: Text(_formatTimeOfDay(_startTime)),
                               trailing: const Icon(Icons.schedule),
-                              onTap: () => _pickTime(isStart: true),
+                              enabled: !_pickerOpen && !_hasPopped,
+                              onTap: (_pickerOpen || _hasPopped)
+                                  ? null
+                                  : () => _pickTime(isStart: true),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -216,7 +226,10 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                               title: Text(l10n.endTime),
                               subtitle: Text(_formatTimeOfDay(_endTime)),
                               trailing: const Icon(Icons.schedule),
-                              onTap: () => _pickTime(isStart: false),
+                              enabled: !_pickerOpen && !_hasPopped,
+                              onTap: (_pickerOpen || _hasPopped)
+                                  ? null
+                                  : () => _pickTime(isStart: false),
                             ),
                           ),
                         ],
@@ -231,7 +244,10 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                               : linkedPeriodsLabel,
                         ),
                         trailing: const Icon(Icons.tune),
-                        onTap: _pickPeriods,
+                        enabled: !_pickerOpen && !_hasPopped,
+                        onTap: (_pickerOpen || _hasPopped)
+                            ? null
+                            : _pickPeriods,
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -318,277 +334,324 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     FocusManager.instance.primaryFocus?.unfocus();
   }
 
+  void _setPickerOpen(bool value) {
+    if (mounted) {
+      setState(() => _pickerOpen = value);
+    } else {
+      _pickerOpen = value;
+    }
+  }
+
   Future<void> _pickDayOfWeek() async {
-    _dismissActiveInputFocus();
-    final result = await showDialog<int>(
-      context: context,
-      builder: (context) {
-        var popped = false;
-        void popWith(int day) {
-          if (popped) return;
-          popped = true;
-          Navigator.of(context).pop(day);
-        }
-        return AlertDialog(
-          title: Text(AppLocalizations.of(context).selectDayOfWeek),
-          content: SizedBox(
-            width: 320,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: List.generate(7, (index) {
-                final day = index + 1;
-                return ChoiceChip(
-                  label: Text(
-                    formatDayOfWeekLabel(
-                      day,
-                      localeCode: app_locale.localeCodeFromLocale(
-                        Localizations.localeOf(context),
-                      ),
-                    ),
-                  ),
-                  selected: day == _selectedDayOfWeek,
-                  onSelected: (_) => popWith(day),
-                );
-              }),
-            ),
-          ),
-        );
-      },
-    );
-    if (!mounted || result == null) {
+    if (_pickerOpen || _hasPopped) {
       return;
     }
-    setState(() => _selectedDayOfWeek = result);
+    _setPickerOpen(true);
+    _dismissActiveInputFocus();
+    try {
+      final result = await showDialog<int>(
+        context: context,
+        builder: (context) {
+          var popped = false;
+          void popWith(int day) {
+            if (popped) return;
+            popped = true;
+            Navigator.of(context).pop(day);
+          }
+
+          return AlertDialog(
+            title: Text(AppLocalizations.of(context).selectDayOfWeek),
+            content: SizedBox(
+              width: 320,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(7, (index) {
+                  final day = index + 1;
+                  return ChoiceChip(
+                    label: Text(
+                      formatDayOfWeekLabel(
+                        day,
+                        localeCode: app_locale.localeCodeFromLocale(
+                          Localizations.localeOf(context),
+                        ),
+                      ),
+                    ),
+                    selected: day == _selectedDayOfWeek,
+                    onSelected: (_) => popWith(day),
+                  );
+                }),
+              ),
+            ),
+          );
+        },
+      );
+      if (!mounted || result == null) {
+        return;
+      }
+      setState(() => _selectedDayOfWeek = result);
+    } finally {
+      _setPickerOpen(false);
+    }
   }
 
   Future<void> _pickSemesterWeeks() async {
-    _dismissActiveInputFocus();
-    final draft = {..._selectedSemesterWeeks};
-    final result = await showDialog<List<int>>(
-      context: context,
-      builder: (context) {
-        var popped = false;
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final l10n = AppLocalizations.of(context);
-            void popWith(List<int>? value) {
-              if (popped) return;
-              popped = true;
-              Navigator.of(context).pop(value);
-            }
-            return AlertDialog(
-              title: Text(l10n.selectSemesterWeeks),
-              content: SizedBox(
-                width: 360,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Wrap(
-                        spacing: 8,
-                        children: [
-                          TextButton(
-                            onPressed: () => setState(() {
-                              draft
-                                ..clear()
-                                ..addAll(
-                                  buildAllSemesterWeeks(widget.totalWeeks),
-                                );
-                            }),
-                            child: Text(l10n.selectAll),
-                          ),
-                          TextButton(
-                            onPressed: () => setState(() => draft.clear()),
-                            child: Text(l10n.clear),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Flexible(
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        itemCount: widget.totalWeeks,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              mainAxisSpacing: 8,
-                              crossAxisSpacing: 8,
-                              childAspectRatio: 1.6,
-                            ),
-                        itemBuilder: (context, index) {
-                          final week = index + 1;
-                          final selected = draft.contains(week);
-                          final colorScheme = Theme.of(context).colorScheme;
-                          return Material(
-                            color: selected
-                                ? colorScheme.primaryContainer
-                                : Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(12),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                setState(() {
-                                  if (selected) {
-                                    draft.remove(week);
-                                  } else {
-                                    draft.add(week);
-                                  }
-                                });
-                              },
-                              child: Center(
-                                child: Text(
-                                  '$week',
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.labelLarge
-                                      ?.copyWith(
-                                        color: selected
-                                            ? colorScheme.onSecondaryContainer
-                                            : colorScheme.onSurfaceVariant,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => popWith(null),
-                  child: Text(l10n.cancel),
-                ),
-                FilledButton(
-                  onPressed: () =>
-                      popWith(normalizeSemesterWeeks(draft.toList())),
-                  child: Text(l10n.confirm),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-    if (!mounted || result == null) {
+    if (_pickerOpen || _hasPopped) {
       return;
     }
-    setState(() {
-      _selectedSemesterWeeks = result.isEmpty
-          ? buildAllSemesterWeeks(widget.totalWeeks)
-          : result;
-    });
+    _setPickerOpen(true);
+    _dismissActiveInputFocus();
+    final draft = {..._selectedSemesterWeeks};
+    try {
+      final result = await showDialog<List<int>>(
+        context: context,
+        builder: (context) {
+          var popped = false;
+          return StatefulBuilder(
+            builder: (context, setState) {
+              final l10n = AppLocalizations.of(context);
+              void popWith(List<int>? value) {
+                if (popped) return;
+                popped = true;
+                Navigator.of(context).pop(value);
+              }
+
+              return AlertDialog(
+                title: Text(l10n.selectSemesterWeeks),
+                content: SizedBox(
+                  width: 360,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Wrap(
+                          spacing: 8,
+                          children: [
+                            TextButton(
+                              onPressed: () => setState(() {
+                                draft
+                                  ..clear()
+                                  ..addAll(
+                                    buildAllSemesterWeeks(widget.totalWeeks),
+                                  );
+                              }),
+                              child: Text(l10n.selectAll),
+                            ),
+                            TextButton(
+                              onPressed: () => setState(() => draft.clear()),
+                              child: Text(l10n.clear),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Flexible(
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          itemCount: widget.totalWeeks,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                mainAxisSpacing: 8,
+                                crossAxisSpacing: 8,
+                                childAspectRatio: 1.6,
+                              ),
+                          itemBuilder: (context, index) {
+                            final week = index + 1;
+                            final selected = draft.contains(week);
+                            final colorScheme = Theme.of(context).colorScheme;
+                            return Material(
+                              color: selected
+                                  ? colorScheme.primaryContainer
+                                  : Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(12),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () {
+                                  setState(() {
+                                    if (selected) {
+                                      draft.remove(week);
+                                    } else {
+                                      draft.add(week);
+                                    }
+                                  });
+                                },
+                                child: Center(
+                                  child: Text(
+                                    '$week',
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
+                                          color: selected
+                                              ? colorScheme.onSecondaryContainer
+                                              : colorScheme.onSurfaceVariant,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => popWith(null),
+                    child: Text(l10n.cancel),
+                  ),
+                  FilledButton(
+                    onPressed: () =>
+                        popWith(normalizeSemesterWeeks(draft.toList())),
+                    child: Text(l10n.confirm),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+      if (!mounted || result == null) {
+        return;
+      }
+      setState(() {
+        _selectedSemesterWeeks = result.isEmpty
+            ? buildAllSemesterWeeks(widget.totalWeeks)
+            : result;
+      });
+    } finally {
+      _setPickerOpen(false);
+    }
   }
 
   Future<void> _pickTime({required bool isStart}) async {
-    _dismissActiveInputFocus();
-    final initialTime = isStart ? _startTime : _endTime;
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!,
-        );
-      },
-    );
-    if (!mounted || picked == null) {
+    if (_pickerOpen || _hasPopped) {
       return;
     }
-    setState(() {
-      if (isStart) {
-        _startTime = picked;
-      } else {
-        _endTime = picked;
+    _setPickerOpen(true);
+    _dismissActiveInputFocus();
+    try {
+      final initialTime = isStart ? _startTime : _endTime;
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: initialTime,
+        builder: (context, child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child!,
+          );
+        },
+      );
+      if (!mounted || picked == null) {
+        return;
       }
-      _selectedPeriods = _matchedPeriods;
-    });
+      setState(() {
+        if (isStart) {
+          _startTime = picked;
+        } else {
+          _endTime = picked;
+        }
+        _selectedPeriods = _matchedPeriods;
+      });
+    } finally {
+      _setPickerOpen(false);
+    }
   }
 
   Future<void> _pickPeriods() async {
-    _dismissActiveInputFocus();
-    final draft = List<int>.from(_selectedPeriods);
-    final result = await showDialog<List<int>>(
-      context: context,
-      builder: (context) {
-        var popped = false;
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final l10n = AppLocalizations.of(context);
-            void popWith(List<int>? value) {
-              if (popped) return;
-              popped = true;
-              Navigator.of(context).pop(value);
-            }
-            return AlertDialog(
-              title: Text(l10n.selectLinkedPeriods),
-              content: SizedBox(
-                width: 360,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final period in widget.periodTimes)
-                      ChoiceChip(
-                        label: Text(l10n.periodNumberLabel(period.index)),
-                        selected: draft.contains(period.index),
-                        onSelected: (_) {
-                          setState(() {
-                            final next = _togglePeriodSelection(
-                              draft,
-                              period.index,
-                            );
-                            draft
-                              ..clear()
-                              ..addAll(next);
-                          });
-                        },
-                      ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => setState(draft.clear),
-                  child: Text(l10n.clear),
-                ),
-                TextButton(
-                  onPressed: () => popWith(null),
-                  child: Text(l10n.cancel),
-                ),
-                FilledButton(
-                  onPressed: () => popWith(List<int>.from(draft)),
-                  child: Text(l10n.confirm),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-    if (!mounted || result == null) {
+    if (_pickerOpen || _hasPopped) {
       return;
     }
-    setState(() {
-      _selectedPeriods = _normalizeSelectedPeriods(result);
-      if (_selectedPeriods.isNotEmpty) {
-        final selectedTimes =
-            widget.periodTimes
-                .where((item) => _selectedPeriods.contains(item.index))
-                .toList()
-              ..sort((a, b) => a.index.compareTo(b.index));
-        if (selectedTimes.isNotEmpty) {
-          _startTime = _timeOfDayFromMinutes(selectedTimes.first.startMinutes);
-          _endTime = _timeOfDayFromMinutes(selectedTimes.last.endMinutes);
-        }
+    _setPickerOpen(true);
+    _dismissActiveInputFocus();
+    final draft = List<int>.from(_selectedPeriods);
+    try {
+      final result = await showDialog<List<int>>(
+        context: context,
+        builder: (context) {
+          var popped = false;
+          return StatefulBuilder(
+            builder: (context, setState) {
+              final l10n = AppLocalizations.of(context);
+              void popWith(List<int>? value) {
+                if (popped) return;
+                popped = true;
+                Navigator.of(context).pop(value);
+              }
+
+              return AlertDialog(
+                title: Text(l10n.selectLinkedPeriods),
+                content: SizedBox(
+                  width: 360,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final period in widget.periodTimes)
+                        ChoiceChip(
+                          label: Text(l10n.periodNumberLabel(period.index)),
+                          selected: draft.contains(period.index),
+                          onSelected: (_) {
+                            setState(() {
+                              final next = _togglePeriodSelection(
+                                draft,
+                                period.index,
+                              );
+                              draft
+                                ..clear()
+                                ..addAll(next);
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => setState(draft.clear),
+                    child: Text(l10n.clear),
+                  ),
+                  TextButton(
+                    onPressed: () => popWith(null),
+                    child: Text(l10n.cancel),
+                  ),
+                  FilledButton(
+                    onPressed: () => popWith(List<int>.from(draft)),
+                    child: Text(l10n.confirm),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+      if (!mounted || result == null) {
+        return;
       }
-    });
+      setState(() {
+        _selectedPeriods = _normalizeSelectedPeriods(result);
+        if (_selectedPeriods.isNotEmpty) {
+          final selectedTimes =
+              widget.periodTimes
+                  .where((item) => _selectedPeriods.contains(item.index))
+                  .toList()
+                ..sort((a, b) => a.index.compareTo(b.index));
+          if (selectedTimes.isNotEmpty) {
+            _startTime = _timeOfDayFromMinutes(
+              selectedTimes.first.startMinutes,
+            );
+            _endTime = _timeOfDayFromMinutes(selectedTimes.last.endMinutes);
+          }
+        }
+      });
+    } finally {
+      _setPickerOpen(false);
+    }
   }
 
   void _submit() {

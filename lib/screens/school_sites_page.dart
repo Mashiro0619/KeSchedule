@@ -18,18 +18,29 @@ enum _SchoolSitesMenuAction { toggleEditMode, importJson, shareJson, saveJson }
 enum _SchoolSiteItemAction { edit, delete }
 
 class SchoolSitesPage extends StatefulWidget {
-  const SchoolSitesPage({super.key});
+  const SchoolSitesPage({
+    super.key,
+    SchoolSiteService? siteService,
+    ExportService? exportService,
+  }) : siteService = siteService ?? const SchoolSiteService(),
+       exportService = exportService ?? const ExportService();
+
+  final SchoolSiteService siteService;
+  final ExportService exportService;
 
   @override
   State<SchoolSitesPage> createState() => _SchoolSitesPageState();
 }
 
 class _SchoolSitesPageState extends State<SchoolSitesPage> {
-  static const _exportService = ExportService();
-  static const _siteService = SchoolSiteService();
-
   var _loading = true;
   var _isEditMode = false;
+  var _editorDialogOpen = false;
+  var _htmlImportOpen = false;
+  var _webImportOpen = false;
+  var _jsonImportInProgress = false;
+  var _jsonShareInProgress = false;
+  var _jsonSaveInProgress = false;
   List<SchoolSite> _sites = const [];
 
   bool get _supportsWebImport =>
@@ -37,6 +48,9 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS ||
           defaultTargetPlatform == TargetPlatform.windows);
+
+  ExportService get _exportService => widget.exportService;
+  SchoolSiteService get _siteService => widget.siteService;
 
   @override
   void initState() {
@@ -53,12 +67,12 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
         actions: [
           IconButton(
             tooltip: l10n.schoolSitesAdd,
-            onPressed: _addSite,
+            onPressed: _editorDialogOpen ? null : _addSite,
             icon: const Icon(Icons.add),
           ),
           IconButton(
             tooltip: l10n.schoolHtmlImportEntry,
-            onPressed: _openHtmlImport,
+            onPressed: _htmlImportOpen ? null : _openHtmlImport,
             icon: const Icon(Icons.code),
           ),
           PopupMenuButton<_SchoolSitesMenuAction>(
@@ -71,14 +85,17 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
               ),
               PopupMenuItem(
                 value: _SchoolSitesMenuAction.importJson,
+                enabled: !_jsonImportInProgress,
                 child: Text(l10n.schoolSitesImportJson),
               ),
               PopupMenuItem(
                 value: _SchoolSitesMenuAction.shareJson,
+                enabled: !_jsonShareInProgress,
                 child: Text(l10n.schoolSitesShareJson),
               ),
               PopupMenuItem(
                 value: _SchoolSitesMenuAction.saveJson,
+                enabled: !_jsonSaveInProgress,
                 child: Text(l10n.schoolSitesSaveJson),
               ),
             ],
@@ -110,8 +127,8 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
                       child: Text(site.loginUrl),
                     ),
                     isThreeLine: false,
-                    enabled: _supportsWebImport,
-                    onTap: _supportsWebImport
+                    enabled: _supportsWebImport && !_webImportOpen,
+                    onTap: _supportsWebImport && !_webImportOpen
                         ? () => _openWebImportForSite(site)
                         : null,
                     trailing: _isEditMode
@@ -187,40 +204,126 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
     }
   }
 
+  void _setEditorDialogOpen(bool value) {
+    if (_editorDialogOpen == value) return;
+    if (mounted) {
+      setState(() => _editorDialogOpen = value);
+    } else {
+      _editorDialogOpen = value;
+    }
+  }
+
+  void _setHtmlImportOpen(bool value) {
+    if (_htmlImportOpen == value) return;
+    if (mounted) {
+      setState(() => _htmlImportOpen = value);
+    } else {
+      _htmlImportOpen = value;
+    }
+  }
+
+  void _setWebImportOpen(bool value) {
+    if (_webImportOpen == value) return;
+    if (mounted) {
+      setState(() => _webImportOpen = value);
+    } else {
+      _webImportOpen = value;
+    }
+  }
+
+  void _setJsonImportInProgress(bool value) {
+    if (_jsonImportInProgress == value) return;
+    if (mounted) {
+      setState(() => _jsonImportInProgress = value);
+    } else {
+      _jsonImportInProgress = value;
+    }
+  }
+
+  void _setJsonShareInProgress(bool value) {
+    if (_jsonShareInProgress == value) return;
+    if (mounted) {
+      setState(() => _jsonShareInProgress = value);
+    } else {
+      _jsonShareInProgress = value;
+    }
+  }
+
+  void _setJsonSaveInProgress(bool value) {
+    if (_jsonSaveInProgress == value) return;
+    if (mounted) {
+      setState(() => _jsonSaveInProgress = value);
+    } else {
+      _jsonSaveInProgress = value;
+    }
+  }
+
   Future<void> _openHtmlImport() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const SchoolHtmlImportPage()));
+    if (_htmlImportOpen || !mounted) {
+      return;
+    }
+    _setHtmlImportOpen(true);
+    try {
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const SchoolHtmlImportPage()));
+    } finally {
+      _setHtmlImportOpen(false);
+    }
   }
 
   Future<void> _openWebImportForSite(SchoolSite site) async {
+    if (_webImportOpen || !mounted) {
+      return;
+    }
+    _setWebImportOpen(true);
     final provider = context.read<TimetableProvider>();
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
-          value: provider,
-          child: SchoolWebImportPage(site: site),
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
+            value: provider,
+            child: SchoolWebImportPage(site: site),
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      _setWebImportOpen(false);
+    }
   }
 
   Future<void> _addSite() async {
-    final created = await _showEditorDialog();
-    if (!mounted || created == null) {
+    if (_editorDialogOpen || !mounted) {
       return;
     }
-    await _persistSites([..._sites, created]);
+    _setEditorDialogOpen(true);
+    try {
+      final created = await _showEditorDialog();
+      if (!mounted || created == null) {
+        return;
+      }
+      await _persistSites([..._sites, created]);
+    } finally {
+      _setEditorDialogOpen(false);
+    }
   }
 
   Future<void> _editSite(int index) async {
-    final updated = await _showEditorDialog(initialSite: _sites[index]);
-    if (!mounted || updated == null) {
+    if (_editorDialogOpen || !mounted) {
       return;
     }
-    final nextSites = [..._sites];
-    nextSites[index] = updated;
-    await _persistSites(nextSites);
+    _setEditorDialogOpen(true);
+    try {
+      final updated = await _showEditorDialog(initialSite: _sites[index]);
+      if (!mounted || updated == null) {
+        return;
+      }
+      final nextSites = [..._sites];
+      nextSites[index] = updated;
+      await _persistSites(nextSites);
+    } finally {
+      _setEditorDialogOpen(false);
+    }
   }
 
   Future<void> _deleteSite(int index) async {
@@ -235,6 +338,7 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
           popped = true;
           Navigator.of(context).pop(value);
         }
+
         return AlertDialog(
           title: Text(l10n.schoolSitesDeleteTitle),
           content: Text(l10n.schoolSitesDeleteMessage(site.name)),
@@ -274,6 +378,7 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
           popped = true;
           Navigator.of(context).pop(value);
         }
+
         return AlertDialog(
           title: Text(
             initialSite == null ? l10n.schoolSitesAdd : l10n.schoolSitesEdit,
@@ -349,50 +454,78 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
   }
 
   Future<void> _importJson() async {
+    if (_jsonImportInProgress || !mounted) {
+      return;
+    }
+    _setJsonImportInProgress(true);
     final l10n = AppLocalizations.of(context);
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['json'],
-      withData: true,
-    );
-    if (!mounted) {
-      return;
-    }
-    final files = result?.files ?? const <PlatformFile>[];
-    final file = files.isEmpty ? null : files.first;
-    final bytes = file?.bytes;
-    if (file == null || bytes == null) {
-      return;
-    }
     try {
-      final imported = await _siteService.importSites(utf8.decode(bytes));
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        withData: true,
+      );
       if (!mounted) {
         return;
       }
-      setState(() {
-        _sites = imported;
-        _isEditMode = false;
-      });
-      _showMessage(l10n.schoolSitesImported);
-    } on FormatException catch (error) {
-      _showMessage(error.message);
-    } catch (_) {
-      _showMessage(l10n.importFailedCheckContent);
+      final files = result?.files ?? const <PlatformFile>[];
+      final file = files.isEmpty ? null : files.first;
+      final bytes = file?.bytes;
+      if (file == null || bytes == null) {
+        return;
+      }
+      try {
+        final imported = await _siteService.importSites(utf8.decode(bytes));
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _sites = imported;
+          _isEditMode = false;
+        });
+        _showMessage(l10n.schoolSitesImported);
+      } on FormatException catch (error) {
+        _showMessage(error.message);
+      } catch (_) {
+        _showMessage(l10n.importFailedCheckContent);
+      }
+    } finally {
+      _setJsonImportInProgress(false);
     }
   }
 
   Future<void> _shareJson() async {
-    final l10n = AppLocalizations.of(context);
-    final content = await _siteService.exportSites(_sites);
-    if (!mounted) {
+    if (_jsonShareInProgress || !mounted) {
       return;
     }
-    await _exportService.shareFile(
-      ExportPayload(fileName: l10n.schoolSitesJsonFileName, content: content),
-    );
+    _setJsonShareInProgress(true);
+    final l10n = AppLocalizations.of(context);
+    try {
+      final content = await _siteService.exportSites(_sites);
+      if (!mounted) {
+        return;
+      }
+      await _exportService.shareFile(
+        ExportPayload(fileName: l10n.schoolSitesJsonFileName, content: content),
+      );
+    } finally {
+      _setJsonShareInProgress(false);
+    }
   }
 
   Future<void> _saveJsonToFile() async {
+    if (_jsonSaveInProgress || !mounted) {
+      return;
+    }
+    _setJsonSaveInProgress(true);
+    try {
+      await _saveJsonToFileInner();
+    } finally {
+      _setJsonSaveInProgress(false);
+    }
+  }
+
+  Future<void> _saveJsonToFileInner() async {
     final l10n = AppLocalizations.of(context);
     final result = await _exportService.saveFile(
       ExportPayload(
@@ -417,7 +550,7 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
           confirmText: l10n.retrySave,
         );
         if (retry == true && mounted) {
-          await _saveJsonToFile();
+          await _saveJsonToFileInner();
         }
         return;
       case ExportSaveStatus.permissionPermanentlyDenied:
@@ -477,6 +610,7 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
           popped = true;
           Navigator.of(context).pop(value);
         }
+
         return AlertDialog(
           title: Text(title),
           content: Text(message),
@@ -508,6 +642,7 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
           popped = true;
           Navigator.of(context).pop(value);
         }
+
         return AlertDialog(
           title: Text(title),
           content: Text(message),

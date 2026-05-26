@@ -140,7 +140,8 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
                           onLoadStop: (_, url) {
                             _cancelPageLoadWatchdog();
                             final nextUrl = url?.toString() ?? _currentUrl;
-                            final entryUrl = _entryUrl.isEmpty && nextUrl.isNotEmpty
+                            final entryUrl =
+                                _entryUrl.isEmpty && nextUrl.isNotEmpty
                                 ? nextUrl
                                 : _entryUrl;
                             if (!mounted) {
@@ -156,7 +157,8 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
                           },
                           onUpdateVisitedHistory: (_, url, _) {
                             final nextUrl = url?.toString() ?? _currentUrl;
-                            final entryUrl = _entryUrl.isEmpty && nextUrl.isNotEmpty
+                            final entryUrl =
+                                _entryUrl.isEmpty && nextUrl.isNotEmpty
                                 ? nextUrl
                                 : _entryUrl;
                             if (!mounted) {
@@ -170,7 +172,9 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
                             });
                           },
                           onTitleChanged: (_, title) {
-                            if (!mounted || title == null || title == _currentTitle) {
+                            if (!mounted ||
+                                title == null ||
+                                title == _currentTitle) {
                               return;
                             }
                             setState(() => _currentTitle = title);
@@ -180,8 +184,9 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
                               return;
                             }
                             _handlePageLoadFailure(
-                              AppLocalizations.of(context)
-                                  .schoolWebImportLoadFailed,
+                              AppLocalizations.of(
+                                context,
+                              ).schoolWebImportLoadFailed,
                             );
                           },
                           onReceivedHttpError: (_, request, _) {
@@ -189,8 +194,9 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
                               return;
                             }
                             _handlePageLoadFailure(
-                              AppLocalizations.of(context)
-                                  .schoolWebImportLoadFailed,
+                              AppLocalizations.of(
+                                context,
+                              ).schoolWebImportLoadFailed,
                             );
                           },
                         ),
@@ -216,8 +222,9 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
       if (!mounted) {
         return;
       }
-      final selected =
-          sites.where((item) => item.loginUrl == widget.site.loginUrl).firstOrNull;
+      final selected = sites
+          .where((item) => item.loginUrl == widget.site.loginUrl)
+          .firstOrNull;
       setState(() {
         _sites = sites;
         _selectedSite = selected ?? widget.site;
@@ -266,8 +273,9 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
       _hasStartedInitialLoad = false;
       return;
     }
-    final loadFailedMessage =
-        AppLocalizations.of(context).schoolWebImportLoadFailed;
+    final loadFailedMessage = AppLocalizations.of(
+      context,
+    ).schoolWebImportLoadFailed;
     _startPageLoadWatchdog();
     if (mounted) {
       setState(() {
@@ -348,7 +356,7 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
     final l10n = AppLocalizations.of(context);
     final controller = _controller;
     final selectedSite = _selectedSite;
-    if (controller == null || selectedSite == null) {
+    if (_isParsing || controller == null || selectedSite == null) {
       return;
     }
     setState(() => _isParsing = true);

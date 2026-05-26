@@ -1,7 +1,14 @@
 part of 'general_schedule_home_screen.dart';
 
-class _CalendarManagerSheet extends StatelessWidget {
+class _CalendarManagerSheet extends StatefulWidget {
   const _CalendarManagerSheet();
+
+  @override
+  State<_CalendarManagerSheet> createState() => _CalendarManagerSheetState();
+}
+
+class _CalendarManagerSheetState extends State<_CalendarManagerSheet> {
+  var _actionInProgress = false;
 
   @override
   Widget build(BuildContext context) {
@@ -22,10 +29,16 @@ class _CalendarManagerSheet extends StatelessWidget {
                 IconButton(
                   tooltip: l10n.addCalendar,
                   icon: const Icon(Icons.add),
-                  onPressed: () => provider.addGeneralSchedule(
-                    name: l10n.newCalendar,
-                    colorValue: _nextCalendarColor(provider.generalSchedules),
-                  ),
+                  onPressed: _actionInProgress
+                      ? null
+                      : () => _runCalendarAction(
+                          () => provider.addGeneralSchedule(
+                            name: l10n.newCalendar,
+                            colorValue: _nextCalendarColor(
+                              provider.generalSchedules,
+                            ),
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -61,25 +74,36 @@ class _CalendarManagerSheet extends StatelessWidget {
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
                         ),
-                        onPressed: () =>
-                            provider.updateGeneralScheduleVisibility(
-                              schedule.id,
-                              !schedule.isVisible,
-                            ),
+                        onPressed: _actionInProgress
+                            ? null
+                            : () => _runCalendarAction(
+                                () => provider.updateGeneralScheduleVisibility(
+                                  schedule.id,
+                                  !schedule.isVisible,
+                                ),
+                              ),
                       ),
                       IconButton(
                         tooltip: l10n.rename,
                         icon: const Icon(Icons.edit_outlined),
-                        onPressed: () => _renameCalendar(context, schedule),
+                        onPressed: _actionInProgress
+                            ? null
+                            : () => _renameCalendar(context, schedule),
                       ),
                       IconButton(
                         tooltip: l10n.delete,
                         icon: const Icon(Icons.delete_outline),
-                        onPressed: () => _deleteCalendar(context, schedule),
+                        onPressed: _actionInProgress
+                            ? null
+                            : () => _deleteCalendar(context, schedule),
                       ),
                     ],
                   ),
-                  onTap: () => provider.switchGeneralSchedule(schedule.id),
+                  onTap: _actionInProgress
+                      ? null
+                      : () => _runCalendarAction(
+                          () => provider.switchGeneralSchedule(schedule.id),
+                        ),
                 );
               },
             ),
@@ -89,74 +113,109 @@ class _CalendarManagerSheet extends StatelessWidget {
     );
   }
 
+  Future<void> _runCalendarAction(Future<void> Function() action) async {
+    if (_actionInProgress) {
+      return;
+    }
+    setState(() => _actionInProgress = true);
+    try {
+      await action();
+    } finally {
+      if (mounted) {
+        setState(() => _actionInProgress = false);
+      } else {
+        _actionInProgress = false;
+      }
+    }
+  }
+
   Future<void> _renameCalendar(
     BuildContext context,
     GeneralSchedule schedule,
   ) async {
-    final provider = context.read<TimetableProvider>();
-    final controller = TextEditingController(text: schedule.name);
-    final name = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        final l10n = AppLocalizations.of(dialogContext);
-        return AlertDialog(
-          title: Text(l10n.renameCalendar),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: l10n.name,
-              border: const OutlineInputBorder(),
+    await _runCalendarAction(() async {
+      final provider = context.read<TimetableProvider>();
+      final controller = TextEditingController(text: schedule.name);
+      final name = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) {
+          final l10n = AppLocalizations.of(dialogContext);
+          var popped = false;
+          void popWith(String? value) {
+            if (popped) return;
+            popped = true;
+            Navigator.of(dialogContext).pop(value);
+          }
+
+          return AlertDialog(
+            title: Text(l10n.renameCalendar),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: l10n.name,
+                border: const OutlineInputBorder(),
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.of(dialogContext).pop(controller.text.trim()),
-              child: Text(l10n.save),
-            ),
-          ],
-        );
-      },
-    );
-    controller.dispose();
-    if (name != null && name.trim().isNotEmpty) {
-      await provider.renameGeneralSchedule(schedule.id, name);
-    }
+            actions: [
+              TextButton(
+                onPressed: () => popWith(null),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () => popWith(controller.text.trim()),
+                child: Text(l10n.save),
+              ),
+            ],
+          );
+        },
+      );
+      controller.dispose();
+      if (name != null && name.trim().isNotEmpty) {
+        await provider.renameGeneralSchedule(schedule.id, name);
+      }
+    });
   }
 
   Future<void> _deleteCalendar(
     BuildContext context,
     GeneralSchedule schedule,
   ) async {
-    final provider = context.read<TimetableProvider>();
-    final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.deleteCalendar),
-        content: Text(l10n.deleteCalendarMessage(schedule.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(dialogContext).colorScheme.error,
-            ),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await provider.deleteGeneralSchedule(schedule.id);
-    }
+    await _runCalendarAction(() async {
+      final provider = context.read<TimetableProvider>();
+      final l10n = AppLocalizations.of(context);
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          var popped = false;
+          void popWith(bool value) {
+            if (popped) return;
+            popped = true;
+            Navigator.of(dialogContext).pop(value);
+          }
+
+          return AlertDialog(
+            title: Text(l10n.deleteCalendar),
+            content: Text(l10n.deleteCalendarMessage(schedule.name)),
+            actions: [
+              TextButton(
+                onPressed: () => popWith(false),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () => popWith(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                ),
+                child: Text(l10n.delete),
+              ),
+            ],
+          );
+        },
+      );
+      if (confirmed == true) {
+        await provider.deleteGeneralSchedule(schedule.id);
+      }
+    });
   }
 }

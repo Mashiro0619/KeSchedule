@@ -14,9 +14,9 @@ class _StudentHomeAppBar extends StatelessWidget
   final TimetableProvider provider;
   final TimetableData timetable;
   final int week;
-  final VoidCallback onTitleTap;
-  final VoidCallback onAddCourse;
-  final VoidCallback onOpenSettings;
+  final VoidCallback? onTitleTap;
+  final VoidCallback? onAddCourse;
+  final VoidCallback? onOpenSettings;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -73,12 +73,19 @@ class _TimetableDrawer extends StatelessWidget {
   const _TimetableDrawer({
     required this.provider,
     required this.activeTimetable,
+    required this.switchingTimetable,
+    required this.onSwitchTimetable,
     required this.onEditTimetable,
+    required this.onCreateTimetable,
   });
 
   final TimetableProvider provider;
   final TimetableData activeTimetable;
-  final ValueChanged<TimetableData> onEditTimetable;
+  final bool switchingTimetable;
+  final void Function(BuildContext context, TimetableData timetable)?
+  onSwitchTimetable;
+  final ValueChanged<TimetableData>? onEditTimetable;
+  final Future<void> Function()? onCreateTimetable;
 
   @override
   Widget build(BuildContext context) {
@@ -108,18 +115,14 @@ class _TimetableDrawer extends StatelessWidget {
                       trailing: IconButton(
                         tooltip: l10n.editTimetable,
                         icon: const Icon(Icons.edit_outlined),
-                        onPressed: () => onEditTimetable(item),
+                        onPressed: onEditTimetable == null || switchingTimetable
+                            ? null
+                            : () => onEditTimetable!(item),
                       ),
-                      onTap: () async {
-                        if (item.id == activeTimetable.id) {
-                          Navigator.of(context).pop();
-                          return;
-                        }
-                        await provider.switchTimetable(item.id);
-                        if (context.mounted) {
-                          Navigator.of(context).pop();
-                        }
-                      },
+                      enabled: !switchingTimetable,
+                      onTap: switchingTimetable || onSwitchTimetable == null
+                          ? null
+                          : () => onSwitchTimetable!(context, item),
                     ),
                 ],
               ),
@@ -127,7 +130,7 @@ class _TimetableDrawer extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: FilledButton.icon(
-                onPressed: provider.addTimetable,
+                onPressed: onCreateTimetable,
                 icon: const Icon(Icons.add),
                 label: Text(l10n.createTimetable),
               ),
@@ -249,10 +252,10 @@ class _EmptyTimetableState extends StatelessWidget {
     required this.onImportFromWeb,
   });
 
-  final Future<void> Function() onCreate;
-  final Future<void> Function() onImport;
-  final Future<void> Function() onImportFromText;
-  final Future<void> Function() onImportFromWeb;
+  final Future<void> Function()? onCreate;
+  final Future<void> Function()? onImport;
+  final Future<void> Function()? onImportFromText;
+  final Future<void> Function()? onImportFromWeb;
 
   @override
   Widget build(BuildContext context) {

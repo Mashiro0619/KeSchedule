@@ -42,6 +42,8 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
 
   bool _isSubmitting = false;
   bool _isCompressed = false;
+  bool _parserSettingsPageOpen = false;
+  bool _returnToWebPagePopped = false;
 
   bool _isConfigured(TimetableProvider provider) {
     if (provider.schoolImportParserSource ==
@@ -104,7 +106,7 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
         actions: [
           if (widget.showReturnToWebPageButton)
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: _returnToWebPagePopped ? null : _returnToWebPageOnce,
               child: Text(l10n.schoolHtmlImportReturnToWebPage),
             ),
         ],
@@ -120,13 +122,9 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
                   title: Text(l10n.schoolImportParserSettingsTitle),
                   subtitle: Text(_buildParserSummary(provider, l10n)),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const SchoolImportParserSettingsPage(),
-                      ),
-                    );
-                  },
+                  onTap: _parserSettingsPageOpen
+                      ? null
+                      : _openParserSettingsPage,
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -202,13 +200,9 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
             if (isCustom) ...[
               const SizedBox(height: 16),
               FilledButton.tonalIcon(
-                onPressed: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const SchoolImportParserSettingsPage(),
-                    ),
-                  );
-                },
+                onPressed: _parserSettingsPageOpen
+                    ? null
+                    : _openParserSettingsPage,
                 icon: const Icon(Icons.tune_outlined),
                 label: Text(l10n.schoolImportParserSettingsTitle),
               ),
@@ -236,6 +230,32 @@ class _SchoolHtmlImportPageState extends State<SchoolHtmlImportPage> {
       selection: TextSelection.collapsed(offset: sanitizedContent.length),
     );
     setState(() => _isCompressed = true);
+  }
+
+  Future<void> _openParserSettingsPage() async {
+    if (_parserSettingsPageOpen) {
+      return;
+    }
+    setState(() => _parserSettingsPageOpen = true);
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const SchoolImportParserSettingsPage(),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _parserSettingsPageOpen = false);
+      }
+    }
+  }
+
+  void _returnToWebPageOnce() {
+    if (_returnToWebPagePopped) {
+      return;
+    }
+    setState(() => _returnToWebPagePopped = true);
+    Navigator.of(context).pop();
   }
 
   String? _validateBeforeSubmit(

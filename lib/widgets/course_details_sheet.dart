@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,7 +16,7 @@ import '../models/timetable_models.dart'
         pickDisplayedCourseForConflict;
 import '../providers/timetable_provider.dart';
 
-class CourseDetailsSheet extends StatelessWidget {
+class CourseDetailsSheet extends StatefulWidget {
   const CourseDetailsSheet({
     super.key,
     required this.courseId,
@@ -31,10 +33,37 @@ class CourseDetailsSheet extends StatelessWidget {
   final int weekday;
   final String? conflictKey;
   final bool isFullConflict;
-  final VoidCallback onEdit;
-  final ValueChanged<CourseItem>? onSelectDisplayedCourse;
-  final ValueChanged<CourseItem>? onEditConflictCourse;
+  final FutureOr<void> Function() onEdit;
+  final FutureOr<void> Function(CourseItem)? onSelectDisplayedCourse;
+  final FutureOr<void> Function(CourseItem)? onEditConflictCourse;
   final VoidCallback? onMissing;
+
+  @override
+  State<CourseDetailsSheet> createState() => _CourseDetailsSheetState();
+}
+
+class _CourseDetailsSheetState extends State<CourseDetailsSheet> {
+  var _actionInProgress = false;
+  var _missingNotified = false;
+
+  Future<void> _runAction(
+    FutureOr<void> Function()? action, {
+    bool resetOnSuccess = true,
+  }) async {
+    if (_actionInProgress || action == null) {
+      return;
+    }
+    setState(() => _actionInProgress = true);
+    var succeeded = false;
+    try {
+      await action();
+      succeeded = true;
+    } finally {
+      if (mounted && (resetOnSuccess || !succeeded)) {
+        setState(() => _actionInProgress = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +79,7 @@ class CourseDetailsSheet extends StatelessWidget {
         }
 
         final course = timetable.courses
-            .where((item) => item.id == courseId)
+            .where((item) => item.id == widget.courseId)
             .cast<CourseItem?>()
             .firstWhere((item) => item != null, orElse: () => null);
         if (course == null) {
@@ -89,7 +118,9 @@ class CourseDetailsSheet extends StatelessWidget {
                       ),
                       IconButton(
                         tooltip: l10n.editCourseTooltip,
-                        onPressed: onEdit,
+                        onPressed: _actionInProgress
+                            ? null
+                            : () => _runAction(widget.onEdit),
                         icon: const Icon(Icons.edit),
                       ),
                     ],
@@ -113,20 +144,26 @@ class CourseDetailsSheet extends StatelessWidget {
                   const SizedBox(height: 12),
                   _DetailRow(
                     label: l10n.teacherName,
-                    value: course.teacher.isEmpty ? l10n.notFilled : course.teacher,
+                    value: course.teacher.isEmpty
+                        ? l10n.notFilled
+                        : course.teacher,
                   ),
                   _DetailRow(
                     label: l10n.dayOfWeek,
                     value: formatDayOfWeekLabel(
                       course.dayOfWeek,
-                      localeCode: app_locale.localeCodeFromLocale(Localizations.localeOf(context)),
+                      localeCode: app_locale.localeCodeFromLocale(
+                        Localizations.localeOf(context),
+                      ),
                     ),
                   ),
                   _DetailRow(
                     label: l10n.semesterWeeks,
                     value: formatSemesterWeeksLabel(
                       course.semesterWeeks,
-                      localeCode: app_locale.localeCodeFromLocale(Localizations.localeOf(context)),
+                      localeCode: app_locale.localeCodeFromLocale(
+                        Localizations.localeOf(context),
+                      ),
                     ),
                   ),
                   _DetailRow(
@@ -141,7 +178,10 @@ class CourseDetailsSheet extends StatelessWidget {
                   ),
                   if (otherConflictCourses.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    Text(l10n.conflictCourses, style: theme.textTheme.titleMedium),
+                    Text(
+                      l10n.conflictCourses,
+                      style: theme.textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
                     for (final item in otherConflictCourses)
                       Card.outlined(
@@ -154,16 +194,29 @@ class CourseDetailsSheet extends StatelessWidget {
                           trailing: Wrap(
                             spacing: 4,
                             children: [
-                              if (onSelectDisplayedCourse != null)
+                              if (widget.onSelectDisplayedCourse != null)
                                 IconButton(
                                   tooltip: l10n.setAsDisplayed,
-                                  onPressed: () => onSelectDisplayedCourse!(item),
+                                  onPressed: _actionInProgress
+                                      ? null
+                                      : () => _runAction(
+                                          () => widget.onSelectDisplayedCourse!(
+                                            item,
+                                          ),
+                                          resetOnSuccess: false,
+                                        ),
                                   icon: const Icon(Icons.visibility_outlined),
                                 ),
-                              if (onEditConflictCourse != null)
+                              if (widget.onEditConflictCourse != null)
                                 IconButton(
                                   tooltip: l10n.editThisCourse,
-                                  onPressed: () => onEditConflictCourse!(item),
+                                  onPressed: _actionInProgress
+                                      ? null
+                                      : () => _runAction(
+                                          () => widget.onEditConflictCourse!(
+                                            item,
+                                          ),
+                                        ),
                                   icon: const Icon(Icons.edit_outlined),
                                 ),
                             ],
@@ -176,7 +229,10 @@ class CourseDetailsSheet extends StatelessWidget {
                     Text(l10n.customFields, style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
                     for (final entry in course.customFields.entries)
-                      _DetailRow(label: entry.key, value: entry.value.toString()),
+                      _DetailRow(
+                        label: entry.key,
+                        value: entry.value.toString(),
+                      ),
                   ],
                 ],
               ),
@@ -192,12 +248,12 @@ class CourseDetailsSheet extends StatelessWidget {
     required TimetableData timetable,
     required CourseItem course,
   }) {
-    if (!isFullConflict) {
+    if (!widget.isFullConflict) {
       return [course];
     }
 
     final sameWeekdayCourses = timetable.courses
-        .where((item) => item.dayOfWeek == weekday)
+        .where((item) => item.dayOfWeek == widget.weekday)
         .toList();
     final exactRangeCourses = sameWeekdayCourses
         .where(
@@ -206,7 +262,8 @@ class CourseDetailsSheet extends StatelessWidget {
               item.endMinutes == course.endMinutes,
         )
         .toList();
-    if (exactRangeCourses.length > 1 && isFullConflictGroup(exactRangeCourses)) {
+    if (exactRangeCourses.length > 1 &&
+        isFullConflictGroup(exactRangeCourses)) {
       return _sortConflictCourses(provider, exactRangeCourses);
     }
 
@@ -217,7 +274,8 @@ class CourseDetailsSheet extends StatelessWidget {
               item.endMinutes >= course.endMinutes,
         )
         .toList();
-    if (containingCourses.length > 1 && isFullConflictGroup(containingCourses)) {
+    if (containingCourses.length > 1 &&
+        isFullConflictGroup(containingCourses)) {
       return _sortConflictCourses(provider, containingCourses);
     }
 
@@ -231,10 +289,11 @@ class CourseDetailsSheet extends StatelessWidget {
     if (courses.length < 2) {
       return courses;
     }
-    final key = conflictKey ??
+    final key =
+        widget.conflictKey ??
         buildConflictKeyForCourses(
           provider.activeTimetable.id,
-          weekday,
+          widget.weekday,
           courses,
         );
     final displayedCourseId = provider.displayedCourseIdForConflict(key);
@@ -248,10 +307,15 @@ class CourseDetailsSheet extends StatelessWidget {
   }
 
   void _notifyMissing() {
-    if (onMissing == null) {
+    if (widget.onMissing == null || _missingNotified) {
       return;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => onMissing!.call());
+    _missingNotified = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onMissing?.call();
+      }
+    });
   }
 }
 

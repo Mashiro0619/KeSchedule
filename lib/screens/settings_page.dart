@@ -50,6 +50,21 @@ enum _GeneralDataAction {
 
 enum _ExportFormat { json, ics }
 
+enum _SettingsFlow {
+  periodTimePicker,
+  schoolSitesPage,
+  themeSettingsPage,
+  timetableDisplaySettingsPage,
+  generalDisplaySettingsPage,
+  languageSettingsPage,
+  studentDataActions,
+  generalDataActions,
+  privacyPolicy,
+  licensesPage,
+  updateCheck,
+  githubRepo,
+}
+
 enum UpdateCheckSource { manual, startup }
 
 enum _UpdateAction { github, website, googlePlay, quark, ignore, cancel }
@@ -150,6 +165,7 @@ class AppUpdateCoordinator {
           popped = true;
           Navigator.of(context).pop(action);
         }
+
         return AlertDialog(
           title: Text(l10n.checkForUpdates),
           content: SingleChildScrollView(
@@ -202,6 +218,7 @@ class AppUpdateCoordinator {
           popped = true;
           Navigator.of(context).pop(action);
         }
+
         return AlertDialog(
           title: Text(l10n.updateCheckFailedTitle),
           content: Text(l10n.updateCheckFailedMessage),
@@ -340,6 +357,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String? _editingTimetableId;
   String _currentVersion = '';
   String? _selectedPeriodTimeSetId;
+  final Set<_SettingsFlow> _openFlows = <_SettingsFlow>{};
 
   @override
   void initState() {
@@ -410,7 +428,9 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                   ),
                   trailing: const Icon(Icons.keyboard_arrow_down),
-                  onTap: () => _pickPeriodTimeSet(provider, timetable!.config),
+                  onTap: _isFlowOpen(_SettingsFlow.periodTimePicker)
+                      ? null
+                      : () => _pickPeriodTimeSet(provider, timetable!.config),
                 ),
                 Divider(
                   color: Theme.of(
@@ -422,7 +442,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   leading: const Icon(Icons.language_outlined),
                   title: Text(l10n.schoolWebImportEntry),
                   subtitle: Text(l10n.schoolWebImportEntryDesc),
-                  onTap: () => _openSchoolSitesPage(provider),
+                  onTap: _isFlowOpen(_SettingsFlow.schoolSitesPage)
+                      ? null
+                      : () => _openSchoolSitesPage(provider),
                 ),
                 Divider(
                   color: Theme.of(
@@ -442,7 +464,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   }} · ${provider.themeColorMode == themeColorModeColorful ? l10n.themeColorModeColorful : l10n.themeColorModeSingle}',
                 ),
                 trailing: const Icon(Icons.keyboard_arrow_right),
-                onTap: () => _openThemeSettingsPage(provider),
+                onTap: _isFlowOpen(_SettingsFlow.themeSettingsPage)
+                    ? null
+                    : () => _openThemeSettingsPage(provider),
               ),
               Divider(
                 color: Theme.of(
@@ -456,7 +480,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: Text(l10n.timetableDisplaySettings),
                   subtitle: Text(l10n.timetableDisplaySettingsDesc),
                   trailing: const Icon(Icons.keyboard_arrow_right),
-                  onTap: () => _openTimetableDisplaySettingsPage(provider),
+                  onTap: _isFlowOpen(_SettingsFlow.timetableDisplaySettingsPage)
+                      ? null
+                      : () => _openTimetableDisplaySettingsPage(provider),
                 ),
                 Divider(
                   color: Theme.of(
@@ -471,7 +497,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: Text(l10n.generalDisplaySettings),
                   subtitle: Text(l10n.generalDisplaySettingsDesc),
                   trailing: const Icon(Icons.keyboard_arrow_right),
-                  onTap: () => _openGeneralDisplaySettingsPage(provider),
+                  onTap: _isFlowOpen(_SettingsFlow.generalDisplaySettingsPage)
+                      ? null
+                      : () => _openGeneralDisplaySettingsPage(provider),
                 ),
                 Divider(
                   color: Theme.of(
@@ -485,7 +513,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   leading: const Icon(Icons.import_export),
                   title: Text(l10n.dataImportExport),
                   subtitle: Text(l10n.dataImportExportDesc),
-                  onTap: () => _showDataActions(provider),
+                  onTap: _isFlowOpen(_SettingsFlow.studentDataActions)
+                      ? null
+                      : () => _showDataActions(provider),
                 ),
               if (provider.isGeneralMode)
                 ListTile(
@@ -493,7 +523,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   leading: const Icon(Icons.import_export),
                   title: Text(l10n.generalScheduleImportExport),
                   subtitle: Text(l10n.generalScheduleImportExportDesc),
-                  onTap: () => _showGeneralDataActions(provider),
+                  onTap: _isFlowOpen(_SettingsFlow.generalDataActions)
+                      ? null
+                      : () => _showGeneralDataActions(provider),
                 ),
               Divider(
                 color: Theme.of(
@@ -506,7 +538,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: Text(l10n.language),
                 subtitle: Text(currentLanguageLabel),
                 trailing: const Icon(Icons.keyboard_arrow_right),
-                onTap: () => _openLanguageSettingsPage(provider),
+                onTap: _isFlowOpen(_SettingsFlow.languageSettingsPage)
+                    ? null
+                    : () => _openLanguageSettingsPage(provider),
               ),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -519,28 +553,36 @@ class _SettingsPageState extends State<SettingsPage> {
                           provider.acceptedPrivacyPolicyVersion!,
                         ),
                 ),
-                onTap: _openPrivacyPolicyPage,
+                onTap: _isFlowOpen(_SettingsFlow.privacyPolicy)
+                    ? null
+                    : _openPrivacyPolicyPage,
               ),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 leading: const Icon(Icons.description_outlined),
                 title: Text(l10n.openSourceLicenses),
                 subtitle: Text(l10n.openSourceLicensesDesc),
-                onTap: _openLicensesPage,
+                onTap: _isFlowOpen(_SettingsFlow.licensesPage)
+                    ? null
+                    : _openLicensesPage,
               ),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 leading: const Icon(Icons.update_outlined),
                 title: Text(l10n.checkForUpdates),
                 subtitle: Text(_buildUpdateSubtitle(provider, l10n)),
-                onTap: _checkForUpdates,
+                onTap: _isFlowOpen(_SettingsFlow.updateCheck)
+                    ? null
+                    : _checkForUpdates,
               ),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 leading: const FaIcon(FontAwesomeIcons.github),
                 title: Text(l10n.githubRepository),
                 subtitle: Text(l10n.githubRepositoryUrl),
-                onTap: _openGithubRepo,
+                onTap: _isFlowOpen(_SettingsFlow.githubRepo)
+                    ? null
+                    : _openGithubRepo,
               ),
             ],
           ),
@@ -549,52 +591,85 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  bool _isFlowOpen(_SettingsFlow flow) => _openFlows.contains(flow);
+
+  void _setFlowOpen(_SettingsFlow flow, bool value) {
+    final changed = value ? _openFlows.add(flow) : _openFlows.remove(flow);
+    if (!changed) return;
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _guardFlow(
+    _SettingsFlow flow,
+    Future<void> Function() action,
+  ) async {
+    if (_isFlowOpen(flow) || !mounted) {
+      return;
+    }
+    _setFlowOpen(flow, true);
+    try {
+      await action();
+    } finally {
+      _setFlowOpen(flow, false);
+    }
+  }
+
   Future<void> _openThemeSettingsPage(TimetableProvider provider) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
-          value: provider,
-          child: const ThemeSettingsPage(),
+    await _guardFlow(_SettingsFlow.themeSettingsPage, () async {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
+            value: provider,
+            child: const ThemeSettingsPage(),
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Future<void> _openTimetableDisplaySettingsPage(
     TimetableProvider provider,
   ) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
-          value: provider,
-          child: const TimetableDisplaySettingsPage(),
+    await _guardFlow(_SettingsFlow.timetableDisplaySettingsPage, () async {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
+            value: provider,
+            child: const TimetableDisplaySettingsPage(),
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Future<void> _openGeneralDisplaySettingsPage(
     TimetableProvider provider,
   ) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
-          value: provider,
-          child: const GeneralDisplaySettingsPage(),
+    await _guardFlow(_SettingsFlow.generalDisplaySettingsPage, () async {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
+            value: provider,
+            child: const GeneralDisplaySettingsPage(),
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Future<void> _openLanguageSettingsPage(TimetableProvider provider) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
-          value: provider,
-          child: const LanguageSettingsPage(),
+    await _guardFlow(_SettingsFlow.languageSettingsPage, () async {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
+            value: provider,
+            child: const LanguageSettingsPage(),
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   String _languageLabelForCode(
@@ -617,27 +692,37 @@ class _SettingsPageState extends State<SettingsPage> {
     TimetableProvider provider,
     TimetableConfig config,
   ) async {
-    final result = await showPeriodTimeSetPickerDialog(
-      context,
-      provider: provider,
-      selectedPeriodTimeSetId: _selectedPeriodTimeSetId!,
-    );
-    if (result == null || result == _selectedPeriodTimeSetId) {
-      return;
-    }
-    setState(() => _selectedPeriodTimeSetId = result);
-    await provider.updateTimetableConfig(
-      config.copyWith(periodTimeSetId: result),
-    );
+    await _guardFlow(_SettingsFlow.periodTimePicker, () async {
+      final result = await showPeriodTimeSetPickerDialog(
+        context,
+        provider: provider,
+        selectedPeriodTimeSetId: _selectedPeriodTimeSetId!,
+      );
+      if (result == null || result == _selectedPeriodTimeSetId) {
+        return;
+      }
+      setState(() => _selectedPeriodTimeSetId = result);
+      await provider.updateTimetableConfig(
+        config.copyWith(periodTimeSetId: result),
+      );
+    });
   }
 
   Future<void> _openPrivacyPolicyPage() async {
-    final uri = Uri.parse('https://mashiro.tech/KeSchedule/privacy.html');
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    await _guardFlow(_SettingsFlow.privacyPolicy, () async {
+      final uri = Uri.parse('https://mashiro.tech/KeSchedule/privacy.html');
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    });
   }
 
-  void _openLicensesPage() {
-    showLicensePage(context: context, applicationName: 'Sked');
+  Future<void> _openLicensesPage() async {
+    await _guardFlow(_SettingsFlow.licensesPage, () async {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const LicensePage(applicationName: 'Sked'),
+        ),
+      );
+    });
   }
 
   String _buildUpdateSubtitle(
@@ -672,12 +757,14 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _checkForUpdates() {
-    return AppUpdateCoordinator.checkForUpdates(
-      context,
-      provider: context.read<TimetableProvider>(),
-      source: UpdateCheckSource.manual,
-    );
+  Future<void> _checkForUpdates() async {
+    await _guardFlow(_SettingsFlow.updateCheck, () async {
+      await AppUpdateCoordinator.checkForUpdates(
+        context,
+        provider: context.read<TimetableProvider>(),
+        source: UpdateCheckSource.manual,
+      );
+    });
   }
 
   bool _isNewerThanCurrentVersion(String version) {
@@ -688,112 +775,113 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _openGithubRepo() async {
-    final uri = Uri.parse('https://github.com/Mashiro0619/KeSchedule');
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && mounted) {
-      _showMessage(AppLocalizations.of(context).openGithubFailed);
-    }
+    await _guardFlow(_SettingsFlow.githubRepo, () async {
+      final uri = Uri.parse('https://github.com/Mashiro0619/KeSchedule');
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        _showMessage(AppLocalizations.of(context).openGithubFailed);
+      }
+    });
   }
 
   Future<void> _showDataActions(TimetableProvider provider) async {
-    final action = await showModalBottomSheet<_DataAction>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        final l10n = AppLocalizations.of(sheetContext);
-        return _buildAdaptiveBottomSheet(
-          sheetContext,
-          maxWidth: 680,
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.file_download_outlined),
-                  title: Text(l10n.importTimetableFiles),
-                  subtitle: Text(l10n.importTimetableFilesDesc),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_DataAction.importTimetables),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.paste_outlined),
-                  title: Text(l10n.importTimetableText),
-                  subtitle: Text(l10n.importTimetableTextDesc),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_DataAction.importTimetablesText),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.html_outlined),
-                  title: Text(l10n.schoolHtmlImportEntry),
-                  subtitle: Text(l10n.schoolHtmlImportEntryDesc),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_DataAction.importSchoolHtml),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.share_outlined),
-                  title: Text(l10n.shareTimetableFiles),
-                  subtitle: Text(l10n.shareTimetableFilesDesc),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_DataAction.exportTimetablesShare),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.save_alt_outlined),
-                  title: Text(l10n.saveTimetableFiles),
-                  subtitle: Text(l10n.saveTimetableFilesDesc),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_DataAction.exportTimetablesSave),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.text_snippet_outlined),
-                  title: Text(l10n.exportTimetableText),
-                  subtitle: Text(l10n.exportTimetableTextDesc),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_DataAction.exportTimetablesText),
-                ),
-              ],
+    await _guardFlow(_SettingsFlow.studentDataActions, () async {
+      final action = await showModalBottomSheet<_DataAction>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) {
+          final l10n = AppLocalizations.of(sheetContext);
+          var popped = false;
+          void popWith(_DataAction action) {
+            if (popped) return;
+            popped = true;
+            Navigator.of(sheetContext).pop(action);
+          }
+
+          return _buildAdaptiveBottomSheet(
+            sheetContext,
+            maxWidth: 680,
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.file_download_outlined),
+                    title: Text(l10n.importTimetableFiles),
+                    subtitle: Text(l10n.importTimetableFilesDesc),
+                    onTap: () => popWith(_DataAction.importTimetables),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.paste_outlined),
+                    title: Text(l10n.importTimetableText),
+                    subtitle: Text(l10n.importTimetableTextDesc),
+                    onTap: () => popWith(_DataAction.importTimetablesText),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.html_outlined),
+                    title: Text(l10n.schoolHtmlImportEntry),
+                    subtitle: Text(l10n.schoolHtmlImportEntryDesc),
+                    onTap: () => popWith(_DataAction.importSchoolHtml),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.share_outlined),
+                    title: Text(l10n.shareTimetableFiles),
+                    subtitle: Text(l10n.shareTimetableFilesDesc),
+                    onTap: () => popWith(_DataAction.exportTimetablesShare),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.save_alt_outlined),
+                    title: Text(l10n.saveTimetableFiles),
+                    subtitle: Text(l10n.saveTimetableFilesDesc),
+                    onTap: () => popWith(_DataAction.exportTimetablesSave),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.text_snippet_outlined),
+                    title: Text(l10n.exportTimetableText),
+                    subtitle: Text(l10n.exportTimetableTextDesc),
+                    onTap: () => popWith(_DataAction.exportTimetablesText),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
-    );
-    if (action == null || !mounted) {
-      return;
-    }
-    switch (action) {
-      case _DataAction.importTimetables:
-        await TimetableImportFlow.importTimetables(context, provider);
+          );
+        },
+      );
+      if (action == null || !mounted) {
         return;
-      case _DataAction.importTimetablesText:
-        await _importTimetablesFromText(provider);
-        return;
-      case _DataAction.importSchoolHtml:
-        await _openSchoolHtmlImportPage(provider);
-        return;
-      case _DataAction.exportTimetablesShare:
-        await _exportTimetables(provider, share: true);
-        return;
-      case _DataAction.exportTimetablesSave:
-        await _exportTimetables(provider, share: false);
-        return;
-      case _DataAction.exportTimetablesText:
-        await _exportTimetablesAsText(provider);
-        return;
-    }
+      }
+      switch (action) {
+        case _DataAction.importTimetables:
+          await TimetableImportFlow.importTimetables(context, provider);
+          return;
+        case _DataAction.importTimetablesText:
+          await _importTimetablesFromText(provider);
+          return;
+        case _DataAction.importSchoolHtml:
+          await _openSchoolHtmlImportPage(provider);
+          return;
+        case _DataAction.exportTimetablesShare:
+          await _exportTimetables(provider, share: true);
+          return;
+        case _DataAction.exportTimetablesSave:
+          await _exportTimetables(provider, share: false);
+          return;
+        case _DataAction.exportTimetablesText:
+          await _exportTimetablesAsText(provider);
+          return;
+      }
+    });
   }
 
   Future<void> _openSchoolSitesPage(TimetableProvider provider) async {
-    await TimetableImportFlow.openSchoolSitesPage(context, provider);
+    await _guardFlow(_SettingsFlow.schoolSitesPage, () async {
+      await TimetableImportFlow.openSchoolSitesPage(context, provider);
+    });
   }
 
   Future<void> _importTimetablesFromText(TimetableProvider provider) async {
@@ -915,6 +1003,7 @@ class _SettingsPageState extends State<SettingsPage> {
               popped = true;
               Navigator.of(context).pop(value);
             }
+
             return AlertDialog(
               title: Text(title),
               content: SizedBox(
@@ -1100,6 +1189,7 @@ class _SettingsPageState extends State<SettingsPage> {
           popped = true;
           Navigator.of(context).pop(value);
         }
+
         return AlertDialog(
           title: Text(title),
           content: Text(message),
@@ -1131,6 +1221,7 @@ class _SettingsPageState extends State<SettingsPage> {
           popped = true;
           Navigator.of(context).pop(value);
         }
+
         return AlertDialog(
           title: Text(title),
           content: Text(message),
@@ -1159,141 +1250,140 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _showGeneralDataActions(TimetableProvider provider) async {
-    final l10n = AppLocalizations.of(context);
-    final action = await showModalBottomSheet<_GeneralDataAction>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        final maxHeight = MediaQuery.of(sheetContext).size.height * 0.85;
-        return _buildAdaptiveBottomSheet(
-          sheetContext,
-          maxWidth: 680,
-          child: SafeArea(
-            top: false,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxHeight),
-              child: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.only(bottom: 12),
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.file_download_outlined),
-                    title: Text(l10n.importJsonFile),
-                    subtitle: Text(l10n.importGeneralSchedulesDesc),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_GeneralDataAction.importSchedulesJsonFile),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.paste_outlined),
-                    title: Text(l10n.pasteJson),
-                    subtitle: Text(l10n.importGeneralSchedulesJsonTextDesc),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_GeneralDataAction.importSchedulesJsonText),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.calendar_month_outlined),
-                    title: Text(l10n.importIcsFile),
-                    subtitle: Text(l10n.importIcsFileDesc),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_GeneralDataAction.importSchedulesIcsFile),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.event_note_outlined),
-                    title: Text(l10n.pasteIcs),
-                    subtitle: Text(l10n.pasteIcsDesc),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_GeneralDataAction.importSchedulesIcsText),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.share_outlined),
-                    title: Text('${l10n.shareGeneralSchedules} JSON'),
-                    subtitle: Text(l10n.shareGeneralSchedulesDesc),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_GeneralDataAction.exportSchedulesJsonShare),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.save_alt_outlined),
-                    title: Text('${l10n.saveGeneralSchedules} JSON'),
-                    subtitle: Text(l10n.saveGeneralSchedulesDesc),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_GeneralDataAction.exportSchedulesJsonSave),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.text_snippet_outlined),
-                    title: Text(l10n.copyJson),
-                    subtitle: Text(l10n.copyJsonDesc),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_GeneralDataAction.exportSchedulesJsonText),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.ios_share_outlined),
-                    title: Text(l10n.shareIcs),
-                    subtitle: Text(l10n.shareIcsDesc),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_GeneralDataAction.exportSchedulesIcsShare),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.event_available_outlined),
-                    title: Text(l10n.saveIcs),
-                    subtitle: Text(l10n.saveIcsDesc),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_GeneralDataAction.exportSchedulesIcsSave),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.event_note_outlined),
-                    title: Text(l10n.copyIcs),
-                    subtitle: Text(l10n.copyIcsDesc),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_GeneralDataAction.exportSchedulesIcsText),
-                  ),
-                ],
+    await _guardFlow(_SettingsFlow.generalDataActions, () async {
+      final l10n = AppLocalizations.of(context);
+      final action = await showModalBottomSheet<_GeneralDataAction>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) {
+          final maxHeight = MediaQuery.of(sheetContext).size.height * 0.85;
+          var popped = false;
+          void popWith(_GeneralDataAction action) {
+            if (popped) return;
+            popped = true;
+            Navigator.of(sheetContext).pop(action);
+          }
+
+          return _buildAdaptiveBottomSheet(
+            sheetContext,
+            maxWidth: 680,
+            child: SafeArea(
+              top: false,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.only(bottom: 12),
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.file_download_outlined),
+                      title: Text(l10n.importJsonFile),
+                      subtitle: Text(l10n.importGeneralSchedulesDesc),
+                      onTap: () =>
+                          popWith(_GeneralDataAction.importSchedulesJsonFile),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.paste_outlined),
+                      title: Text(l10n.pasteJson),
+                      subtitle: Text(l10n.importGeneralSchedulesJsonTextDesc),
+                      onTap: () =>
+                          popWith(_GeneralDataAction.importSchedulesJsonText),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.calendar_month_outlined),
+                      title: Text(l10n.importIcsFile),
+                      subtitle: Text(l10n.importIcsFileDesc),
+                      onTap: () =>
+                          popWith(_GeneralDataAction.importSchedulesIcsFile),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.event_note_outlined),
+                      title: Text(l10n.pasteIcs),
+                      subtitle: Text(l10n.pasteIcsDesc),
+                      onTap: () =>
+                          popWith(_GeneralDataAction.importSchedulesIcsText),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.share_outlined),
+                      title: Text('${l10n.shareGeneralSchedules} JSON'),
+                      subtitle: Text(l10n.shareGeneralSchedulesDesc),
+                      onTap: () =>
+                          popWith(_GeneralDataAction.exportSchedulesJsonShare),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.save_alt_outlined),
+                      title: Text('${l10n.saveGeneralSchedules} JSON'),
+                      subtitle: Text(l10n.saveGeneralSchedulesDesc),
+                      onTap: () =>
+                          popWith(_GeneralDataAction.exportSchedulesJsonSave),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.text_snippet_outlined),
+                      title: Text(l10n.copyJson),
+                      subtitle: Text(l10n.copyJsonDesc),
+                      onTap: () =>
+                          popWith(_GeneralDataAction.exportSchedulesJsonText),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.ios_share_outlined),
+                      title: Text(l10n.shareIcs),
+                      subtitle: Text(l10n.shareIcsDesc),
+                      onTap: () =>
+                          popWith(_GeneralDataAction.exportSchedulesIcsShare),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.event_available_outlined),
+                      title: Text(l10n.saveIcs),
+                      subtitle: Text(l10n.saveIcsDesc),
+                      onTap: () =>
+                          popWith(_GeneralDataAction.exportSchedulesIcsSave),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.event_note_outlined),
+                      title: Text(l10n.copyIcs),
+                      subtitle: Text(l10n.copyIcsDesc),
+                      onTap: () =>
+                          popWith(_GeneralDataAction.exportSchedulesIcsText),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
-    );
-    if (action == null || !mounted) return;
-    switch (action) {
-      case _GeneralDataAction.importSchedulesJsonFile:
-        await _importGeneralSchedulesJsonFile(provider);
-      case _GeneralDataAction.importSchedulesJsonText:
-        await _importGeneralSchedulesJsonText(provider);
-      case _GeneralDataAction.importSchedulesIcsFile:
-        await _importGeneralSchedulesIcsFile(provider);
-      case _GeneralDataAction.importSchedulesIcsText:
-        await _importGeneralSchedulesIcsText(provider);
-      case _GeneralDataAction.exportSchedulesJsonShare:
-        await _exportGeneralSchedules(provider, share: true);
-      case _GeneralDataAction.exportSchedulesJsonSave:
-        await _exportGeneralSchedules(provider, share: false);
-      case _GeneralDataAction.exportSchedulesJsonText:
-        await _exportGeneralSchedulesAsText(
-          provider,
-          format: _ExportFormat.json,
-        );
-      case _GeneralDataAction.exportSchedulesIcsShare:
-        await _exportGeneralSchedulesIcs(provider, share: true);
-      case _GeneralDataAction.exportSchedulesIcsSave:
-        await _exportGeneralSchedulesIcs(provider, share: false);
-      case _GeneralDataAction.exportSchedulesIcsText:
-        await _exportGeneralSchedulesAsText(
-          provider,
-          format: _ExportFormat.ics,
-        );
-    }
+          );
+        },
+      );
+      if (action == null || !mounted) return;
+      switch (action) {
+        case _GeneralDataAction.importSchedulesJsonFile:
+          await _importGeneralSchedulesJsonFile(provider);
+        case _GeneralDataAction.importSchedulesJsonText:
+          await _importGeneralSchedulesJsonText(provider);
+        case _GeneralDataAction.importSchedulesIcsFile:
+          await _importGeneralSchedulesIcsFile(provider);
+        case _GeneralDataAction.importSchedulesIcsText:
+          await _importGeneralSchedulesIcsText(provider);
+        case _GeneralDataAction.exportSchedulesJsonShare:
+          await _exportGeneralSchedules(provider, share: true);
+        case _GeneralDataAction.exportSchedulesJsonSave:
+          await _exportGeneralSchedules(provider, share: false);
+        case _GeneralDataAction.exportSchedulesJsonText:
+          await _exportGeneralSchedulesAsText(
+            provider,
+            format: _ExportFormat.json,
+          );
+        case _GeneralDataAction.exportSchedulesIcsShare:
+          await _exportGeneralSchedulesIcs(provider, share: true);
+        case _GeneralDataAction.exportSchedulesIcsSave:
+          await _exportGeneralSchedulesIcs(provider, share: false);
+        case _GeneralDataAction.exportSchedulesIcsText:
+          await _exportGeneralSchedulesAsText(
+            provider,
+            format: _ExportFormat.ics,
+          );
+      }
+    });
   }
 
   Future<List<String>?> _pickGeneralScheduleIds({
@@ -1320,6 +1410,7 @@ class _SettingsPageState extends State<SettingsPage> {
               popped = true;
               Navigator.of(context).pop(value);
             }
+
             return AlertDialog(
               title: Text(title),
               content: SizedBox(
@@ -1469,6 +1560,7 @@ class _SettingsPageState extends State<SettingsPage> {
               popped = true;
               Navigator.of(ctx).pop(value);
             }
+
             return AlertDialog(
               title: Text(l10n.dataImportExport),
               content: Text(l10n.replaceActiveSchedulePrompt),
@@ -1559,6 +1651,7 @@ class _SettingsPageState extends State<SettingsPage> {
               popped = true;
               Navigator.of(ctx).pop(value);
             }
+
             return AlertDialog(
               title: Text(l10n.importIcs),
               content: Text(

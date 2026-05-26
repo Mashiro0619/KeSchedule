@@ -27,16 +27,25 @@ class TimetableImportFlow {
 
   static const TimetableJsonImportService _jsonImportService =
       TimetableJsonImportService();
+  static var _importTimetablesInProgress = false;
 
   static Future<void> importTimetables(
     BuildContext context,
     TimetableProvider provider,
   ) async {
-    final source = await _pickJsonSource();
-    if (source == null || !context.mounted) {
+    if (_importTimetablesInProgress) {
       return;
     }
-    await importTimetablesFromSource(context, provider, source);
+    _importTimetablesInProgress = true;
+    try {
+      final source = await _pickJsonSource();
+      if (source == null || !context.mounted) {
+        return;
+      }
+      await importTimetablesFromSource(context, provider, source);
+    } finally {
+      _importTimetablesInProgress = false;
+    }
   }
 
   static Future<bool> importTimetablesFromSource(
@@ -91,6 +100,7 @@ class TimetableImportFlow {
             popped = true;
             Navigator.of(context).pop(value);
           }
+
           return AlertDialog(
             title: Text(l10n.importTimetableDialogTitle),
             content: Text(l10n.chooseImportMethod),
@@ -192,6 +202,7 @@ class TimetableImportFlow {
           popped = true;
           Navigator.of(context).pop(value);
         }
+
         return AlertDialog(
           title: Text(l10n.importPeriodTimeSetDialogTitle),
           content: Text(dialogBody),
@@ -260,6 +271,7 @@ class TimetableImportFlow {
               popped = true;
               Navigator.of(context).pop(result);
             }
+
             return AlertDialog(
               title: Text(title),
               content: SizedBox(

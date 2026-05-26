@@ -39,6 +39,16 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasScheduledStartupUpdateCheck = false;
   bool _hasStartedPrivacyPolicyFetch = false;
   bool _isShowingPrivacyConsentDialog = false;
+  bool _weekPickerOpen = false;
+  bool _courseEditorOpen = false;
+  bool _courseDetailsOpen = false;
+  bool _timetableItemDialogOpen = false;
+  bool _timetableSwitchInProgress = false;
+  bool _addTimetableInProgress = false;
+  bool _settingsPageOpen = false;
+  bool _fileImportInProgress = false;
+  bool _textImportPageOpen = false;
+  bool _schoolWebImportPageOpen = false;
   Timer? _liveCourseTimer;
   TimetableProvider? _lastProvider;
 
@@ -114,6 +124,149 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _setWeekPickerOpen(bool value) {
+    if (_weekPickerOpen == value) return;
+    if (mounted) {
+      setState(() => _weekPickerOpen = value);
+    } else {
+      _weekPickerOpen = value;
+    }
+  }
+
+  void _setCourseEditorOpen(bool value) {
+    if (_courseEditorOpen == value) return;
+    if (mounted) {
+      setState(() => _courseEditorOpen = value);
+    } else {
+      _courseEditorOpen = value;
+    }
+  }
+
+  void _setCourseDetailsOpen(bool value) {
+    if (_courseDetailsOpen == value) return;
+    if (mounted) {
+      setState(() => _courseDetailsOpen = value);
+    } else {
+      _courseDetailsOpen = value;
+    }
+  }
+
+  void _setTimetableItemDialogOpen(bool value) {
+    if (_timetableItemDialogOpen == value) return;
+    if (mounted) {
+      setState(() => _timetableItemDialogOpen = value);
+    } else {
+      _timetableItemDialogOpen = value;
+    }
+  }
+
+  void _setTimetableSwitchInProgress(bool value) {
+    if (_timetableSwitchInProgress == value) return;
+    if (mounted) {
+      setState(() => _timetableSwitchInProgress = value);
+    } else {
+      _timetableSwitchInProgress = value;
+    }
+  }
+
+  void _setAddTimetableInProgress(bool value) {
+    if (_addTimetableInProgress == value) return;
+    if (mounted) {
+      setState(() => _addTimetableInProgress = value);
+    } else {
+      _addTimetableInProgress = value;
+    }
+  }
+
+  void _setSettingsPageOpen(bool value) {
+    if (_settingsPageOpen == value) return;
+    if (mounted) {
+      setState(() => _settingsPageOpen = value);
+    } else {
+      _settingsPageOpen = value;
+    }
+  }
+
+  void _setFileImportInProgress(bool value) {
+    if (_fileImportInProgress == value) return;
+    if (mounted) {
+      setState(() => _fileImportInProgress = value);
+    } else {
+      _fileImportInProgress = value;
+    }
+  }
+
+  void _setTextImportPageOpen(bool value) {
+    if (_textImportPageOpen == value) return;
+    if (mounted) {
+      setState(() => _textImportPageOpen = value);
+    } else {
+      _textImportPageOpen = value;
+    }
+  }
+
+  void _setSchoolWebImportPageOpen(bool value) {
+    if (_schoolWebImportPageOpen == value) return;
+    if (mounted) {
+      setState(() => _schoolWebImportPageOpen = value);
+    } else {
+      _schoolWebImportPageOpen = value;
+    }
+  }
+
+  Future<void> _addTimetableOnce(TimetableProvider provider) async {
+    if (_addTimetableInProgress || !mounted) {
+      return;
+    }
+    _setAddTimetableInProgress(true);
+    try {
+      await provider.addTimetable();
+    } finally {
+      _setAddTimetableInProgress(false);
+    }
+  }
+
+  Future<void> _openSettingsPage(TimetableProvider provider) async {
+    if (_settingsPageOpen || !mounted) {
+      return;
+    }
+    _setSettingsPageOpen(true);
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
+            value: provider,
+            child: const SettingsPage(),
+          ),
+        ),
+      );
+    } finally {
+      _setSettingsPageOpen(false);
+    }
+  }
+
+  Future<void> _switchTimetableFromDrawer(
+    BuildContext drawerContext,
+    TimetableProvider provider,
+    TimetableData activeTimetable,
+    TimetableData targetTimetable,
+  ) async {
+    if (_timetableSwitchInProgress) {
+      return;
+    }
+    _setTimetableSwitchInProgress(true);
+    try {
+      if (targetTimetable.id != activeTimetable.id) {
+        await provider.switchTimetable(targetTimetable.id);
+      }
+      if (drawerContext.mounted) {
+        await Navigator.of(drawerContext).maybePop();
+      }
+    } finally {
+      _setTimetableSwitchInProgress(false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<TimetableProvider>(
@@ -132,11 +285,18 @@ class _HomeScreenState extends State<HomeScreen> {
               actions: const [ModeSwitchAction()],
             ),
             body: _EmptyTimetableState(
-              onCreate: provider.addTimetable,
-              onImport: () => _importTimetableData(context, provider),
-              onImportFromText: () =>
-                  _importTimetablesFromText(context, provider),
-              onImportFromWeb: () => _importTimetableFromWeb(context, provider),
+              onCreate: _addTimetableInProgress
+                  ? null
+                  : () => _addTimetableOnce(provider),
+              onImport: _fileImportInProgress
+                  ? null
+                  : () => _importTimetableData(context, provider),
+              onImportFromText: _textImportPageOpen
+                  ? null
+                  : () => _importTimetablesFromText(context, provider),
+              onImportFromWeb: _schoolWebImportPageOpen
+                  ? null
+                  : () => _importTimetableFromWeb(context, provider),
             ),
           );
         }
@@ -150,27 +310,42 @@ class _HomeScreenState extends State<HomeScreen> {
             provider: provider,
             timetable: timetable,
             week: week,
-            onTitleTap: () => _showWeekPicker(
-              context,
-              provider,
-              config.totalWeeks,
-              currentWeekFor(config),
-            ),
-            onAddCourse: () => _openEditor(context, provider),
-            onOpenSettings: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
-                  value: provider,
-                  child: const SettingsPage(),
-                ),
-              ),
-            ),
+            onTitleTap: _weekPickerOpen
+                ? null
+                : () => _showWeekPicker(
+                    context,
+                    provider,
+                    config.totalWeeks,
+                    currentWeekFor(config),
+                  ),
+            onAddCourse: _courseEditorOpen
+                ? null
+                : () => _openEditor(context, provider),
+            onOpenSettings: _settingsPageOpen
+                ? null
+                : () => _openSettingsPage(provider),
           ),
           drawer: _TimetableDrawer(
             provider: provider,
             activeTimetable: timetable,
-            onEditTimetable: (item) =>
-                _openTimetableItemDialog(this.context, provider, item),
+            switchingTimetable: _timetableSwitchInProgress,
+            onSwitchTimetable: _timetableSwitchInProgress
+                ? null
+                : (drawerContext, item) => _switchTimetableFromDrawer(
+                    drawerContext,
+                    provider,
+                    timetable,
+                    item,
+                  ),
+            onEditTimetable:
+                _timetableItemDialogOpen || _timetableSwitchInProgress
+                ? null
+                : (item) =>
+                      _openTimetableItemDialog(this.context, provider, item),
+            onCreateTimetable:
+                _addTimetableInProgress || _timetableSwitchInProgress
+                ? null
+                : () => _addTimetableOnce(provider),
           ),
           body: _TimetableWeekPager(
             controller: _pageController!,

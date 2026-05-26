@@ -33,6 +33,11 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
   String _searchQuery = '';
   int? _colorFilterValue;
   bool _initializedView = false;
+  bool _datePickerOpen = false;
+  bool _editorSheetOpen = false;
+  bool _detailsSheetOpen = false;
+  bool _calendarManagerOpen = false;
+  bool _settingsPageOpen = false;
 
   @override
   void didChangeDependencies() {
@@ -69,7 +74,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
         titleSpacing: 12,
         title: InkWell(
           borderRadius: BorderRadius.circular(24),
-          onTap: () => _pickDate(context, provider),
+          onTap: _datePickerOpen ? null : () => _pickDate(context, provider),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Column(
@@ -97,32 +102,30 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
           IconButton(
             icon: const Icon(Icons.calendar_month_outlined),
             tooltip: l10n.calendars,
-            onPressed: () => _openCalendarManager(context, provider),
+            onPressed: _calendarManagerOpen
+                ? null
+                : () => _openCalendarManager(context, provider),
           ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: l10n.addEvent,
-            onPressed: () => _openEditor(context, provider),
+            onPressed: _editorSheetOpen
+                ? null
+                : () => _openEditor(context, provider),
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: l10n.settings,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) =>
-                      ChangeNotifierProvider<TimetableProvider>.value(
-                        value: provider,
-                        child: const SettingsPage(),
-                      ),
-                ),
-              );
-            },
+            onPressed: _settingsPageOpen
+                ? null
+                : () => _openSettingsPage(context, provider),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openEditor(context, provider),
+        onPressed: _editorSheetOpen
+            ? null
+            : () => _openEditor(context, provider),
         tooltip: l10n.addEvent,
         child: const Icon(Icons.add),
       ),
@@ -236,26 +239,42 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
     await provider.setSelectedGeneralDate(DateTime.now());
   }
 
+  void _setUiBusyFlag(void Function() update) {
+    if (mounted) {
+      setState(update);
+    } else {
+      update();
+    }
+  }
+
   Future<void> _pickDate(
     BuildContext context,
     TimetableProvider provider,
   ) async {
-    final firstDate = DateTime(1970);
-    final lastDate = DateTime(2100);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _clampDate(
-        provider.selectedGeneralDate,
-        firstDate,
-        lastDate,
-      ),
-      firstDate: firstDate,
-      lastDate: lastDate,
-    );
-    if (!mounted || picked == null) {
+    if (_datePickerOpen) {
       return;
     }
-    await provider.setSelectedGeneralDate(picked);
+    _setUiBusyFlag(() => _datePickerOpen = true);
+    final firstDate = DateTime(1970);
+    final lastDate = DateTime(2100);
+    try {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: _clampDate(
+          provider.selectedGeneralDate,
+          firstDate,
+          lastDate,
+        ),
+        firstDate: firstDate,
+        lastDate: lastDate,
+      );
+      if (!mounted || picked == null) {
+        return;
+      }
+      await provider.setSelectedGeneralDate(picked);
+    } finally {
+      _setUiBusyFlag(() => _datePickerOpen = false);
+    }
   }
 
   Future<void> _openEditor(
@@ -264,31 +283,39 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
     DateTime? initialDate,
     GeneralEvent? event,
   }) async {
+    if (_editorSheetOpen) {
+      return;
+    }
+    _setUiBusyFlag(() => _editorSheetOpen = true);
     final canDismiss = provider.closeGeneralEventPopupOnOutsideTap;
-    final result = await showModalBottomSheet<GeneralEventEditorResult>(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: canDismiss,
-      enableDrag: canDismiss,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => AdaptiveModalSurface(
-        maxWidth: 680,
-        dismissOnOutsideTap: canDismiss,
-        child: GeneralEventEditorSheet(
-          initialEvent: event,
-          initialDate: initialDate ?? provider.selectedGeneralDate,
-          calendars: provider.generalSchedules,
-          activeCalendarId: provider.activeGeneralSchedule.id,
+    try {
+      final result = await showModalBottomSheet<GeneralEventEditorResult>(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: canDismiss,
+        enableDrag: canDismiss,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) => AdaptiveModalSurface(
+          maxWidth: 680,
+          dismissOnOutsideTap: canDismiss,
+          child: GeneralEventEditorSheet(
+            initialEvent: event,
+            initialDate: initialDate ?? provider.selectedGeneralDate,
+            calendars: provider.generalSchedules,
+            activeCalendarId: provider.activeGeneralSchedule.id,
+          ),
         ),
-      ),
-    );
+      );
 
-    if (result == null || !mounted) return;
+      if (result == null || !mounted) return;
 
-    if (result.delete && event != null) {
-      await provider.deleteGeneralEvent(event.id);
-    } else if (result.event != null) {
-      await provider.saveGeneralEvent(result.event!);
+      if (result.delete && event != null) {
+        await provider.deleteGeneralEvent(event.id);
+      } else if (result.event != null) {
+        await provider.saveGeneralEvent(result.event!);
+      }
+    } finally {
+      _setUiBusyFlag(() => _editorSheetOpen = false);
     }
   }
 
@@ -297,89 +324,127 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
     TimetableProvider provider,
     GeneralEventOccurrence occurrence,
   ) async {
+    if (_detailsSheetOpen) {
+      return;
+    }
+    _setUiBusyFlag(() => _detailsSheetOpen = true);
     final canDismiss = provider.closeGeneralEventPopupOnOutsideTap;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: canDismiss,
-      enableDrag: canDismiss,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => AdaptiveModalSurface(
-        maxWidth: 560,
-        dismissOnOutsideTap: canDismiss,
-        child: GeneralEventDetailsSheet(
-          occurrence: occurrence,
-          isReminderHandled: provider.isGeneralReminderHandled(occurrence),
-          onEdit: () {
-            Navigator.of(sheetContext).pop();
-            _openEditor(context, provider, event: occurrence.event);
-          },
-          onDismissReminder: () async {
-            final messenger = ScaffoldMessenger.of(context);
-            final message = AppLocalizations.of(context).reminderHandled;
-            await provider.dismissGeneralReminder(occurrence);
-            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-            if (mounted) {
-              messenger.showSnackBar(SnackBar(content: Text(message)));
-            }
-          },
-          onRestoreReminder: () async {
-            final messenger = ScaffoldMessenger.of(context);
-            final message = AppLocalizations.of(context).reminderRestored;
-            await provider.restoreGeneralReminder(occurrence);
-            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-            if (mounted) {
-              messenger.showSnackBar(SnackBar(content: Text(message)));
-            }
-          },
-          onDuplicate: () async {
-            final messenger = ScaffoldMessenger.of(context);
-            final message = AppLocalizations.of(context).eventDuplicated;
-            await provider.duplicateGeneralOccurrence(occurrence);
-            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-            if (mounted) {
-              messenger.showSnackBar(SnackBar(content: Text(message)));
-            }
-          },
-          onDeleteThis: () async {
-            await provider.deleteGeneralOccurrence(occurrence);
-            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-          },
-          onDeleteFuture: occurrence.event.recurrenceRule.isRepeating
-              ? () async {
-                  await provider.deleteFutureGeneralOccurrences(occurrence);
-                  if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-                }
-              : null,
-          onDeleteAll: () async {
-            await provider.deleteGeneralEvent(occurrence.event.id);
-            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-          },
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: canDismiss,
+        enableDrag: canDismiss,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) => AdaptiveModalSurface(
+          maxWidth: 560,
+          dismissOnOutsideTap: canDismiss,
+          child: GeneralEventDetailsSheet(
+            occurrence: occurrence,
+            isReminderHandled: provider.isGeneralReminderHandled(occurrence),
+            onEdit: () {
+              Navigator.of(sheetContext).pop();
+              return _openEditor(context, provider, event: occurrence.event);
+            },
+            onDismissReminder: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final message = AppLocalizations.of(context).reminderHandled;
+              await provider.dismissGeneralReminder(occurrence);
+              if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+              if (mounted) {
+                messenger.showSnackBar(SnackBar(content: Text(message)));
+              }
+            },
+            onRestoreReminder: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final message = AppLocalizations.of(context).reminderRestored;
+              await provider.restoreGeneralReminder(occurrence);
+              if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+              if (mounted) {
+                messenger.showSnackBar(SnackBar(content: Text(message)));
+              }
+            },
+            onDuplicate: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final message = AppLocalizations.of(context).eventDuplicated;
+              await provider.duplicateGeneralOccurrence(occurrence);
+              if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+              if (mounted) {
+                messenger.showSnackBar(SnackBar(content: Text(message)));
+              }
+            },
+            onDeleteThis: () async {
+              await provider.deleteGeneralOccurrence(occurrence);
+              if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+            },
+            onDeleteFuture: occurrence.event.recurrenceRule.isRepeating
+                ? () async {
+                    await provider.deleteFutureGeneralOccurrences(occurrence);
+                    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                  }
+                : null,
+            onDeleteAll: () async {
+              await provider.deleteGeneralEvent(occurrence.event.id);
+              if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+            },
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      _setUiBusyFlag(() => _detailsSheetOpen = false);
+    }
   }
 
   Future<void> _openCalendarManager(
     BuildContext context,
     TimetableProvider provider,
   ) async {
+    if (_calendarManagerOpen) {
+      return;
+    }
+    _setUiBusyFlag(() => _calendarManagerOpen = true);
     final canDismiss = provider.closeGeneralEventPopupOnOutsideTap;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: canDismiss,
-      enableDrag: canDismiss,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => AdaptiveModalSurface(
-        maxWidth: 620,
-        dismissOnOutsideTap: canDismiss,
-        child: ChangeNotifierProvider<TimetableProvider>.value(
-          value: provider,
-          child: const _CalendarManagerSheet(),
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: canDismiss,
+        enableDrag: canDismiss,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) => AdaptiveModalSurface(
+          maxWidth: 620,
+          dismissOnOutsideTap: canDismiss,
+          child: ChangeNotifierProvider<TimetableProvider>.value(
+            value: provider,
+            child: const _CalendarManagerSheet(),
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      _setUiBusyFlag(() => _calendarManagerOpen = false);
+    }
+  }
+
+  Future<void> _openSettingsPage(
+    BuildContext context,
+    TimetableProvider provider,
+  ) async {
+    if (_settingsPageOpen) {
+      return;
+    }
+    _setUiBusyFlag(() => _settingsPageOpen = true);
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ChangeNotifierProvider<TimetableProvider>.value(
+            value: provider,
+            child: const SettingsPage(),
+          ),
+        ),
+      );
+    } finally {
+      _setUiBusyFlag(() => _settingsPageOpen = false);
+    }
   }
 }
 

@@ -44,6 +44,7 @@ class _SchoolImportStreamDialogState extends State<SchoolImportStreamDialog> {
   bool _isEditing = false;
   String? _error;
   SchoolImportResponse? _response;
+  bool _hasPopped = false;
 
   @override
   void initState() {
@@ -130,7 +131,15 @@ class _SchoolImportStreamDialogState extends State<SchoolImportStreamDialog> {
     }
 
     _error = null;
-    Navigator.of(context).pop(_response);
+    _popOnce(_response);
+  }
+
+  void _popOnce([SchoolImportResponse? result]) {
+    if (_hasPopped) {
+      return;
+    }
+    _hasPopped = true;
+    Navigator.of(context).pop(result);
   }
 
   @override
@@ -219,7 +228,7 @@ class _SchoolImportStreamDialogState extends State<SchoolImportStreamDialog> {
                   TextButton(
                     onPressed: () {
                       _subscription?.cancel();
-                      Navigator.of(context).pop(null);
+                      _popOnce();
                     },
                     child: const Text('取消'),
                   ),
@@ -248,9 +257,7 @@ class _SchoolImportStreamDialogState extends State<SchoolImportStreamDialog> {
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
-                      onPressed: _isDone
-                          ? () => Navigator.of(context).pop(_response)
-                          : null,
+                      onPressed: _isDone ? () => _popOnce(_response) : null,
                       child: const Text('确定'),
                     ),
                   ],

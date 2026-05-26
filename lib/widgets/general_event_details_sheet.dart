@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/timetable_models.dart';
 
-class GeneralEventDetailsSheet extends StatelessWidget {
+class GeneralEventDetailsSheet extends StatefulWidget {
   const GeneralEventDetailsSheet({
     super.key,
     required this.occurrence,
@@ -18,21 +20,46 @@ class GeneralEventDetailsSheet extends StatelessWidget {
   });
 
   final GeneralEventOccurrence occurrence;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDuplicate;
+  final FutureOr<void> Function()? onEdit;
+  final FutureOr<void> Function()? onDuplicate;
   final bool isReminderHandled;
-  final VoidCallback? onDismissReminder;
-  final VoidCallback? onRestoreReminder;
-  final VoidCallback? onDeleteThis;
-  final VoidCallback? onDeleteFuture;
-  final VoidCallback? onDeleteAll;
+  final FutureOr<void> Function()? onDismissReminder;
+  final FutureOr<void> Function()? onRestoreReminder;
+  final FutureOr<void> Function()? onDeleteThis;
+  final FutureOr<void> Function()? onDeleteFuture;
+  final FutureOr<void> Function()? onDeleteAll;
+
+  @override
+  State<GeneralEventDetailsSheet> createState() =>
+      _GeneralEventDetailsSheetState();
+}
+
+class _GeneralEventDetailsSheetState extends State<GeneralEventDetailsSheet> {
+  var _actionTriggered = false;
+
+  Future<void> _runAction(FutureOr<void> Function()? action) async {
+    if (_actionTriggered || action == null) {
+      return;
+    }
+    setState(() => _actionTriggered = true);
+    try {
+      await action();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _actionTriggered = false);
+      }
+      rethrow;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final event = occurrence.event;
-    final color = Color(event.colorValue ?? occurrence.calendar.colorValue);
+    final event = widget.occurrence.event;
+    final color = Color(
+      event.colorValue ?? widget.occurrence.calendar.colorValue,
+    );
     final isRepeating = event.recurrenceRule.isRepeating;
 
     return SafeArea(
@@ -68,7 +95,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        occurrence.calendar.name,
+                        widget.occurrence.calendar.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelMedium?.copyWith(
@@ -83,7 +110,7 @@ class GeneralEventDetailsSheet extends StatelessWidget {
             const SizedBox(height: 18),
             _InfoRow(
               icon: Icons.access_time,
-              value: _formatOccurrenceTime(occurrence, l10n),
+              value: _formatOccurrenceTime(widget.occurrence, l10n),
             ),
             if (isRepeating)
               _InfoRow(
@@ -116,9 +143,11 @@ class GeneralEventDetailsSheet extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                if (onDeleteThis != null)
+                if (widget.onDeleteThis != null)
                   OutlinedButton.icon(
-                    onPressed: onDeleteThis,
+                    onPressed: _actionTriggered
+                        ? null
+                        : () => _runAction(widget.onDeleteThis),
                     icon: const Icon(Icons.delete_outline),
                     label: Text(
                       isRepeating ? l10n.deleteThisOccurrence : l10n.delete,
@@ -127,45 +156,59 @@ class GeneralEventDetailsSheet extends StatelessWidget {
                       foregroundColor: theme.colorScheme.error,
                     ),
                   ),
-                if (isRepeating && onDeleteFuture != null)
+                if (isRepeating && widget.onDeleteFuture != null)
                   OutlinedButton.icon(
-                    onPressed: onDeleteFuture,
+                    onPressed: _actionTriggered
+                        ? null
+                        : () => _runAction(widget.onDeleteFuture),
                     icon: const Icon(Icons.delete_sweep_outlined),
                     label: Text(l10n.deleteFutureOccurrences),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                     ),
                   ),
-                if (isRepeating && onDeleteAll != null)
+                if (isRepeating && widget.onDeleteAll != null)
                   OutlinedButton.icon(
-                    onPressed: onDeleteAll,
+                    onPressed: _actionTriggered
+                        ? null
+                        : () => _runAction(widget.onDeleteAll),
                     icon: const Icon(Icons.delete_forever_outlined),
                     label: Text(l10n.deleteAllOccurrences),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                     ),
                   ),
-                if (onEdit != null)
+                if (widget.onEdit != null)
                   FilledButton.icon(
-                    onPressed: onEdit,
+                    onPressed: _actionTriggered
+                        ? null
+                        : () => _runAction(widget.onEdit),
                     icon: const Icon(Icons.edit_outlined),
                     label: Text(l10n.editEvent),
                   ),
-                if (onDuplicate != null)
+                if (widget.onDuplicate != null)
                   FilledButton.icon(
-                    onPressed: onDuplicate,
+                    onPressed: _actionTriggered
+                        ? null
+                        : () => _runAction(widget.onDuplicate),
                     icon: const Icon(Icons.content_copy_outlined),
                     label: Text(l10n.duplicateEvent),
                   ),
-                if (!isReminderHandled && onDismissReminder != null)
+                if (!widget.isReminderHandled &&
+                    widget.onDismissReminder != null)
                   OutlinedButton.icon(
-                    onPressed: onDismissReminder,
+                    onPressed: _actionTriggered
+                        ? null
+                        : () => _runAction(widget.onDismissReminder),
                     icon: const Icon(Icons.check_circle_outline),
                     label: Text(l10n.markReminderHandled),
                   ),
-                if (isReminderHandled && onRestoreReminder != null)
+                if (widget.isReminderHandled &&
+                    widget.onRestoreReminder != null)
                   OutlinedButton.icon(
-                    onPressed: onRestoreReminder,
+                    onPressed: _actionTriggered
+                        ? null
+                        : () => _runAction(widget.onRestoreReminder),
                     icon: const Icon(Icons.restore_outlined),
                     label: Text(l10n.restoreReminder),
                   ),

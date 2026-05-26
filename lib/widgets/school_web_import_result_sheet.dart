@@ -34,6 +34,7 @@ class _SchoolWebImportResultSheetState
   late String _selectedPeriodTimeSetId;
   late bool _importBundledPeriodTimeSet;
   bool _hasPopped = false;
+  bool _pickerOpen = false;
 
   bool get _hasBundledPeriodTimeSet =>
       widget.response.timetable.periodTimeSet.periodTimes.isNotEmpty;
@@ -126,7 +127,8 @@ class _SchoolWebImportResultSheetState
                     title: Text(l10n.semesterStartDate),
                     subtitle: Text(_formatDate(_startDate)),
                     trailing: const Icon(Icons.calendar_today_outlined),
-                    onTap: _pickStartDate,
+                    enabled: !_pickerOpen && !_hasPopped,
+                    onTap: (_pickerOpen || _hasPopped) ? null : _pickStartDate,
                   ),
                   const SizedBox(height: 4),
                   ListTile(
@@ -194,16 +196,24 @@ class _SchoolWebImportResultSheetState
                               ),
                       ),
                       trailing: const Icon(Icons.keyboard_arrow_down),
-                      onTap: widget.periodTimeSets.isEmpty
+                      enabled:
+                          widget.periodTimeSets.isNotEmpty &&
+                          !_pickerOpen &&
+                          !_hasPopped,
+                      onTap:
+                          widget.periodTimeSets.isEmpty ||
+                              _pickerOpen ||
+                              _hasPopped
                           ? null
                           : () async {
-                              final result =
-                                  await showPeriodTimeSetPickerDialog(
-                                    context,
-                                    provider: widget.provider,
-                                    selectedPeriodTimeSetId:
-                                        _selectedPeriodTimeSetId,
-                                  );
+                              final result = await _runPicker(
+                                () => showPeriodTimeSetPickerDialog(
+                                  context,
+                                  provider: widget.provider,
+                                  selectedPeriodTimeSetId:
+                                      _selectedPeriodTimeSetId,
+                                ),
+                              );
                               if (!mounted || result == null) {
                                 return;
                               }
@@ -334,16 +344,34 @@ class _SchoolWebImportResultSheetState
         : _startDate.isAfter(lastDate)
         ? lastDate
         : _startDate;
-    final picked = await showDatePicker(
-      context: context,
-      firstDate: firstDate,
-      lastDate: lastDate,
-      initialDate: boundedInitialDate,
+    final picked = await _runPicker(
+      () => showDatePicker(
+        context: context,
+        firstDate: firstDate,
+        lastDate: lastDate,
+        initialDate: boundedInitialDate,
+      ),
     );
     if (!mounted || picked == null) {
       return;
     }
     setState(() => _startDate = picked);
+  }
+
+  Future<T?> _runPicker<T>(Future<T?> Function() picker) async {
+    if (_pickerOpen || _hasPopped) {
+      return null;
+    }
+    setState(() => _pickerOpen = true);
+    try {
+      return await picker();
+    } finally {
+      if (mounted) {
+        setState(() => _pickerOpen = false);
+      } else {
+        _pickerOpen = false;
+      }
+    }
   }
 
   void _submit(TimetableImportMode mode) {

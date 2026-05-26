@@ -7,7 +7,12 @@ import '../providers/timetable_provider.dart';
 import '../services/school_import_api.dart';
 
 class SchoolImportParserSettingsPage extends StatefulWidget {
-  const SchoolImportParserSettingsPage({super.key});
+  const SchoolImportParserSettingsPage({
+    super.key,
+    this.api = const SchoolImportApi(),
+  });
+
+  final SchoolImportApi api;
 
   @override
   State<SchoolImportParserSettingsPage> createState() =>
@@ -16,7 +21,6 @@ class SchoolImportParserSettingsPage extends StatefulWidget {
 
 class _SchoolImportParserSettingsPageState
     extends State<SchoolImportParserSettingsPage> {
-  final SchoolImportApi _api = const SchoolImportApi();
   late final TextEditingController _baseUrlController;
   late final TextEditingController _apiKeyController;
   late final TextEditingController _modelController;
@@ -83,8 +87,7 @@ class _SchoolImportParserSettingsPageState
                       const SizedBox(height: 8),
                       _SelectableParserTile(
                         title: l10n.schoolImportParserSourceCustomOpenAi,
-                        subtitle:
-                            l10n.schoolImportParserSourceCustomOpenAiDesc,
+                        subtitle: l10n.schoolImportParserSourceCustomOpenAiDesc,
                         selected: isCustom,
                         onTap: () => provider.updateSchoolImportParserSource(
                           schoolImportParserSourceCustomOpenAi,
@@ -149,7 +152,8 @@ class _SchoolImportParserSettingsPageState
                         ),
                         const SizedBox(height: 12),
                         FilledButton.tonalIcon(
-                          onPressed: _isFetchingModels ||
+                          onPressed:
+                              _isFetchingModels ||
                                   provider.customSchoolImportBaseUrl.isEmpty ||
                                   provider.customSchoolImportApiKey.isEmpty
                               ? null
@@ -178,16 +182,16 @@ class _SchoolImportParserSettingsPageState
                               for (final model in _availableModels)
                                 ChoiceChip(
                                   label: Text(model),
-                                  selected: provider.customSchoolImportModel == model,
+                                  selected:
+                                      provider.customSchoolImportModel == model,
                                   onSelected: (_) async {
                                     _modelController.text = model;
                                     _modelController.selection =
                                         TextSelection.collapsed(
-                                      offset: model.length,
-                                    );
-                                    await provider.updateCustomSchoolImportModel(
-                                      model,
-                                    );
+                                          offset: model.length,
+                                        );
+                                    await provider
+                                        .updateCustomSchoolImportModel(model);
                                   },
                                 ),
                             ],
@@ -195,14 +199,16 @@ class _SchoolImportParserSettingsPageState
                         ],
                         const SizedBox(height: 12),
                         Theme(
-                          data: Theme.of(context).copyWith(
-                            dividerColor: Colors.transparent,
-                          ),
+                          data: Theme.of(
+                            context,
+                          ).copyWith(dividerColor: Colors.transparent),
                           child: ExpansionTile(
                             tilePadding: EdgeInsets.zero,
                             childrenPadding: EdgeInsets.zero,
                             initiallyExpanded: false,
-                            title: Text(l10n.schoolImportParserCustomPromptTitle),
+                            title: Text(
+                              l10n.schoolImportParserCustomPromptTitle,
+                            ),
                             subtitle: Text(
                               l10n.schoolImportParserCustomPromptDescription,
                             ),
@@ -230,9 +236,11 @@ class _SchoolImportParserSettingsPageState
                                   onPressed: () async {
                                     _syncController(
                                       _customPromptController,
-                                      SchoolImportApi.defaultCustomOpenAiSystemPrompt,
+                                      SchoolImportApi
+                                          .defaultCustomOpenAiSystemPrompt,
                                     );
-                                    await provider.updateCustomSchoolImportPrompt('');
+                                    await provider
+                                        .updateCustomSchoolImportPrompt('');
                                   },
                                   icon: const Icon(Icons.restart_alt_outlined),
                                   label: Text(
@@ -277,18 +285,9 @@ class _SchoolImportParserSettingsPageState
   }
 
   void _syncControllers(TimetableProvider provider) {
-    _syncController(
-      _baseUrlController,
-      provider.customSchoolImportBaseUrl,
-    );
-    _syncController(
-      _apiKeyController,
-      provider.customSchoolImportApiKey,
-    );
-    _syncController(
-      _modelController,
-      provider.customSchoolImportModel,
-    );
+    _syncController(_baseUrlController, provider.customSchoolImportBaseUrl);
+    _syncController(_apiKeyController, provider.customSchoolImportApiKey);
+    _syncController(_modelController, provider.customSchoolImportModel);
     _syncController(
       _customPromptController,
       provider.customSchoolImportPrompt.isEmpty
@@ -308,10 +307,13 @@ class _SchoolImportParserSettingsPageState
   }
 
   Future<void> _fetchModels(TimetableProvider provider) async {
+    if (_isFetchingModels) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     setState(() => _isFetchingModels = true);
     try {
-      final models = await _api.fetchCustomModels(
+      final models = await widget.api.fetchCustomModels(
         baseUrl: provider.customSchoolImportBaseUrl,
         apiKey: provider.customSchoolImportApiKey,
       );
@@ -340,7 +342,9 @@ class _SchoolImportParserSettingsPageState
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
