@@ -446,7 +446,7 @@ END:VCALENDAR
 
     final ics = service.exportSchedules([schedule]);
     for (final line in ics.split('\r\n')) {
-      expect(utf8.encode(line).length, lessThanOrEqualTo(74));
+      expect(utf8.encode(line).length, lessThanOrEqualTo(75));
     }
 
     final imported = service.importSchedules(ics);
@@ -455,6 +455,64 @@ END:VCALENDAR
     expect(event.title, longTitle);
     expect(event.location, '会议室，北区');
     expect(event.notes, contains('第一行\n第二行，包含分号；以及反斜杠 \\'));
+  });
+
+  test('keeps exact 75-octet content lines unfolded', () {
+    final title = List.filled(67, 'A').join();
+    final schedule = GeneralSchedule(
+      id: 'cal1',
+      name: 'Work',
+      events: [
+        GeneralEvent(
+          id: 'evt-exact-75',
+          calendarId: 'cal1',
+          title: title,
+          startDateTimeIso: '2026-05-25T09:00:00.000',
+          endDateTimeIso: '2026-05-25T10:00:00.000',
+        ),
+      ],
+    );
+
+    expect(utf8.encode('SUMMARY:$title').length, 75);
+
+    final ics = service.exportSchedules([schedule]);
+
+    expect(ics, contains('SUMMARY:$title\r\nDTSTART'));
+    for (final line in ics.split('\r\n')) {
+      expect(utf8.encode(line).length, lessThanOrEqualTo(75));
+    }
+  });
+
+  test('generates unique UIDs for exported events without ids', () {
+    final schedule = GeneralSchedule(
+      id: 'cal1',
+      name: 'Work',
+      events: [
+        GeneralEvent(
+          id: '',
+          calendarId: 'cal1',
+          title: 'First',
+          startDateTimeIso: '2026-05-25T09:00:00.000',
+          endDateTimeIso: '2026-05-25T10:00:00.000',
+        ),
+        GeneralEvent(
+          id: '',
+          calendarId: 'cal1',
+          title: 'Second',
+          startDateTimeIso: '2026-05-25T09:00:00.000',
+          endDateTimeIso: '2026-05-25T10:00:00.000',
+        ),
+      ],
+    );
+
+    final uids = service
+        .exportSchedules([schedule])
+        .split('\r\n')
+        .where((line) => line.startsWith('UID:'))
+        .toList();
+
+    expect(uids, hasLength(2));
+    expect(uids.toSet(), hasLength(2));
   });
 
   test('malformed ICS without events fails clearly', () {
@@ -731,6 +789,31 @@ END:VCALENDAR
     expect(events.map((event) => event.id).toSet(), hasLength(2));
     expect(events.first.id, 'ics_duplicate');
     expect(events.last.id, 'ics_duplicate_1');
+  });
+
+  test('generates unique ids for imported events without UIDs', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:First
+DTSTART:20260525T090000
+DTEND:20260525T100000
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Second
+DTSTART:20260525T090000
+DTEND:20260525T100000
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final events = imported.schedules.single.events;
+
+    expect(events, hasLength(2));
+    expect(events.map((event) => event.id).toSet(), hasLength(2));
+    expect(events.every((event) => event.id.startsWith('evt_')), isTrue);
   });
 
   test('sanitizes imported UID before using it as a local event id', () {

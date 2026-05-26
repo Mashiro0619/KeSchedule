@@ -473,6 +473,12 @@ void main() {
         prefersConfiguredUpdateSourceForLocale(const Locale('zh', 'TW')),
         isTrue,
       );
+      expect(
+        prefersConfiguredUpdateSourceForLocale(
+          const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+        ),
+        isTrue,
+      );
     });
 
     test('非中文系语言默认使用 GitHub 更新源', () {

@@ -85,9 +85,13 @@ class GeneralCalendarIcsService {
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
     ];
+    final usedUids = <String>{};
+    var fallbackUidSequence = 0;
     for (final schedule in schedules) {
       for (final event in schedule.events) {
-        lines.addAll(_exportEvent(schedule, event));
+        lines.addAll(
+          _exportEvent(schedule, event, usedUids, fallbackUidSequence++),
+        );
       }
     }
     lines.add('END:VCALENDAR');
@@ -155,16 +159,22 @@ class GeneralCalendarIcsService {
     );
   }
 
-  List<String> _exportEvent(GeneralSchedule schedule, GeneralEvent event) {
+  List<String> _exportEvent(
+    GeneralSchedule schedule,
+    GeneralEvent event,
+    Set<String> usedUids,
+    int fallbackUidSequence,
+  ) {
     final start = tryParseStrictIsoDateTime(event.startDateTimeIso);
     final end = tryParseStrictIsoDateTime(event.endDateTimeIso);
     if (start == null || end == null) {
       return const [];
     }
     final stamp = _formatUtcDateTime(DateTime.now().toUtc());
-    final uid = event.id.trim().isEmpty
-        ? 'sked-${start.microsecondsSinceEpoch}@sked.local'
+    final rawUid = event.id.trim().isEmpty
+        ? 'sked-${start.microsecondsSinceEpoch}-$fallbackUidSequence@sked.local'
         : '${_escapeText(event.id)}@sked.local';
+    final uid = _uniqueIcsUid(rawUid, usedUids);
     final description = [
       if (event.notes.trim().isNotEmpty) event.notes.trim(),
       'Calendar: ${schedule.name}',
@@ -422,14 +432,17 @@ List<String> _unfoldLines(String source) {
 }
 
 String _foldLine(String line) {
-  const limit = 73;
-  if (utf8.encode(line).length <= limit) {
+  const maxLineBytes = 75;
+  if (utf8.encode(line).length <= maxLineBytes) {
     return line;
   }
   final buffer = StringBuffer();
   var segment = StringBuffer();
   var segmentBytes = 0;
   var isFirstSegment = true;
+
+  int currentSegmentLimit() => isFirstSegment ? maxLineBytes : maxLineBytes - 1;
+
   void flushSegment() {
     if (!isFirstSegment) {
       buffer.write('\r\n ');
@@ -443,14 +456,11 @@ String _foldLine(String line) {
   for (final rune in line.runes) {
     final char = String.fromCharCode(rune);
     final charBytes = utf8.encode(char).length;
-    if (segmentBytes > 0 && segmentBytes + charBytes > limit) {
+    if (segmentBytes > 0 && segmentBytes + charBytes > currentSegmentLimit()) {
       flushSegment();
     }
     segment.write(char);
     segmentBytes += charBytes;
-    if (segmentBytes >= limit) {
-      flushSegment();
-    }
   }
   if (segmentBytes > 0 || isFirstSegment) {
     flushSegment();
@@ -924,7 +934,27 @@ List<String> _unsupportedFieldParameters(Iterable<_IcsField> fields) {
   return unsupported..sort();
 }
 
-String _generateEventId() => 'evt_${DateTime.now().microsecondsSinceEpoch}';
+String _uniqueIcsUid(String rawUid, Set<String> usedUids) {
+  var candidate = rawUid;
+  var suffix = 1;
+  final atIndex = rawUid.lastIndexOf('@');
+  final base = atIndex > 0 ? rawUid.substring(0, atIndex) : rawUid;
+  final domain = atIndex > 0 ? rawUid.substring(atIndex) : '';
+  while (usedUids.contains(candidate)) {
+    candidate = '${base}_$suffix$domain';
+    suffix += 1;
+  }
+  usedUids.add(candidate);
+  return candidate;
+}
+
+var _generatedEventIdCounter = 0;
+
+String _generateEventId() {
+  final stamp = DateTime.now().microsecondsSinceEpoch;
+  final suffix = _generatedEventIdCounter++;
+  return 'evt_${stamp}_$suffix';
+}
 
 String _importedEventIdFromUid(String? uid) {
   final source = uid?.trim() ?? '';
