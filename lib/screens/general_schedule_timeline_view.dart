@@ -304,9 +304,10 @@ class _CalendarTimeline extends StatelessWidget {
     final layouts = _layoutTimedOccurrenceSegments(segments);
     for (final layout in layouts) {
       final height = math.max(
-        28,
+        28.0,
         (layout.endMinutes - layout.startMinutes) * minuteHeight,
       );
+      final cardHeight = math.max(1.0, height - 4.0);
       final laneGap = layout.laneCount > 1 ? 2.0 : 0.0;
       final availableWidth = width - 8 - laneGap * (layout.laneCount - 1);
       final laneWidth = math.max(1.0, availableWidth / layout.laneCount);
@@ -314,10 +315,10 @@ class _CalendarTimeline extends StatelessWidget {
         left: left + 4 + layout.lane * (laneWidth + laneGap),
         top: (layout.startMinutes - startMinutes) * minuteHeight + 2,
         width: laneWidth,
-        height: height - 4,
+        height: cardHeight,
         child: _OccurrenceCard(
           occurrence: layout.occurrence,
-          dense: height < 46 || laneWidth < 72,
+          dense: cardHeight < 64 || laneWidth < 72,
           onTap: () => onOccurrenceTap(layout.occurrence),
         ),
       );
@@ -660,6 +661,15 @@ class _OccurrenceCard extends StatelessWidget {
       occurrence.event.colorValue ?? occurrence.calendar.colorValue,
     );
     final textColor = _readableColor(color);
+    final title = Text(
+      occurrence.event.title,
+      maxLines: dense ? 1 : 2,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.labelMedium?.copyWith(
+        color: textColor,
+        fontWeight: FontWeight.w700,
+      ),
+    );
     return Material(
       color: color.withAlpha(210),
       borderRadius: BorderRadius.circular(8),
@@ -674,43 +684,32 @@ class _OccurrenceCard extends StatelessWidget {
               horizontal: 8,
               vertical: dense ? 3 : 6,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: dense
-                  ? MainAxisAlignment.center
-                  : MainAxisAlignment.start,
-              children: [
-                Text(
-                  occurrence.event.title,
-                  maxLines: dense ? 1 : 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (!dense) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatOccurrenceTime(context, occurrence),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: textColor.withAlpha(220),
-                    ),
-                  ),
-                  if (occurrence.event.location.isNotEmpty)
-                    Text(
-                      occurrence.event.location,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: textColor.withAlpha(220),
+            child: dense
+                ? Align(alignment: Alignment.centerLeft, child: title)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      title,
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatOccurrenceTime(context, occurrence),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: textColor.withAlpha(220),
+                        ),
                       ),
-                    ),
-                ],
-              ],
-            ),
+                      if (occurrence.event.location.isNotEmpty)
+                        Text(
+                          occurrence.event.location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: textColor.withAlpha(220),
+                          ),
+                        ),
+                    ],
+                  ),
           ),
         ),
       ),

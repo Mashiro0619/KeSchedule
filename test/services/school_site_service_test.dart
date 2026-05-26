@@ -131,5 +131,29 @@ void main() {
       expect(sites.single.name, 'Valid University');
       expect(sites.single.loginUrl, 'https://valid.test');
     });
+
+    test('manual import rejects non-empty files with no valid sites', () async {
+      const service = SchoolSiteService(store: _FakeSchoolSiteStore(null));
+
+      expect(
+        () => service.importSites(
+          jsonEncode([
+            {'name': 42, 'loginUrl': 'https://bad-name.test'},
+            {'name': 'Bad URL', 'loginUrl': 42},
+            'bad',
+            null,
+          ]),
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('manual import accepts an explicit empty site list', () async {
+      const service = SchoolSiteService(store: _FakeSchoolSiteStore(null));
+
+      final sites = await service.importSites('[]');
+
+      expect(sites, isEmpty);
+    });
   });
 }

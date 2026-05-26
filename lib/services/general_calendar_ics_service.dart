@@ -104,7 +104,7 @@ class GeneralCalendarIcsService {
     var current = <String>[];
     var inEvent = false;
     for (final line in unfolded) {
-      final normalized = line.trim();
+      final normalized = line.trim().toUpperCase();
       if (normalized == 'BEGIN:VEVENT') {
         inEvent = true;
         current = <String>[];
@@ -202,14 +202,37 @@ class GeneralCalendarIcsService {
     List<GeneralCalendarIcsImportWarning> warnings,
   ) {
     final fields = <String, _IcsField>{};
+    final duplicateFields = <String>{};
+    final unsupportedComponents = <String>{};
+    var nestedComponentDepth = 0;
     for (final line in lines) {
-      final separator = line.indexOf(':');
+      final separator = _findIcsValueSeparator(line);
       if (separator <= 0) {
         continue;
       }
       final rawName = line.substring(0, separator);
       final value = _unescapeText(line.substring(separator + 1));
       final field = _IcsField.parse(rawName, value);
+      if (field.name == 'BEGIN') {
+        final component = field.value.trim().toUpperCase();
+        if (component.isNotEmpty && component != 'VEVENT') {
+          unsupportedComponents.add(component);
+          nestedComponentDepth += 1;
+        }
+        continue;
+      }
+      if (nestedComponentDepth > 0) {
+        if (field.name == 'END') {
+          nestedComponentDepth -= 1;
+        }
+        continue;
+      }
+      if (field.name == 'END') {
+        continue;
+      }
+      if (fields.containsKey(field.name)) {
+        duplicateFields.add(field.name);
+      }
       fields[field.name] = field;
     }
     final startField = fields['DTSTART'];
@@ -230,16 +253,38 @@ class GeneralCalendarIcsService {
       );
       return null;
     }
-    final isAllDay = startField.params['VALUE'] == 'DATE';
+    final isAllDay = _isIcsDateOnly(startField);
     final endField = fields['DTEND'];
+    final durationField = fields['DURATION'];
+    final ignoredSupportedFields = <String>[];
+    var adjustedEnd = false;
     var end = endField == null ? null : _parseIcsDateTime(endField);
+    if (endField != null && end == null) {
+      adjustedEnd = true;
+    }
+    if (durationField != null) {
+      if (endField == null) {
+        final duration = _parseIcsDuration(durationField.value);
+        if (duration == null) {
+          ignoredSupportedFields.add('DURATION');
+          adjustedEnd = true;
+        } else {
+          end = start.add(duration);
+        }
+      } else {
+        ignoredSupportedFields.add('DURATION');
+      }
+    }
     end ??= isAllDay
         ? normalizeDateOnly(start).add(const Duration(days: 1))
         : start.add(const Duration(hours: 1));
     if (!end.isAfter(start)) {
+      adjustedEnd = true;
       end = isAllDay
           ? normalizeDateOnly(start).add(const Duration(days: 1))
           : start.add(const Duration(hours: 1));
+    }
+    if (adjustedEnd) {
       warnings.add(
         const GeneralCalendarIcsImportWarning(
           code: GeneralCalendarIcsWarningCode.adjustedEnd,
@@ -251,22 +296,35 @@ class GeneralCalendarIcsService {
     final now = DateTime.now().toIso8601String();
     final title = fields['SUMMARY']?.value.trim();
     final description = fields['DESCRIPTION']?.value.trim() ?? '';
-    final unsupportedFields = _unsupportedFields(fields.keys);
+    final unsupportedFields = [
+      ..._unsupportedFields(fields.keys),
+      ...unsupportedComponents,
+      ...ignoredSupportedFields,
+    ]..sort();
+    final duplicateFieldNames = duplicateFields.toList()..sort();
     final unsupportedRRuleParts = <String>[];
+    final duplicateRRuleParts = <String>[];
     final recurrenceRule = _parseRRule(
       fields['RRULE']?.value,
       warnings,
       unsupportedParts: unsupportedRRuleParts,
+      duplicateParts: duplicateRRuleParts,
     );
     final notes = [
       if (description.isNotEmpty) description,
       if (unsupportedFields.isNotEmpty)
         'Unsupported ICS fields ignored: ${unsupportedFields.join(', ')}',
+      if (duplicateFieldNames.isNotEmpty)
+        'Duplicate ICS fields overwritten: ${duplicateFieldNames.join(', ')}',
+      if (duplicateRRuleParts.isNotEmpty)
+        'Duplicate RRULE parts overwritten: ${duplicateRRuleParts.join(', ')}',
       if (unsupportedRRuleParts.isNotEmpty)
         'Unsupported RRULE parts ignored: ${unsupportedRRuleParts.join(', ')}',
     ].join('\n\n');
     final unsupported = [
       ...unsupportedFields,
+      for (final field in duplicateFieldNames) 'DUPLICATE:$field',
+      for (final part in duplicateRRuleParts) 'RRULE:DUPLICATE:$part',
       for (final part in unsupportedRRuleParts) 'RRULE:$part',
     ]..sort();
     if (unsupported.isNotEmpty) {
@@ -279,7 +337,7 @@ class GeneralCalendarIcsService {
     }
 
     return GeneralEvent(
-      id: uid == null || uid.isEmpty ? _generateEventId() : 'ics_$uid',
+      id: _importedEventIdFromUid(uid),
       calendarId: calendarId,
       title: title == null || title.isEmpty ? 'Untitled event' : title,
       startDateTimeIso: start.toIso8601String(),
@@ -321,6 +379,21 @@ class _IcsField {
       value: value,
     );
   }
+}
+
+int _findIcsValueSeparator(String line) {
+  var inQuotedParam = false;
+  for (var index = 0; index < line.length; index++) {
+    final char = line[index];
+    if (char == '"') {
+      inQuotedParam = !inQuotedParam;
+      continue;
+    }
+    if (char == ':' && !inQuotedParam) {
+      return index;
+    }
+  }
+  return -1;
 }
 
 List<String> _unfoldLines(String source) {
@@ -429,11 +502,11 @@ String _formatUtcDateTime(DateTime value) => '${_formatLocalDateTime(value)}Z';
 
 DateTime? _parseIcsDateTime(_IcsField field) {
   final value = field.value.trim();
-  if (field.params['VALUE'] == 'DATE' || RegExp(r'^\d{8}$').hasMatch(value)) {
+  if (_isIcsDateOnly(field)) {
     return _parseDate(value);
   }
   final match = RegExp(
-    r'^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$',
+    r'^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z|[+-]\d{2}:?\d{2})?$',
   ).firstMatch(value);
   if (match == null) {
     return _parseIsoDateTime(value);
@@ -444,8 +517,8 @@ DateTime? _parseIcsDateTime(_IcsField field) {
   final hour = int.parse(match.group(4)!);
   final minute = int.parse(match.group(5)!);
   final second = int.parse(match.group(6)!);
-  final isUtc = match.group(7) == 'Z';
-  if (isUtc) {
+  final offset = match.group(7);
+  if (offset == 'Z') {
     return _strictDateTime(
       year: year,
       month: month,
@@ -456,6 +529,17 @@ DateTime? _parseIcsDateTime(_IcsField field) {
       isUtc: true,
     )?.toLocal();
   }
+  if (offset != null && offset.isNotEmpty) {
+    return _strictDateTimeWithOffset(
+      year: year,
+      month: month,
+      day: day,
+      hour: hour,
+      minute: minute,
+      second: second,
+      offset: offset,
+    );
+  }
   return _strictDateTime(
     year: year,
     month: month,
@@ -464,6 +548,13 @@ DateTime? _parseIcsDateTime(_IcsField field) {
     minute: minute,
     second: second,
   );
+}
+
+bool _isIcsDateOnly(_IcsField field) {
+  final value = field.value.trim();
+  return field.params['VALUE'] == 'DATE' ||
+      RegExp(r'^\d{8}$').hasMatch(value) ||
+      RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value);
 }
 
 DateTime? _parseDate(String value, {bool allowDateTime = false}) {
@@ -526,6 +617,53 @@ DateTime? _parseIsoDateTime(String value) {
   return parsed?.isUtc == true ? parsed!.toLocal() : parsed;
 }
 
+Duration? _parseIcsDuration(String value) {
+  final trimmed = value.trim().toUpperCase();
+  final weekMatch = RegExp(r'^\+?P(\d+)W$').firstMatch(trimmed);
+  if (weekMatch != null) {
+    final weeks = int.tryParse(weekMatch.group(1)!);
+    if (weeks == null || weeks < 1 || weeks > 5200) {
+      return null;
+    }
+    return Duration(days: weeks * 7);
+  }
+
+  final match = RegExp(
+    r'^\+?P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$',
+  ).firstMatch(trimmed);
+  if (match == null) {
+    return null;
+  }
+  final hasDatePart = match.group(1) != null;
+  final hasTimePart =
+      match.group(2) != null ||
+      match.group(3) != null ||
+      match.group(4) != null;
+  if (!hasDatePart && !hasTimePart) {
+    return null;
+  }
+  if (trimmed.contains('T') && !hasTimePart) {
+    return null;
+  }
+  final days = int.tryParse(match.group(1) ?? '0');
+  final hours = int.tryParse(match.group(2) ?? '0');
+  final minutes = int.tryParse(match.group(3) ?? '0');
+  final seconds = int.tryParse(match.group(4) ?? '0');
+  if (days == null || hours == null || minutes == null || seconds == null) {
+    return null;
+  }
+  if (days > 36500 || hours > 999999 || minutes > 999999 || seconds > 999999) {
+    return null;
+  }
+  final duration = Duration(
+    days: days,
+    hours: hours,
+    minutes: minutes,
+    seconds: seconds,
+  );
+  return duration > Duration.zero ? duration : null;
+}
+
 DateTime? _strictDateTime({
   required int year,
   required int month,
@@ -554,6 +692,43 @@ DateTime? _strictDateTime({
   return isUtc
       ? DateTime.utc(year, month, day, hour, minute, second)
       : DateTime(year, month, day, hour, minute, second);
+}
+
+DateTime? _strictDateTimeWithOffset({
+  required int year,
+  required int month,
+  required int day,
+  required int hour,
+  required int minute,
+  required int second,
+  required String offset,
+}) {
+  final local = _strictDateTime(
+    year: year,
+    month: month,
+    day: day,
+    hour: hour,
+    minute: minute,
+    second: second,
+  );
+  if (local == null) {
+    return null;
+  }
+  final match = RegExp(r'^([+-])(\d{2}):?(\d{2})$').firstMatch(offset);
+  if (match == null) {
+    return null;
+  }
+  final offsetHours = int.parse(match.group(2)!);
+  final offsetMinutes = int.parse(match.group(3)!);
+  if (offsetHours > 23 || offsetMinutes > 59) {
+    return null;
+  }
+  final duration = Duration(hours: offsetHours, minutes: offsetMinutes);
+  final utcBase = DateTime.utc(year, month, day, hour, minute, second);
+  return (match.group(1) == '+'
+          ? utcBase.subtract(duration)
+          : utcBase.add(duration))
+      .toLocal();
 }
 
 String? _exportRRule(GeneralEventRecurrenceRule rule) {
@@ -592,18 +767,23 @@ GeneralEventRecurrenceRule _parseRRule(
   String? value,
   List<GeneralCalendarIcsImportWarning> warnings, {
   List<String>? unsupportedParts,
+  List<String>? duplicateParts,
 }) {
   if (value == null || value.trim().isEmpty) {
     return const GeneralEventRecurrenceRule();
   }
   final parts = <String, String>{};
+  final duplicates = <String>{};
   for (final part in value.split(';')) {
     final separator = part.indexOf('=');
     if (separator <= 0) continue;
-    parts[part.substring(0, separator).toUpperCase()] = part
-        .substring(separator + 1)
-        .toUpperCase();
+    final key = part.substring(0, separator).toUpperCase();
+    if (parts.containsKey(key)) {
+      duplicates.add(key);
+    }
+    parts[key] = part.substring(separator + 1).toUpperCase();
   }
+  duplicateParts?.addAll(duplicates.toList()..sort());
   const supportedParts = {'FREQ', 'INTERVAL', 'COUNT', 'UNTIL'};
   final unsupported =
       parts.keys
@@ -628,9 +808,7 @@ GeneralEventRecurrenceRule _parseRRule(
     unsupportedValues.add('COUNT=$rawCount');
   }
   final rawUntil = parts['UNTIL'];
-  final until = rawUntil == null
-      ? null
-      : _parseDate(rawUntil, allowDateTime: true);
+  final until = rawUntil == null ? null : _parseRRuleUntil(rawUntil);
   if (rawUntil != null && until == null) {
     unsupportedValues.add('UNTIL=$rawUntil');
   }
@@ -674,6 +852,43 @@ GeneralEventRecurrenceRule _parseRRule(
   );
 }
 
+DateTime? _parseRRuleUntil(String value) {
+  final trimmed = value.trim();
+  final date = _parseDate(trimmed);
+  if (date != null) {
+    return date;
+  }
+
+  final basicMatch = RegExp(
+    r'^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$',
+  ).firstMatch(trimmed);
+  if (basicMatch != null) {
+    return _strictDateTime(
+      year: int.parse(basicMatch.group(1)!),
+      month: int.parse(basicMatch.group(2)!),
+      day: int.parse(basicMatch.group(3)!),
+      hour: int.parse(basicMatch.group(4)!),
+      minute: int.parse(basicMatch.group(5)!),
+      second: int.parse(basicMatch.group(6)!),
+    );
+  }
+
+  final isoMatch = RegExp(
+    r'^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(Z|[+-]\d{2}:?\d{2})?$',
+  ).firstMatch(trimmed);
+  if (isoMatch == null) {
+    return null;
+  }
+  return _strictDateTime(
+    year: int.parse(isoMatch.group(1)!),
+    month: int.parse(isoMatch.group(2)!),
+    day: int.parse(isoMatch.group(3)!),
+    hour: int.parse(isoMatch.group(4)!),
+    minute: int.parse(isoMatch.group(5)!),
+    second: int.parse(isoMatch.group(6) ?? '0'),
+  );
+}
+
 List<String> _unsupportedFields(Iterable<String> fields) {
   const supported = {
     'UID',
@@ -681,6 +896,7 @@ List<String> _unsupportedFields(Iterable<String> fields) {
     'SUMMARY',
     'DTSTART',
     'DTEND',
+    'DURATION',
     'LOCATION',
     'DESCRIPTION',
     'RRULE',
@@ -689,6 +905,21 @@ List<String> _unsupportedFields(Iterable<String> fields) {
 }
 
 String _generateEventId() => 'evt_${DateTime.now().microsecondsSinceEpoch}';
+
+String _importedEventIdFromUid(String? uid) {
+  final source = uid?.trim() ?? '';
+  if (source.isEmpty) {
+    return _generateEventId();
+  }
+  final safe = source
+      .replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_')
+      .replaceAll(RegExp(r'_+'), '_')
+      .replaceAll(RegExp(r'^_+|_+$'), '');
+  if (safe.isEmpty) {
+    return _generateEventId();
+  }
+  return 'ics_${safe.length > 96 ? safe.substring(0, 96) : safe}';
+}
 
 List<GeneralEvent> _deduplicateImportedEventIds(
   List<GeneralEvent> events,

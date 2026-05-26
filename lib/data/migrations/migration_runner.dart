@@ -71,6 +71,7 @@ class MigrationRunner {
     final raw = json['schemaVersion'];
     if (raw is int) return raw;
     if (raw is num) return raw.toInt();
+    if (raw is String) return int.tryParse(raw.trim()) ?? 1;
     return 1;
   }
 

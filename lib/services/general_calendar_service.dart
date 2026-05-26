@@ -122,8 +122,13 @@ class GeneralCalendarService {
     );
   }
 
-  GeneralScheduleData saveEvent(GeneralScheduleData data, GeneralEvent event) {
+  GeneralScheduleData saveEvent(
+    GeneralScheduleData data,
+    GeneralEvent event, {
+    bool preserveEventReminderAcknowledgements = false,
+  }) {
     final base = data.schedules.isEmpty ? data.normalized() : data;
+    final existing = _eventLocationById(base, event.id);
     var targetScheduleId = event.calendarId.trim().isEmpty
         ? base.activeSchedule.id
         : event.calendarId.trim();
@@ -145,7 +150,29 @@ class GeneralCalendarService {
       updatedSchedules.add(schedule.copyWith(events: events));
     }
     if (!inserted) return data;
-    return base.copyWith(schedules: updatedSchedules);
+    final reminderAcknowledgements =
+        !preserveEventReminderAcknowledgements &&
+            existing != null &&
+            _eventOccurrenceIdentityChanged(
+              existing.schedule,
+              existing.event,
+              targetScheduleId,
+              normalized,
+            )
+        ? base.reminderAcknowledgements
+              .where(
+                (item) => !_reminderKeyMatchesEventInSchedule(
+                  item.occurrenceKey,
+                  existing.schedule.id,
+                  existing.event.id,
+                ),
+              )
+              .toList()
+        : base.reminderAcknowledgements;
+    return base.copyWith(
+      schedules: updatedSchedules,
+      reminderAcknowledgements: reminderAcknowledgements,
+    );
   }
 
   GeneralScheduleData deleteEvent(GeneralScheduleData data, String eventId) {
@@ -226,6 +253,7 @@ class GeneralCalendarService {
       event.copyWith(
         recurrenceRule: event.recurrenceRule.copyWith(untilDateIso: until),
       ),
+      preserveEventReminderAcknowledgements: true,
     );
     return updated.copyWith(
       reminderAcknowledgements: updated.reminderAcknowledgements
@@ -281,6 +309,66 @@ GeneralSchedule? _scheduleById(GeneralScheduleData data, String scheduleId) {
   return null;
 }
 
+({GeneralSchedule schedule, GeneralEvent event})? _eventLocationById(
+  GeneralScheduleData data,
+  String eventId,
+) {
+  if (eventId.trim().isEmpty) {
+    return null;
+  }
+  for (final schedule in data.schedules) {
+    for (final event in schedule.events) {
+      if (event.id == eventId) {
+        return (schedule: schedule, event: event);
+      }
+    }
+  }
+  return null;
+}
+
+bool _eventOccurrenceIdentityChanged(
+  GeneralSchedule oldSchedule,
+  GeneralEvent oldEvent,
+  String newScheduleId,
+  GeneralEvent newEvent,
+) {
+  return oldSchedule.id != newScheduleId ||
+      oldEvent.startDateTimeIso != newEvent.startDateTimeIso ||
+      !_recurrenceRulesEqual(
+        oldEvent.recurrenceRule,
+        newEvent.recurrenceRule,
+      ) ||
+      !_remindersEqual(oldEvent.reminders, newEvent.reminders);
+}
+
+bool _recurrenceRulesEqual(
+  GeneralEventRecurrenceRule a,
+  GeneralEventRecurrenceRule b,
+) {
+  return a.type == b.type &&
+      a.normalizedInterval == b.normalizedInterval &&
+      a.unit == b.unit &&
+      a.untilDateIso == b.untilDateIso &&
+      a.count == b.count;
+}
+
+bool _remindersEqual(
+  List<GeneralEventReminder> a,
+  List<GeneralEventReminder> b,
+) {
+  final aMinutes = a.map((item) => item.minutesBefore).toList()..sort();
+  final bMinutes = b.map((item) => item.minutesBefore).toList()..sort();
+  if (aMinutes.length != bMinutes.length) {
+    return false;
+  }
+  for (var i = 0; i < aMinutes.length; i++) {
+    if (aMinutes[i] != bMinutes[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 String _nextEventId(GeneralScheduleData data) {
   final existingIds = data.schedules
       .expand((schedule) => schedule.events)
@@ -303,6 +391,14 @@ bool _reminderKeyContainsSchedule(String occurrenceKey, String scheduleId) {
 bool _reminderKeyContainsEvent(String occurrenceKey, String eventId) {
   final parts = occurrenceKey.split('|');
   return parts.length >= 2 && parts[1] == eventId;
+}
+
+bool _reminderKeyMatchesEventInSchedule(
+  String occurrenceKey,
+  String scheduleId,
+  String eventId,
+) {
+  return occurrenceKey.startsWith('$scheduleId|$eventId|');
 }
 
 bool _reminderKeyMatchesEventAtOrAfter(

@@ -151,6 +151,57 @@ void main() {
         ),
       );
     });
+
+    test('rejects wrapped done events with malformed timetable objects', () {
+      expect(
+        () => SchoolImportApi.buildResponseFromPhpDone({
+          'done': true,
+          'ok': true,
+          'timetable': [
+            {'name': 'Not a timetable object'},
+          ],
+        }),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Import response format is invalid.',
+          ),
+        ),
+      );
+    });
+
+    test('rejects done events without any timetable payload', () {
+      expect(
+        () => SchoolImportApi.buildResponseFromPhpDone({
+          'done': true,
+          'ok': true,
+          'meta': {'parser': 'official'},
+        }),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Import response format is invalid.',
+          ),
+        ),
+      );
+    });
+
+    test('accepts explicit empty-course timetable payloads', () {
+      final response = SchoolImportApi.buildResponseFromPhpDone({
+        'done': true,
+        'ok': true,
+        'timetable': {
+          'name': 'Empty Course Timetable',
+          'startDate': '2026-02-23',
+          'courses': [],
+        },
+      });
+
+      expect(response.timetable.name, 'Empty Course Timetable');
+      expect(response.timetable.courses, isEmpty);
+    });
   });
 
   group('SchoolImportApi custom OpenAI streaming', () {
@@ -173,6 +224,111 @@ void main() {
           ),
         ),
       );
+    });
+
+    test('model list ignores entries without string ids', () async {
+      final api = SchoolImportApi(
+        client: _StreamingClient((request) async {
+          return http.StreamedResponse(
+            Stream<List<int>>.fromIterable([
+              utf8.encode(
+                jsonEncode({
+                  'data': [
+                    {'id': 'z-model'},
+                    {'id': 42},
+                    {'id': ' a-model '},
+                    {'id': null},
+                    {
+                      'id': {'name': 'nested'},
+                    },
+                    'malformed',
+                    {'id': 'z-model'},
+                  ],
+                }),
+              ),
+            ]),
+            200,
+          );
+        }),
+      );
+
+      final models = await api.fetchCustomModels(
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'sk-test',
+      );
+
+      expect(models, ['a-model', 'z-model']);
+    });
+
+    test('custom import ignores non-string message content parts', () async {
+      final responseJson = {
+        'ok': true,
+        'meta': {
+          'sourceUrl': '',
+          'pageTitle': '',
+          'parser': '',
+          'warnings': [],
+        },
+        'timetable': {
+          'name': 'Segmented Timetable',
+          'startDate': '2026-02-23',
+          'totalWeeks': 18,
+          'periodTimeSet': {'name': '', 'periodTimes': []},
+          'courses': [],
+        },
+      };
+      final encodedResponse = jsonEncode(responseJson);
+      final splitAt = encodedResponse.indexOf('Segmented');
+      final firstPart = encodedResponse.substring(0, splitAt);
+      final secondPart = encodedResponse.substring(splitAt);
+      final api = SchoolImportApi(
+        client: _StreamingClient((request) async {
+          return http.StreamedResponse(
+            Stream<List<int>>.fromIterable([
+              utf8.encode(
+                jsonEncode({
+                  'choices': [
+                    {
+                      'message': {
+                        'content': [
+                          {'type': 'output_text', 'text': firstPart},
+                          {'type': 'output_text', 'text': 42},
+                          {'type': 'output_text', 'text': secondPart},
+                          {
+                            'type': 'output_text',
+                            'text': {'nested': 'bad'},
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                }),
+              ),
+            ]),
+            200,
+          );
+        }),
+      );
+
+      final result = await api.importCurrentPageWithRawResponse(
+        const SchoolImportPagePayload(
+          url: 'https://example.test/page',
+          title: 'Example page',
+          html: '<table>demo</table>',
+          locale: 'zh',
+          sourceHint: schoolImportParserSourceCustomOpenAi,
+        ),
+        parserSettings: const SchoolImportParserSettings(
+          source: schoolImportParserSourceCustomOpenAi,
+          customBaseUrl: 'https://api.example.com/v1',
+          customApiKey: 'sk-test',
+          customModel: 'gpt-4.1-mini',
+        ),
+      );
+
+      expect(result.response.meta.sourceUrl, 'https://example.test/page');
+      expect(result.response.meta.parser, 'custom-openai:gpt-4.1-mini');
+      expect(result.response.timetable.name, 'Segmented Timetable');
     });
 
     test('official stream reports connection timeout clearly', () async {
@@ -346,6 +502,84 @@ void main() {
       expect(done.response.meta.parser, 'custom-openai:gpt-4.1-mini');
       expect(done.response.timetable.name, 'Streamed Timetable');
       expect(done.response.timetable.courses.single.name, 'Streamed Course');
+    });
+
+    test('custom stream parses array content delta parts', () async {
+      final responseJson = {
+        'ok': true,
+        'meta': {
+          'sourceUrl': '',
+          'pageTitle': '',
+          'parser': '',
+          'warnings': [],
+        },
+        'timetable': {
+          'name': 'Segmented Stream Timetable',
+          'startDate': '2026-02-23',
+          'totalWeeks': 18,
+          'periodTimeSet': {'name': '', 'periodTimes': []},
+          'courses': [],
+        },
+      };
+      final encodedResponse = jsonEncode(responseJson);
+      final splitAt = encodedResponse.indexOf('Segmented');
+      final firstPart = encodedResponse.substring(0, splitAt);
+      final secondPart = encodedResponse.substring(splitAt);
+      final sseBody =
+          'data: ${jsonEncode({
+            'choices': [
+              {
+                'delta': {
+                  'content': [
+                    {'type': 'output_text', 'text': firstPart},
+                    {'type': 'output_text', 'text': 42},
+                    {'type': 'output_text', 'text': secondPart},
+                    {
+                      'type': 'output_text',
+                      'text': {'nested': 'bad'},
+                    },
+                  ],
+                },
+              },
+            ],
+          })}\n\n'
+          'data: [DONE]\n\n';
+
+      final client = _StreamingClient((request) async {
+        return http.StreamedResponse(
+          Stream<List<int>>.fromIterable([utf8.encode(sseBody)]),
+          200,
+        );
+      });
+
+      final events = await const SchoolImportApi()
+          .importCurrentPageStream(
+            const SchoolImportPagePayload(
+              url: 'https://example.test/page',
+              title: 'Example page',
+              html: '<table>demo</table>',
+              locale: 'zh',
+              sourceHint: schoolImportParserSourceCustomOpenAi,
+            ),
+            parserSettings: const SchoolImportParserSettings(
+              source: schoolImportParserSourceCustomOpenAi,
+              customBaseUrl: 'https://api.example.com/v1',
+              customApiKey: 'sk-test',
+              customModel: 'gpt-4.1-mini',
+            ),
+            client: client,
+          )
+          .toList();
+
+      expect(events.whereType<ParseError>(), isEmpty);
+      expect(
+        events.whereType<ParseDelta>().map((event) => event.text).join(),
+        encodedResponse,
+      );
+      final done = events.whereType<ParseDone>().single;
+      expect(done.response.meta.sourceUrl, 'https://example.test/page');
+      expect(done.response.meta.parser, 'custom-openai:gpt-4.1-mini');
+      expect(done.response.timetable.name, 'Segmented Stream Timetable');
     });
 
     test('falls back when custom stream meta fields are malformed', () async {

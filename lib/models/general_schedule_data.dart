@@ -37,6 +37,16 @@ int? _intValue(Object? value) {
   return value is num ? value.toInt() : null;
 }
 
+int? _schemaVersionValue(Object? value) {
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value.trim());
+  }
+  return null;
+}
+
 bool? _boolValue(Object? value) {
   return value is bool ? value : null;
 }
@@ -158,7 +168,12 @@ class GeneralScheduleData {
     Map<String, dynamic> json, {
     String? localeCode,
   }) {
-    final schemaVersion = _intValue(json['schemaVersion']) ?? 0;
+    final schemaVersion = _schemaVersionValue(json['schemaVersion']) ?? 0;
+    if (schemaVersion > generalScheduleSchemaVersion) {
+      throw const FormatException(
+        'General schedule schemaVersion is unsupported.',
+      );
+    }
     if (schemaVersion < 2) {
       return GeneralScheduleData.createDefault();
     }

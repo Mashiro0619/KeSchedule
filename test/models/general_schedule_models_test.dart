@@ -411,6 +411,32 @@ void main() {
       },
     );
 
+    test('fromJson rejects future schemaVersion', () {
+      expect(
+        () => GeneralScheduleData.fromJson({
+          'schemaVersion': generalScheduleSchemaVersion + 1,
+          'activeScheduleId': 'sched1',
+          'schedules': [
+            {'id': 'sched1', 'name': 'My Schedule', 'events': <Object>[]},
+          ],
+        }),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('fromJson rejects future schemaVersion encoded as a string', () {
+      expect(
+        () => GeneralScheduleData.fromJson({
+          'schemaVersion': '${generalScheduleSchemaVersion + 1}',
+          'activeScheduleId': 'sched1',
+          'schedules': [
+            {'id': 'sched1', 'name': 'My Schedule', 'events': <Object>[]},
+          ],
+        }),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
     test('missing activeScheduleId defaults to first schedule', () {
       final data = GeneralScheduleData(
         activeScheduleId: '',

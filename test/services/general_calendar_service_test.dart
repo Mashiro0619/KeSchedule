@@ -200,6 +200,132 @@ void main() {
       expect(updated.reminderAcknowledgements, isEmpty);
     });
 
+    test('keeps handled reminder records when editing event details only', () {
+      final event = buildEvent();
+      final data = buildData(
+        schedules: [
+          GeneralSchedule(id: 'cal', name: 'Work', events: [event]),
+        ],
+        acknowledgements: const [
+          GeneralReminderAcknowledgement(
+            occurrenceKey: 'cal|event|2026-05-25T09:00:00.000',
+            updatedAtIso: '2026-05-25T08:55:00.000',
+          ),
+        ],
+      );
+
+      final updated = service.saveEvent(
+        data,
+        event.copyWith(title: 'Renamed event'),
+      );
+
+      expect(updated.activeSchedule.events.single.title, 'Renamed event');
+      expect(updated.reminderAcknowledgements, hasLength(1));
+      expect(
+        updated.reminderAcknowledgements.single.occurrenceKey,
+        'cal|event|2026-05-25T09:00:00.000',
+      );
+    });
+
+    test(
+      'clears stale handled reminder records when event occurrence moves',
+      () {
+        final event = buildEvent();
+        final other = buildEvent(id: 'other');
+        final data = buildData(
+          schedules: [
+            GeneralSchedule(id: 'cal', name: 'Work', events: [event, other]),
+            const GeneralSchedule(id: 'home', name: 'Home', events: []),
+          ],
+          acknowledgements: const [
+            GeneralReminderAcknowledgement(
+              occurrenceKey: 'cal|event|2026-05-25T09:00:00.000',
+              updatedAtIso: '2026-05-25T08:55:00.000',
+            ),
+            GeneralReminderAcknowledgement(
+              occurrenceKey: 'cal|other|2026-05-25T09:00:00.000',
+              updatedAtIso: '2026-05-25T08:55:00.000',
+            ),
+          ],
+        );
+
+        final updated = service.saveEvent(
+          data,
+          event.copyWith(
+            calendarId: 'home',
+            startDateTimeIso: DateTime(2026, 5, 25, 11).toIso8601String(),
+            endDateTimeIso: DateTime(2026, 5, 25, 12).toIso8601String(),
+          ),
+        );
+
+        expect(
+          updated.schedules
+              .singleWhere((s) => s.id == 'cal')
+              .events
+              .map((item) => item.id),
+          ['other'],
+        );
+        expect(
+          updated.schedules.singleWhere((s) => s.id == 'home').events.single.id,
+          'event',
+        );
+        expect(
+          updated.reminderAcknowledgements.map((item) => item.occurrenceKey),
+          ['cal|other|2026-05-25T09:00:00.000'],
+        );
+      },
+    );
+
+    test(
+      'clears handled reminder records when recurrence or reminders change',
+      () {
+        final event = buildEvent(
+          recurrenceRule: const GeneralEventRecurrenceRule(
+            type: GeneralEventRecurrence.weekly,
+            unit: GeneralEventRecurrenceUnit.week,
+            count: 4,
+          ),
+          reminders: const [GeneralEventReminder(minutesBefore: 10)],
+        );
+        final other = buildEvent(id: 'other');
+        final data = buildData(
+          schedules: [
+            GeneralSchedule(id: 'cal', name: 'Work', events: [event, other]),
+          ],
+          acknowledgements: const [
+            GeneralReminderAcknowledgement(
+              occurrenceKey: 'cal|event|2026-05-25T09:00:00.000',
+              updatedAtIso: '2026-05-25T08:55:00.000',
+            ),
+            GeneralReminderAcknowledgement(
+              occurrenceKey: 'cal|other|2026-05-25T09:00:00.000',
+              updatedAtIso: '2026-05-25T08:55:00.000',
+            ),
+          ],
+        );
+
+        final updated = service.saveEvent(
+          data,
+          event.copyWith(
+            recurrenceRule: const GeneralEventRecurrenceRule(),
+            reminders: const [GeneralEventReminder(minutesBefore: 30)],
+          ),
+        );
+
+        expect(
+          updated.activeSchedule.events
+              .singleWhere((item) => item.id == 'event')
+              .recurrenceRule
+              .isRepeating,
+          false,
+        );
+        expect(
+          updated.reminderAcknowledgements.map((item) => item.occurrenceKey),
+          ['cal|other|2026-05-25T09:00:00.000'],
+        );
+      },
+    );
+
     test('duplicates an occurrence as a one-time event', () {
       final event = buildEvent(
         id: 'repeat',

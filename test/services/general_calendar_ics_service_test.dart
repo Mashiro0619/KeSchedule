@@ -66,6 +66,27 @@ END:VCALENDAR
     expect(event.endDateTimeIso, startsWith('2026-05-26'));
   });
 
+  test('imports date-only ICS values as all-day events', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:date-only
+SUMMARY:Date only
+DTSTART:20260524
+DTEND:20260526
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.isAllDay, true);
+    expect(event.startDateTimeIso, startsWith('2026-05-24'));
+    expect(event.endDateTimeIso, startsWith('2026-05-26'));
+  });
+
   test('imports Google-style TZID and RRULE fixture', () {
     const source = '''
 BEGIN:VCALENDAR
@@ -94,6 +115,138 @@ END:VCALENDAR
     expect(event.recurrenceRule.untilDateIso, '2026-06-15');
   });
 
+  test('imports basic date-times with numeric offsets', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:offset-style
+SUMMARY:Offset event
+DTSTART:20260525T090000+0800
+DTEND:20260525T103000+08:00
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.title, 'Offset event');
+    expect(
+      DateTime.parse(event.startDateTimeIso).toUtc(),
+      DateTime.utc(2026, 5, 25, 1),
+    );
+    expect(
+      DateTime.parse(event.endDateTimeIso).toUtc(),
+      DateTime.utc(2026, 5, 25, 2, 30),
+    );
+    expect(imported.warningItems, isEmpty);
+  });
+
+  test('imports mixed-case ICS event boundaries and fields', () {
+    const source = '''
+begin:vcalendar
+version:2.0
+begin:vevent
+uid:mixed-case
+summary:Mixed case event
+dtstart:20260525T090000
+dtend:20260525T100000
+end:vevent
+end:vcalendar
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.id, 'ics_mixed-case');
+    expect(event.title, 'Mixed case event');
+    expect(event.startDateTimeIso, startsWith('2026-05-25T09:00:00'));
+    expect(event.endDateTimeIso, startsWith('2026-05-25T10:00:00'));
+  });
+
+  test('imports ICS DURATION when DTEND is missing', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:duration-style
+SUMMARY:Duration event
+DTSTART:20260525T090000
+DURATION:PT1H30M
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.title, 'Duration event');
+    expect(event.startDateTimeIso, startsWith('2026-05-25T09:00:00'));
+    expect(event.endDateTimeIso, startsWith('2026-05-25T10:30:00'));
+    expect(imported.warningItems, isEmpty);
+  });
+
+  test('reports ignored ICS DURATION when DTEND is present', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:duration-conflict
+SUMMARY:Duration conflict
+DTSTART:20260525T090000
+DTEND:20260525T100000
+DURATION:PT2H
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+    final warning = imported.warningItems.singleWhere(
+      (item) => item.code == GeneralCalendarIcsWarningCode.unsupportedFields,
+    );
+
+    expect(event.endDateTimeIso, startsWith('2026-05-25T10:00:00'));
+    expect(warning.values, ['DURATION']);
+    expect(event.notes, contains('Unsupported ICS fields ignored: DURATION'));
+  });
+
+  test('warns when invalid ICS DURATION is replaced with default end', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:bad-duration
+SUMMARY:Bad duration
+DTSTART:20260525T090000
+DURATION:P
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.endDateTimeIso, startsWith('2026-05-25T10:00:00'));
+    expect(
+      imported.warningItems.map((item) => item.code),
+      containsAll([
+        GeneralCalendarIcsWarningCode.adjustedEnd,
+        GeneralCalendarIcsWarningCode.unsupportedFields,
+      ]),
+    );
+    expect(
+      imported.warningItems
+          .singleWhere(
+            (item) =>
+                item.code == GeneralCalendarIcsWarningCode.unsupportedFields,
+          )
+          .values,
+      ['DURATION'],
+    );
+  });
+
   test('imports Outlook-style escaped text and folded description', () {
     const source = '''
 BEGIN:VCALENDAR
@@ -118,6 +271,58 @@ END:VCALENDAR
     expect(event.location, 'Room, A; North');
     expect(event.notes, contains('Line one\nLine two'));
     expect(event.notes, contains('backslash \\continued after folding'));
+  });
+
+  test('keeps values after colons inside quoted ICS parameters', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:quoted-param
+SUMMARY:Quoted parameter
+DTSTART:20260525T090000
+DTEND:20260525T100000
+DESCRIPTION;ALTREP="CID:part1@example.com":Body text after quoted parameter
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.notes, contains('Body text after quoted parameter'));
+    expect(event.notes, isNot(contains('part1@example.com')));
+  });
+
+  test('ignores VALARM fields without overwriting event fields', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:with-alarm
+SUMMARY:Event with alarm
+DTSTART:20260525T090000
+DTEND:20260525T100000
+DESCRIPTION:Event note
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Alarm reminder text
+TRIGGER:-PT10M
+END:VALARM
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+    final warning = imported.warningItems.singleWhere(
+      (item) => item.code == GeneralCalendarIcsWarningCode.unsupportedFields,
+    );
+
+    expect(event.notes, contains('Event note'));
+    expect(event.notes, isNot(contains('Alarm reminder text')));
+    expect(warning.values, ['VALARM']);
+    expect(event.notes, contains('Unsupported ICS fields ignored: VALARM'));
   });
 
   test('imports Apple-style UTC timed fixture', () {
@@ -240,6 +445,31 @@ END:VCALENDAR
     expect(event.notes, contains('Unsupported ICS fields ignored: STATUS'));
   });
 
+  test('reports duplicate ICS fields instead of silently overwriting them', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:duplicate-fields
+SUMMARY:First title
+SUMMARY:Second title
+DTSTART:20260524T090000
+DTEND:20260524T100000
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+    final warning = imported.warningItems.singleWhere(
+      (item) => item.code == GeneralCalendarIcsWarningCode.unsupportedFields,
+    );
+
+    expect(event.title, 'Second title');
+    expect(warning.values, ['DUPLICATE:SUMMARY']);
+    expect(event.notes, contains('Duplicate ICS fields overwritten: SUMMARY'));
+  });
+
   test('reports unsupported RRULE parts instead of silently mapping them', () {
     const source = '''
 BEGIN:VCALENDAR
@@ -267,6 +497,35 @@ END:VCALENDAR
       contains('Unsupported RRULE parts ignored: BYDAY=MO,WE'),
     );
   });
+
+  test(
+    'reports duplicate RRULE parts instead of silently overwriting them',
+    () {
+      const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:duplicate-rrule
+SUMMARY:Duplicate RRULE
+DTSTART:20260525T090000
+DTEND:20260525T100000
+RRULE:FREQ=WEEKLY;COUNT=2;COUNT=5
+END:VEVENT
+END:VCALENDAR
+''';
+
+      final imported = service.importSchedules(source);
+      final event = imported.schedules.single.events.single;
+      final warning = imported.warningItems.singleWhere(
+        (item) => item.code == GeneralCalendarIcsWarningCode.unsupportedFields,
+      );
+
+      expect(event.recurrenceRule.type, GeneralEventRecurrence.weekly);
+      expect(event.recurrenceRule.count, 5);
+      expect(warning.values, ['RRULE:DUPLICATE:COUNT']);
+      expect(event.notes, contains('Duplicate RRULE parts overwritten: COUNT'));
+    },
+  );
 
   test('rejects invalid ICS dates instead of rolling them forward', () {
     const source = '''
@@ -298,6 +557,30 @@ END:VCALENDAR
     );
   });
 
+  test('warns when invalid DTEND is replaced with a default end', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:bad-end
+SUMMARY:Bad end
+DTSTART:20260228T090000
+DTEND:20260231T100000
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.startDateTimeIso, startsWith('2026-02-28T09:00:00'));
+    expect(event.endDateTimeIso, startsWith('2026-02-28T10:00:00'));
+    expect(
+      imported.warningItems.single.code,
+      GeneralCalendarIcsWarningCode.adjustedEnd,
+    );
+  });
+
   test('rejects invalid RRULE UNTIL dates instead of rolling them forward', () {
     const source = '''
 BEGIN:VCALENDAR
@@ -320,6 +603,31 @@ END:VCALENDAR
 
     expect(event.recurrenceRule.isRepeating, false);
     expect(warning.values, contains('RRULE:UNTIL=20260231'));
+    expect(event.notes, contains('Unsupported RRULE parts ignored'));
+  });
+
+  test('rejects invalid RRULE UNTIL date-times', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:bad-until-time
+SUMMARY:Bad until time
+DTSTART:20260228T090000
+DTEND:20260228T100000
+RRULE:FREQ=WEEKLY;UNTIL=20260615T999999Z
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+    final warning = imported.warningItems.singleWhere(
+      (item) => item.code == GeneralCalendarIcsWarningCode.unsupportedFields,
+    );
+
+    expect(event.recurrenceRule.isRepeating, false);
+    expect(warning.values, contains('RRULE:UNTIL=20260615T999999Z'));
     expect(event.notes, contains('Unsupported RRULE parts ignored'));
   });
 
@@ -349,5 +657,25 @@ END:VCALENDAR
     expect(events.map((event) => event.id).toSet(), hasLength(2));
     expect(events.first.id, 'ics_duplicate');
     expect(events.last.id, 'ics_duplicate_1');
+  });
+
+  test('sanitizes imported UID before using it as a local event id', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:team|sync/room@example.com
+SUMMARY:Unsafe UID
+DTSTART:20260525T090000
+DTEND:20260525T100000
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.id, 'ics_team_sync_room_example.com');
+    expect(event.id, isNot(contains('|')));
   });
 }

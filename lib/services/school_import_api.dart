@@ -205,8 +205,8 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
           data
               .map((item) {
                 if (item is Map) {
-                  final id = item['id']?.toString().trim() ?? '';
-                  return id;
+                  final id = item['id'];
+                  return id is String ? id.trim() : '';
                 }
                 return '';
               })
@@ -437,25 +437,30 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
       throw const FormatException('Import response format is invalid.');
     }
     final content = message['content'];
-    if (content is String && content.trim().isNotEmpty) {
-      return content.trim();
+    final result = _extractOpenAiTextContent(content).trim();
+    if (result.isNotEmpty) {
+      return result;
+    }
+    throw const FormatException('Import response format is invalid.');
+  }
+
+  String _extractOpenAiTextContent(Object? content) {
+    if (content is String) {
+      return content;
     }
     if (content is List) {
       final buffer = StringBuffer();
       for (final item in content) {
         if (item is Map) {
-          final text = item['text']?.toString() ?? '';
-          if (text.trim().isNotEmpty) {
+          final text = item['text'];
+          if (text is String && text.trim().isNotEmpty) {
             buffer.write(text);
           }
         }
       }
-      final result = buffer.toString().trim();
-      if (result.isNotEmpty) {
-        return result;
-      }
+      return buffer.toString();
     }
-    throw const FormatException('Import response format is invalid.');
+    return '';
   }
 
   Uri _buildOpenAiChatUri(String baseUrl) {
@@ -725,7 +730,7 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
               : null;
           final deltaJson = firstChoice is Map ? firstChoice['delta'] : null;
           final delta = deltaJson is Map
-              ? _stringValue(deltaJson['content'])
+              ? _extractOpenAiTextContent(deltaJson['content'])
               : '';
           if (delta.isNotEmpty) {
             accumulatedContent += delta;
@@ -777,7 +782,30 @@ Populate timetable with the extracted timetable object. Keep ok=true. Fill meta.
   static SchoolImportResponse buildResponseFromPhpDone(
     Map<String, dynamic> json,
   ) {
-    final rawTimetable = _asStringKeyedMap(json['timetable']) ?? json;
+    if (json['ok'] == false) {
+      return SchoolImportResponse.fromJson({
+        'ok': false,
+        'message': json['message'],
+        'meta': _asStringKeyedMap(json['meta']) ?? const {},
+        'timetable': const {},
+      });
+    }
+
+    final rawTimetable = json.containsKey('timetable')
+        ? _asStringKeyedMap(json['timetable'])
+        : json;
+    if (rawTimetable == null) {
+      throw const FormatException('Import response format is invalid.');
+    }
+    final hasTimetablePayload =
+        rawTimetable.containsKey('name') ||
+        rawTimetable.containsKey('startDate') ||
+        rawTimetable.containsKey('totalWeeks') ||
+        rawTimetable.containsKey('periodTimeSet') ||
+        rawTimetable.containsKey('courses');
+    if (!hasTimetablePayload) {
+      throw const FormatException('Import response format is invalid.');
+    }
     final wrapped = <String, dynamic>{
       'ok': json['ok'] ?? true,
       'message': json['message'],

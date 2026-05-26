@@ -38,7 +38,13 @@ Map<String, dynamic> _decodeJsonObject(String source) {
 }
 
 int? _tryDecodeInt(Object? value) {
-  return value is num ? value.toInt() : null;
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value.trim());
+  }
+  return null;
 }
 
 String _stringValue(Object? value, [String fallback = '']) {
@@ -160,10 +166,12 @@ class AppData {
       colorfulUiColorValues: decodeColorValueMap(
         migrated['colorfulUiColorValues'],
       ),
-      privacyPolicyAcceptedVersion:
-          _nullableStringValue(migrated['privacyPolicyAcceptedVersion']),
-      privacyPolicyAcceptedAtIso:
-          _nullableStringValue(migrated['privacyPolicyAcceptedAtIso']),
+      privacyPolicyAcceptedVersion: _nullableStringValue(
+        migrated['privacyPolicyAcceptedVersion'],
+      ),
+      privacyPolicyAcceptedAtIso: _nullableStringValue(
+        migrated['privacyPolicyAcceptedAtIso'],
+      ),
       ignoredUpdateVersion: _nullableStringValue(
         migrated['ignoredUpdateVersion'],
       ),
@@ -247,10 +255,15 @@ class ImportExportEnvelope {
   };
 
   factory ImportExportEnvelope.fromJson(Map<String, dynamic> json) {
+    final rawData = json['data'];
+    final data = _asStringKeyedMap(rawData);
+    if (json.containsKey('data') && data == null) {
+      throw const FormatException('Import/export data format is invalid.');
+    }
     return ImportExportEnvelope(
       schema: _stringValue(json['schema']),
       version: _tryDecodeInt(json['version']) ?? 1,
-      data: _asStringKeyedMap(json['data']) ?? const {},
+      data: data ?? const {},
     );
   }
 
@@ -322,11 +335,16 @@ List<CoursePeriodTime> decodePeriodTimesEnvelope(
     expectedSchema: periodTimesSchema,
     localeCode: localeCode,
   );
-  return _listValue(envelope.data['periodTimes'])
+  final rawPeriodTimes = _listValue(envelope.data['periodTimes']);
+  final periodTimes = rawPeriodTimes
       .map(_asStringKeyedMap)
       .whereType<Map<String, dynamic>>()
       .map(CoursePeriodTime.fromJson)
       .toList();
+  if (rawPeriodTimes.isNotEmpty && periodTimes.isEmpty) {
+    throw const FormatException('Period times JSON format is invalid.');
+  }
+  return periodTimes;
 }
 
 AppData decodeAppDataEnvelope(
@@ -393,14 +411,22 @@ class GeneralScheduleExportData {
   };
 
   factory GeneralScheduleExportData.fromJson(Map<String, dynamic> json) {
+    final schemaVersion = _tryDecodeInt(json['schemaVersion']);
+    if (schemaVersion != null && schemaVersion > generalScheduleSchemaVersion) {
+      throw const FormatException(
+        'General schedule schemaVersion is unsupported.',
+      );
+    }
     final raw = _listValue(json['schedules']);
-    return GeneralScheduleExportData(
-      schedules: raw
-          .map(_asStringKeyedMap)
-          .whereType<Map<String, dynamic>>()
-          .map((s) => GeneralSchedule.fromJson(s).normalized())
-          .toList(),
-    );
+    final schedules = raw
+        .map(_asStringKeyedMap)
+        .whereType<Map<String, dynamic>>()
+        .map((s) => GeneralSchedule.fromJson(s).normalized())
+        .toList();
+    if (raw.isNotEmpty && schedules.isEmpty) {
+      throw const FormatException('General schedule JSON format is invalid.');
+    }
+    return GeneralScheduleExportData(schedules: schedules);
   }
 }
 

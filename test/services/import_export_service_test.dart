@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sked/l10n/app_locale.dart';
 import 'package:sked/models/school_import_models.dart';
@@ -231,6 +233,43 @@ void main() {
       },
     );
 
+    test('rejects non-empty schedule arrays without valid entries', () {
+      final source = ImportExportEnvelope(
+        schema: generalScheduleDataSchema,
+        version: importExportVersion,
+        data: const {
+          'schedules': ['bad', null],
+        },
+      ).encode();
+
+      expect(
+        () => service.previewImportGeneralSchedules(
+          source,
+          localeCode: defaultLocaleCode,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('rejects future schedule schemaVersion encoded as a string', () {
+      final source = ImportExportEnvelope(
+        schema: generalScheduleDataSchema,
+        version: importExportVersion,
+        data: {
+          'schemaVersion': '${generalScheduleSchemaVersion + 1}',
+          'schedules': [schedule().toJson()],
+        },
+      ).encode();
+
+      expect(
+        () => service.previewImportGeneralSchedules(
+          source,
+          localeCode: defaultLocaleCode,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
     test('adds selected calendars as new and de-duplicates ids', () {
       final current = data(
         schedules: [schedule(id: 'work', name: 'Work')],
@@ -257,6 +296,56 @@ void main() {
         hasLength(3),
       );
       expect(mutation.data.activeScheduleId, mutation.data.schedules.last.id);
+    });
+
+    test('sanitizes unsafe calendar and event ids when adding as new', () {
+      final current = data(
+        schedules: [
+          schedule(
+            id: 'work',
+            name: 'Work',
+            events: [event(id: 'work_event', calendarId: 'work')],
+          ),
+        ],
+        activeScheduleId: 'work',
+      );
+      final source = envelope([
+        schedule(
+          id: 'shared|calendar',
+          name: 'Unsafe',
+          events: [
+            event(id: 'a|b', calendarId: 'shared|calendar'),
+            event(id: 'a:b', calendarId: 'shared|calendar'),
+          ],
+        ),
+      ]);
+
+      final mutation = service.importSelectedGeneralSchedulesJson(
+        current,
+        source,
+        scheduleIds: const ['shared|calendar'],
+        mode: GeneralScheduleImportMode.addAsNew,
+        localeCode: defaultLocaleCode,
+      );
+
+      final imported = mutation.data.schedules.last;
+      expect(imported.id, 'shared_calendar');
+      expect(imported.id, isNot(contains('|')));
+      expect(imported.events, hasLength(2));
+      expect(
+        imported.events.map((item) => item.id),
+        everyElement(isNot(contains('|'))),
+      );
+      expect(
+        imported.events.map((item) => item.id).toSet(),
+        hasLength(imported.events.length),
+      );
+      expect(imported.events.first.id, 'a_b');
+      expect(imported.events.last.id, startsWith('evt_import_'));
+      expect(
+        imported.events.map((item) => item.calendarId),
+        everyElement(imported.id),
+      );
     });
 
     test(
@@ -301,6 +390,39 @@ void main() {
         expect(mutation.data.reminderAcknowledgements, isEmpty);
       },
     );
+
+    test('sanitizes imported event ids when replacing active calendar', () {
+      final current = data(
+        schedules: [
+          schedule(
+            id: 'active',
+            name: 'Active',
+            events: [event(id: 'old', calendarId: 'active')],
+          ),
+        ],
+        activeScheduleId: 'active',
+      );
+      final source = envelope([
+        schedule(
+          id: 'replacement|raw',
+          name: 'Replacement',
+          events: [event(id: 'new|unsafe', calendarId: 'replacement|raw')],
+        ),
+      ]);
+
+      final mutation = service.importSelectedGeneralSchedulesJson(
+        current,
+        source,
+        scheduleIds: const ['replacement|raw'],
+        mode: GeneralScheduleImportMode.replaceActive,
+        localeCode: defaultLocaleCode,
+      );
+
+      final replaced = mutation.data.activeSchedule;
+      expect(replaced.id, 'active');
+      expect(replaced.events.single.id, 'new_unsafe');
+      expect(replaced.events.single.calendarId, 'active');
+    });
 
     test('throws when replace-active receives multiple calendars', () {
       final source = envelope([
@@ -370,6 +492,34 @@ END:VCALENDAR
   });
 
   group('student JSON export', () {
+    test('rejects future envelope version encoded as a string', () {
+      final source = jsonEncode({
+        'schema': periodTimesSchema,
+        'version': '${importExportVersion + 99}',
+        'data': {'periodTimes': []},
+      });
+
+      expect(
+        () => decodePeriodTimesEnvelope(source),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('rejects envelopes with non-object data fields', () {
+      final source = jsonEncode({
+        'schema': periodTimesSchema,
+        'version': importExportVersion,
+        'data': [
+          {'periodTimes': []},
+        ],
+      });
+
+      expect(
+        () => decodePeriodTimesEnvelope(source),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
     test('decodes period time envelope while ignoring malformed entries', () {
       final source = ImportExportEnvelope(
         schema: periodTimesSchema,
@@ -391,6 +541,21 @@ END:VCALENDAR
 
       expect(decoded, hasLength(1));
       expect(decoded.single.index, 1);
+    });
+
+    test('rejects non-empty period time arrays without valid entries', () {
+      final source = ImportExportEnvelope(
+        schema: periodTimesSchema,
+        version: importExportVersion,
+        data: const {
+          'periodTimes': ['bad', null],
+        },
+      ).encode();
+
+      expect(
+        () => decodePeriodTimesEnvelope(source),
+        throwsA(isA<FormatException>()),
+      );
     });
 
     test('exports selected timetables with linked period time sets', () {
@@ -435,6 +600,88 @@ END:VCALENDAR
       expect(decoded.generalMode.schedules, isNotEmpty);
       expect(decoded.themeSeedColorValue, defaultThemeSeedColorValue);
       expect(decoded.colorfulUiColorValues, {'ok': 0xFF123456});
+    });
+
+    test('rejects non-empty timetable arrays without valid entries', () {
+      final source = ImportExportEnvelope(
+        schema: timetableDataSchema,
+        version: importExportVersion,
+        data: const {
+          'timetables': ['bad', null],
+          'periodTimeSets': [],
+        },
+      ).encode();
+
+      expect(
+        () => service.previewImportTimetables(
+          source,
+          localeCode: defaultLocaleCode,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('rejects non-empty period time set arrays without valid entries', () {
+      final source = ImportExportEnvelope(
+        schema: timetableDataSchema,
+        version: importExportVersion,
+        data: {
+          'timetables': [timetable().toJson()],
+          'periodTimeSets': ['bad', null],
+        },
+      ).encode();
+
+      expect(
+        () => service.previewImportTimetables(
+          source,
+          localeCode: defaultLocaleCode,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('rejects app-data timetable arrays without valid entries', () {
+      final source = ImportExportEnvelope(
+        schema: appDataSchema,
+        version: importExportVersion,
+        data: const {
+          'activeMode': 'student',
+          'studentMode': {
+            'timetables': ['bad', null, {}],
+            'periodTimeSets': [],
+          },
+        },
+      ).encode();
+
+      expect(
+        () => service.previewImportTimetables(
+          source,
+          localeCode: defaultLocaleCode,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('rejects app-data period time set arrays without valid entries', () {
+      final source = ImportExportEnvelope(
+        schema: appDataSchema,
+        version: importExportVersion,
+        data: {
+          'activeMode': 'student',
+          'studentMode': {
+            'timetables': [timetable().toJson()],
+            'periodTimeSets': ['bad', null, {}],
+          },
+        },
+      ).encode();
+
+      expect(
+        () => service.previewImportTimetables(
+          source,
+          localeCode: defaultLocaleCode,
+        ),
+        throwsA(isA<FormatException>()),
+      );
     });
 
     test('normalizes duplicate student ids and stale display preferences', () {
@@ -502,6 +749,68 @@ END:VCALENDAR
       );
       expect(normalized.studentMode.conflictDisplayCourseIds, isEmpty);
     });
+
+    test(
+      'normalizes unsafe general ids and migrates reminder acknowledgement keys',
+      () {
+        final source = AppData(
+          activeMode: AppMode.general,
+          studentMode: studentData(),
+          generalMode: GeneralScheduleData(
+            activeScheduleId: 'shared|calendar',
+            schedules: [
+              schedule(
+                id: 'shared|calendar',
+                name: 'Unsafe',
+                events: [
+                  event(id: 'a|b', calendarId: 'shared|calendar'),
+                  event(id: 'a:b', calendarId: 'shared|calendar'),
+                ],
+              ),
+            ],
+            reminderAcknowledgements: const [
+              GeneralReminderAcknowledgement(
+                occurrenceKey: 'shared|calendar|a|b|2026-05-25T09:00:00.000',
+                updatedAtIso: '2026-05-25T08:55:00.000',
+              ),
+              GeneralReminderAcknowledgement(
+                occurrenceKey: 'shared|calendar|a:b|2026-05-25T09:00:00.000',
+                isHandled: false,
+                updatedAtIso: '2026-05-25T08:56:00.000',
+              ),
+            ],
+          ),
+        );
+
+        final normalized = service.normalizeAppData(
+          source,
+          localeCode: defaultLocaleCode,
+        );
+
+        final general = normalized.generalMode;
+        final remappedDuplicateEventId =
+            general.schedules.single.events.last.id;
+        expect(general.activeScheduleId, 'shared_calendar');
+        expect(general.schedules.single.id, 'shared_calendar');
+        expect(general.schedules.single.events.first.id, 'a_b');
+        expect(
+          general.schedules.single.events.last.id,
+          startsWith('evt_import_'),
+        );
+        expect(
+          general.schedules.single.events.map((item) => item.calendarId),
+          everyElement('shared_calendar'),
+        );
+        expect(
+          general.reminderAcknowledgements.map((item) => item.occurrenceKey),
+          containsAll([
+            'shared_calendar|a_b|2026-05-25T09:00:00.000',
+            'shared_calendar|$remappedDuplicateEventId|'
+                '2026-05-25T09:00:00.000',
+          ]),
+        );
+      },
+    );
 
     test('keeps preview ids stable for files with missing timetable ids', () {
       final source = timetableEnvelope(

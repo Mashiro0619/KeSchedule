@@ -216,11 +216,22 @@ class TimetableExportData {
         : rawLegacyTimetable.isEmpty
         ? <TimetableData>[]
         : [TimetableData.fromJson(rawLegacyTimetable, localeCode: localeCode)];
-    final decodedPeriodTimeSets = _listValue(json['periodTimeSets'])
+    if (rawTimetables is List &&
+        rawTimetables.isNotEmpty &&
+        timetables.isEmpty) {
+      throw const FormatException('Timetable JSON format is invalid.');
+    }
+    final rawPeriodTimeSets = json['periodTimeSets'];
+    final decodedPeriodTimeSets = _listValue(rawPeriodTimeSets)
         .map(_asStringKeyedMap)
         .where((item) => item.isNotEmpty)
         .map((item) => PeriodTimeSet.fromJson(item, localeCode: localeCode))
         .toList();
+    if (rawPeriodTimeSets is List &&
+        rawPeriodTimeSets.isNotEmpty &&
+        decodedPeriodTimeSets.isEmpty) {
+      throw const FormatException('Timetable JSON format is invalid.');
+    }
     if (rawTimetables is! List &&
         rawLegacyTimetable.containsKey('config') &&
         rawLegacyTimetable.containsKey('courses') &&

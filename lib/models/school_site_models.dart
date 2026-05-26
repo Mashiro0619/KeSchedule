@@ -48,12 +48,16 @@ List<SchoolSite> decodeSchoolSites(String source) {
   if (decoded is! List) {
     throw const FormatException('School site JSON format is invalid.');
   }
-  return decoded
+  final sites = decoded
       .map(_asStringKeyedMap)
       .where((item) => item.isNotEmpty)
       .map(SchoolSite.fromJson)
       .where((item) => item.isValid)
       .toList();
+  if (decoded.isNotEmpty && sites.isEmpty) {
+    throw const FormatException('School site JSON format is invalid.');
+  }
+  return sites;
 }
 
 String encodeSchoolSites(List<SchoolSite> sites) {

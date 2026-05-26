@@ -32,9 +32,7 @@ void main() {
 
     test('fromJson accepts raw maps without schemaVersion (legacy)', () {
       // No schemaVersion -> treated as v1 by runner -> still upgrades cleanly.
-      final json = <String, dynamic>{
-        'activeMode': 'general',
-      };
+      final json = <String, dynamic>{'activeMode': 'general'};
 
       // Should not throw.
       final data = AppData.fromJson(json);
@@ -47,10 +45,15 @@ void main() {
         'schemaVersion': appDataCurrentSchemaVersion + 99,
       };
 
-      expect(
-        () => AppData.fromJson(json),
-        throwsA(isA<MigrationException>()),
-      );
+      expect(() => AppData.fromJson(json), throwsA(isA<MigrationException>()));
+    });
+
+    test('fromJson rejects future schemaVersion encoded as a string', () {
+      final json = <String, dynamic>{
+        'schemaVersion': '${appDataCurrentSchemaVersion + 99}',
+      };
+
+      expect(() => AppData.fromJson(json), throwsA(isA<MigrationException>()));
     });
 
     test('decode runs migrations before constructing AppData', () {
