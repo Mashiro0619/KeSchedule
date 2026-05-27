@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../models/timetable_models.dart';
+import '../utils/import_id_sanitizer.dart';
 
 enum GeneralCalendarIcsWarningCode {
   missingDtStart,
@@ -961,14 +962,11 @@ String _importedEventIdFromUid(String? uid) {
   if (source.isEmpty) {
     return _generateEventId();
   }
-  final safe = source
-      .replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_')
-      .replaceAll(RegExp(r'_+'), '_')
-      .replaceAll(RegExp(r'^_+|_+$'), '');
+  final safe = sanitizeImportedId(source);
   if (safe.isEmpty) {
     return _generateEventId();
   }
-  return 'ics_${safe.length > 96 ? safe.substring(0, 96) : safe}';
+  return 'ics_$safe';
 }
 
 List<GeneralEvent> _deduplicateImportedEventIds(

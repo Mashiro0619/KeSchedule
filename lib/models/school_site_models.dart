@@ -26,12 +26,15 @@ class SchoolSite {
 
   factory SchoolSite.fromJson(Map<String, dynamic> json) {
     return SchoolSite(
-      name: _stringValue(json['name']),
-      loginUrl: _stringValue(json['loginUrl']),
+      name: _stringValue(json['name']).trim(),
+      loginUrl: _stringValue(json['loginUrl']).trim(),
     );
   }
 
-  Map<String, dynamic> toJson() => {'name': name, 'loginUrl': loginUrl};
+  Map<String, dynamic> toJson() => {
+    'name': name.trim(),
+    'loginUrl': loginUrl.trim(),
+  };
 
   SchoolSite copyWith({String? name, String? loginUrl}) {
     return SchoolSite(
@@ -40,7 +43,14 @@ class SchoolSite {
     );
   }
 
-  bool get isValid => name.trim().isNotEmpty && loginUrl.trim().isNotEmpty;
+  bool get isValid {
+    final uri = Uri.tryParse(loginUrl.trim());
+    return name.trim().isNotEmpty &&
+        uri != null &&
+        uri.hasScheme &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.trim().isNotEmpty;
+  }
 }
 
 List<SchoolSite> decodeSchoolSites(String source) {

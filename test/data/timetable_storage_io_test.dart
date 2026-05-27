@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -231,6 +232,71 @@ void main() {
         expect(
           result.data!.generalMode.schedules.single.events.single.title,
           'Recovered schedule',
+        );
+      },
+    );
+
+    test(
+      'falls back to .bak when main file has mixed malformed schedules',
+      () async {
+        final backupData = buildGeneralData('Recovered mixed schedule');
+        final mainData = buildGeneralData('Corrupt mixed schedule').toJson();
+        final generalMode = Map<String, dynamic>.from(
+          mainData['generalMode'] as Map,
+        );
+        generalMode['schedules'] = [
+          ...(generalMode['schedules'] as List),
+          'bad',
+        ];
+        mainData['generalMode'] = generalMode;
+        await backupFile().writeAsString(backupData.encode());
+        await mainFile().writeAsString(jsonEncode(mainData));
+
+        final result = await storage.load();
+
+        expect(
+          result.recoveryStatus,
+          equals(RecoveryStatus.restoredFromBackup),
+        );
+        expect(
+          result.data!.generalMode.schedules.single.events.single.title,
+          'Recovered mixed schedule',
+        );
+      },
+    );
+
+    test(
+      'falls back to .bak when main file has invalid general event dates',
+      () async {
+        final backupData = buildGeneralData('Recovered event date');
+        final mainData = buildGeneralData('Corrupt event date').toJson();
+        final generalMode = Map<String, dynamic>.from(
+          mainData['generalMode'] as Map,
+        );
+        final schedules = [
+          for (final schedule in generalMode['schedules'] as List)
+            Map<String, dynamic>.from(schedule as Map),
+        ];
+        final events = [
+          for (final event in schedules.single['events'] as List)
+            Map<String, dynamic>.from(event as Map),
+        ];
+        events.single['start'] = '2026-02-31T09:00:00.000';
+        schedules.single['events'] = events;
+        generalMode['schedules'] = schedules;
+        mainData['generalMode'] = generalMode;
+        await backupFile().writeAsString(backupData.encode());
+        await mainFile().writeAsString(jsonEncode(mainData));
+
+        final result = await storage.load();
+
+        expect(
+          result.recoveryStatus,
+          equals(RecoveryStatus.restoredFromBackup),
+        );
+        expect(
+          result.data!.generalMode.schedules.single.events.single.title,
+          'Recovered event date',
         );
       },
     );

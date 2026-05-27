@@ -45,10 +45,16 @@ class AppRepository {
   /// 整份替换当前 AppData，并立即落盘（默认 flush=true，因为整份替换基本
   /// 都发生在导入、初始化等不能丢的场景）。
   Future<void> save(AppData data, {bool flush = true}) async {
+    final previous = _current;
     _current = data;
     _enqueueWrite(data);
     if (flush) {
-      await _pendingWrite;
+      try {
+        await _pendingWrite;
+      } catch (_) {
+        _current = previous;
+        rethrow;
+      }
     }
   }
 
@@ -66,7 +72,12 @@ class AppRepository {
     _current = updated;
     _enqueueWrite(updated);
     if (flush) {
-      await _pendingWrite;
+      try {
+        await _pendingWrite;
+      } catch (_) {
+        _current = current;
+        rethrow;
+      }
     }
   }
 
@@ -81,7 +92,12 @@ class AppRepository {
     _current = updated;
     _enqueueWrite(updated);
     if (flush) {
-      await _pendingWrite;
+      try {
+        await _pendingWrite;
+      } catch (_) {
+        _current = current;
+        rethrow;
+      }
     }
   }
 
@@ -98,7 +114,12 @@ class AppRepository {
     _current = updated;
     _enqueueWrite(updated);
     if (flush) {
-      await _pendingWrite;
+      try {
+        await _pendingWrite;
+      } catch (_) {
+        _current = current;
+        rethrow;
+      }
     }
   }
 

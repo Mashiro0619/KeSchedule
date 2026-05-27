@@ -43,6 +43,26 @@ void main() {
       expect(unknown.endMinutes, 0);
     });
 
+    test('CourseItem ignores non-finite scalar and list numbers', () {
+      final course = CourseItem.fromJson({
+        'id': 'non-finite',
+        'dayOfWeek': double.infinity,
+        'weekdays': [double.infinity, 2],
+        'semesterWeeks': [1, double.infinity],
+        'periods': [1, double.infinity],
+        'startMinutes': double.infinity,
+        'endMinutes': double.infinity,
+        'credit': double.infinity,
+      });
+
+      expect(course.dayOfWeek, 2);
+      expect(course.semesterWeeks, [1]);
+      expect(course.periods, [1]);
+      expect(course.startMinutes, 8 * 60);
+      expect(course.endMinutes, (8 * 60) + 45);
+      expect(course.credit, 0);
+    });
+
     test('PeriodTimeSet filters invalid period time entries', () {
       final set = PeriodTimeSet.fromJson({
         'id': 'set1',

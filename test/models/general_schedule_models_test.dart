@@ -467,16 +467,19 @@ void main() {
     });
 
     test('fromJson rejects malformed schemaVersion values', () {
-      expect(
-        () => GeneralScheduleData.fromJson({
-          'schemaVersion': 'future',
-          'activeScheduleId': 'sched1',
-          'schedules': [
-            {'id': 'sched1', 'name': 'My Schedule', 'events': <Object>[]},
-          ],
-        }),
-        throwsA(isA<FormatException>()),
-      );
+      for (final value in ['future', 0, -1]) {
+        expect(
+          () => GeneralScheduleData.fromJson({
+            'schemaVersion': value,
+            'activeScheduleId': 'sched1',
+            'schedules': [
+              {'id': 'sched1', 'name': 'My Schedule', 'events': <Object>[]},
+            ],
+          }),
+          throwsA(isA<FormatException>()),
+          reason: '$value',
+        );
+      }
     });
 
     test('missing activeScheduleId defaults to first schedule', () {

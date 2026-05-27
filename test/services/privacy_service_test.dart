@@ -28,5 +28,22 @@ void main() {
         isNull,
       );
     });
+
+    test('ignores malformed or oversized privacy policy versions', () {
+      for (final value in [
+        'future',
+        '2026-02-31',
+        '2026-05-25<script>',
+        List.filled(40, '1').join(),
+      ]) {
+        expect(
+          extractPrivacyPolicyVersion(
+            '<meta name="privacy-policy-version" content="$value">',
+          ),
+          isNull,
+          reason: value,
+        );
+      }
+    });
   });
 }

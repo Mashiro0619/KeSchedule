@@ -6,18 +6,26 @@ import 'package:sked/models/timetable_models.dart';
 import 'package:sked/providers/timetable_provider.dart';
 
 class _MemoryTimetableStorage implements TimetableStorage {
-  _MemoryTimetableStorage(this.data);
+  _MemoryTimetableStorage(
+    this.data, {
+    this.recoveryStatus = RecoveryStatus.none,
+  });
 
   AppData? data;
+  RecoveryStatus recoveryStatus;
+  final List<Object> saveFailures = [];
   int saveCount = 0;
 
   @override
   Future<StorageLoadResult> load() async =>
-      StorageLoadResult(data: data, recoveryStatus: RecoveryStatus.none);
+      StorageLoadResult(data: data, recoveryStatus: recoveryStatus);
 
   @override
   Future<void> save(AppData data) async {
     saveCount += 1;
+    if (saveFailures.isNotEmpty) {
+      throw saveFailures.removeAt(0);
+    }
     this.data = data;
   }
 
@@ -115,7 +123,98 @@ void main() {
     );
   }
 
+  SchoolImportResponse schoolResponse() {
+    return SchoolImportResponse(
+      meta: const SchoolImportMeta(
+        sourceUrl: 'https://school.example.edu',
+        pageTitle: 'Import',
+        parser: 'test',
+        warnings: [],
+      ),
+      timetable: SchoolImportTimetableDraft(
+        name: 'Imported',
+        startDate: DateTime(2026, 2, 23),
+        totalWeeks: 18,
+        periodTimeSet: const ImportedPeriodTimeSetDraft(
+          name: 'Imported periods',
+          periodTimes: [
+            ImportedPeriodTimeDraft(
+              index: 1,
+              startMinutes: 8 * 60,
+              endMinutes: (8 * 60) + 45,
+            ),
+          ],
+        ),
+        courses: const [
+          ImportedCourseDraft(
+            name: 'Imported Course',
+            teacher: '',
+            location: '',
+            dayOfWeek: 1,
+            semesterWeeks: [1],
+            periods: [1],
+            startMinutes: 8 * 60,
+            endMinutes: (8 * 60) + 45,
+            credit: 0,
+            remarks: '',
+            customFields: {},
+          ),
+        ],
+      ),
+    );
+  }
+
   group('TimetableProvider student mode', () {
+    test('does not auto-save defaults after failed backup recovery', () async {
+      final storage = _MemoryTimetableStorage(
+        null,
+        recoveryStatus: RecoveryStatus.failedBackupRestore,
+      );
+      final provider = TimetableProvider(
+        storage: storage,
+        systemLocaleCodeResolver: () => defaultLocaleCode,
+      );
+
+      await provider.load();
+
+      expect(provider.isLoaded, isTrue);
+      expect(
+        provider.lastRecoveryStatus,
+        equals(RecoveryStatus.failedBackupRestore),
+      );
+      expect(storage.saveCount, 0);
+      expect(storage.data, isNull);
+    });
+
+    test('rolls back school import state when save fails', () async {
+      final original = appData();
+      final storage = _MemoryTimetableStorage(original);
+      final provider = TimetableProvider(
+        storage: storage,
+        systemLocaleCodeResolver: () => defaultLocaleCode,
+      );
+      await provider.load();
+      storage.saveCount = 0;
+      storage.saveFailures.add(Exception('disk full'));
+
+      await expectLater(
+        provider.applySchoolImportRequest(
+          SchoolImportApplyRequest(
+            response: schoolResponse(),
+            mode: TimetableImportMode.addAsNew,
+            importBundledPeriodTimeSet: true,
+          ),
+        ),
+        throwsException,
+      );
+
+      expect(provider.timetables, hasLength(1));
+      expect(provider.activeTimetable.id, 'table1');
+      expect(storage.data!.studentMode.timetables, hasLength(1));
+      expect(storage.data!.studentMode.activeTimetableId, 'table1');
+      expect(storage.saveCount, 1);
+    });
+
     test('persists normalized legacy data after loading', () async {
       final storage = _MemoryTimetableStorage(
         appData(

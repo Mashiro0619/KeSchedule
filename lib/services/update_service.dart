@@ -226,7 +226,7 @@ class UpdateService {
     final releaseUrl = _optionalStringField(decoded, 'html_url');
     return _RemoteUpdateInfo(
       version: version,
-      releaseUrl: releaseUrl.isNotEmpty ? releaseUrl : latestReleaseUrl,
+      releaseUrl: _githubReleaseUrlOrFallback(releaseUrl),
       updateContent: _optionalStringField(decoded, 'body'),
     );
   }
@@ -255,4 +255,21 @@ String _readRemoteVersionField(
 String _optionalStringField(Map<String, dynamic> json, String key) {
   final raw = json[key];
   return raw is String ? raw.trim() : '';
+}
+
+String _githubReleaseUrlOrFallback(String value) {
+  final uri = Uri.tryParse(value.trim());
+  if (uri == null ||
+      uri.scheme != 'https' ||
+      uri.host.toLowerCase() != 'github.com') {
+    return UpdateService.latestReleaseUrl;
+  }
+  final segments = uri.pathSegments;
+  if (segments.length < 4 ||
+      segments[0] != 'Mashiro0619' ||
+      segments[1] != 'KeSchedule' ||
+      segments[2] != 'releases') {
+    return UpdateService.latestReleaseUrl;
+  }
+  return uri.toString();
 }

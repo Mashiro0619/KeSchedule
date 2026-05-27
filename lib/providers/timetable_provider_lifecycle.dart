@@ -47,7 +47,10 @@ mixin _TimetableProviderLifecycle on _TimetableProviderBase {
         }
       } else {
         _appData = await _buildDefaultAppData();
-        await _save();
+        if (_repository.lastRecoveryStatus !=
+            RecoveryStatus.failedBackupRestore) {
+          await _save();
+        }
       }
       _storagePath = await _repository.filePath();
     } catch (e, st) {

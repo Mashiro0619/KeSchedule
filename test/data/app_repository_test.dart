@@ -245,6 +245,24 @@ void main() {
       expect(storage.lastSaved!.activeMode, equals(AppMode.student));
     });
 
+    test('save() rolls current back when a flushed write fails', () async {
+      final initial = _emptyApp();
+      final storage = _FakeStorage(
+        initialResult: StorageLoadResult(
+          data: initial,
+          recoveryStatus: RecoveryStatus.none,
+        ),
+      )..saveFailures.add(Exception('disk full'));
+      final repo = AppRepository(storage: storage);
+      await repo.load();
+      final replacement = initial.copyWith(activeMode: AppMode.student);
+
+      await expectLater(repo.save(replacement), throwsException);
+
+      expect(repo.current, same(initial));
+      expect(storage.lastSaved, isNull);
+    });
+
     test('flush reports the current pending write failure', () async {
       final storage = _FakeStorage(
         initialResult: StorageLoadResult(

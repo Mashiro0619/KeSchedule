@@ -59,7 +59,7 @@ int? _readSchemaVersion(Map<String, dynamic> json) {
     return null;
   }
   final version = _schemaVersionValue(json['schemaVersion']);
-  if (version == null) {
+  if (version == null || version <= 0) {
     throw const FormatException('General schedule schemaVersion is invalid.');
   }
   return version;

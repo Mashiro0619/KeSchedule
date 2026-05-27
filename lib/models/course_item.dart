@@ -60,7 +60,11 @@ List<int> _intList(Object? value) {
   if (value is! List) {
     return const [];
   }
-  return value.whereType<num>().map((item) => item.toInt()).toList();
+  return value
+      .whereType<num>()
+      .where((item) => item.isFinite)
+      .map((item) => item.toInt())
+      .toList();
 }
 
 List<dynamic> _listValue(Object? value) {
@@ -72,11 +76,11 @@ String _stringValue(Object? value, [String fallback = '']) {
 }
 
 int? _intValue(Object? value) {
-  return value is num ? value.toInt() : null;
+  return value is num && value.isFinite ? value.toInt() : null;
 }
 
 double? _doubleValue(Object? value) {
-  return value is num ? value.toDouble() : null;
+  return value is num && value.isFinite ? value.toDouble() : null;
 }
 
 (int, int) _normalizeDecodedTimeRange({
@@ -158,7 +162,9 @@ int _decodeLegacyDayOfWeek(Map<String, dynamic> json) {
   }
   final weekdays = _listValue(json['weekdays']);
   if (weekdays.isNotEmpty) {
-    final firstNumber = weekdays.whereType<num>();
+    final firstNumber = weekdays.whereType<num>().where(
+      (item) => item.isFinite,
+    );
     if (firstNumber.isNotEmpty) {
       return firstNumber.first.toInt();
     }

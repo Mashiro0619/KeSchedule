@@ -587,7 +587,7 @@ END:VCALENDAR
     });
 
     test('rejects malformed envelope version values', () {
-      for (final version in ['future', '1.0', 1.5, null]) {
+      for (final version in ['future', '1.0', 1.5, 0, -1, null]) {
         final source = jsonEncode({
           'schema': periodTimesSchema,
           'version': version,

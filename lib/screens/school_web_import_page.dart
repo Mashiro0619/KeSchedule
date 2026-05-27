@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
@@ -10,6 +9,7 @@ import '../models/school_site_models.dart';
 import '../screens/school_html_import_page.dart';
 import '../services/school_site_service.dart';
 import '../services/school_web_import_page_service.dart';
+import '../utils/platform_capabilities.dart';
 
 class SchoolWebImportPage extends StatefulWidget {
   const SchoolWebImportPage({super.key, required this.site});
@@ -43,11 +43,7 @@ class _SchoolWebImportPageState extends State<SchoolWebImportPage> {
   String? _schoolLoadError;
 
   bool get _isConfigured => AppConfig.hasSchoolImportApiBaseUrl;
-  bool get _supportsWebView =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.windows);
+  bool get _supportsWebView => supportsInAppWebView;
 
   @override
   void didChangeDependencies() {

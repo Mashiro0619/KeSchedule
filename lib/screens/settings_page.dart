@@ -759,7 +759,14 @@ class _SettingsPageState extends State<SettingsPage> {
         availableUpdateVersion,
         currentVersion,
       );
-    } on FormatException {
+    } on FormatException catch (error) {
+      assert(() {
+        debugPrint(
+          'Clearing malformed available update version '
+          '"$availableUpdateVersion": $error',
+        );
+        return true;
+      }());
       await provider.updateAvailableUpdateVersion(null);
       return;
     }
@@ -1171,10 +1178,10 @@ class _SettingsPageState extends State<SettingsPage> {
         return;
       case ExportSaveStatus.failed:
         final shouldShare = await _showFailureDialog(
-          title: _exportService.isWindows
+          title: _exportService.usesDesktopFileSaveErrors
               ? l10n.fileSaveFailedTitle
               : l10n.fileSaveRestrictedTitle,
-          message: _exportService.isWindows
+          message: _exportService.usesDesktopFileSaveErrors
               ? l10n.fileSaveFailedWindowsMessage
               : l10n.fileSaveFailedGenericMessage,
         );
@@ -1592,6 +1599,9 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         );
+        if (choice == null) {
+          return false;
+        }
         if (choice == 'replace') {
           mode = GeneralScheduleImportMode.replaceActive;
         }
@@ -1687,6 +1697,9 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         );
+        if (choice == null) {
+          return false;
+        }
         if (choice == 'replace') {
           mode = GeneralScheduleImportMode.replaceActive;
         }

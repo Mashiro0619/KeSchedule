@@ -178,16 +178,26 @@ class TimetableProvider extends _TimetableProviderBase
 
   @override
   Future<void> _saveAndNotify() async {
-    await _save();
+    final previous = _repository.current;
+    try {
+      await _save();
+    } catch (_) {
+      if (previous != null) {
+        _appData = previous;
+        _selectedWeek = _currentWeekForActiveTimetable();
+      }
+      rethrow;
+    }
     notifyListeners();
   }
 
   @override
   Future<void> _save() async {
-    _appData = _importExportService.normalizeAppData(
+    final normalized = _importExportService.normalizeAppData(
       _appData,
       localeCode: _appData.localeCode,
     );
-    await _repository.save(_appData);
+    await _repository.save(normalized);
+    _appData = normalized;
   }
 }

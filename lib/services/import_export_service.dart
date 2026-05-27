@@ -1,6 +1,7 @@
 import '../l10n/app_locale.dart' as app_locale;
 import '../models/school_import_models.dart';
 import '../models/timetable_models.dart';
+import '../utils/import_id_sanitizer.dart';
 import 'general_calendar_ics_service.dart';
 import 'student_timetable_service.dart' as student_timetable;
 
@@ -1537,18 +1538,7 @@ GeneralSchedule _sanitizeImportedGeneralSchedule(
 }
 
 String _sanitizeImportedGeneralId(String rawId) {
-  final source = rawId.trim();
-  if (source.isEmpty) {
-    return '';
-  }
-  final safe = source
-      .replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_')
-      .replaceAll(RegExp(r'_+'), '_')
-      .replaceAll(RegExp(r'^_+|_+$'), '');
-  if (safe.isEmpty) {
-    return '';
-  }
-  return safe.length > 96 ? safe.substring(0, 96) : safe;
+  return sanitizeImportedId(rawId);
 }
 
 bool _reminderKeyBelongsToSchedule(

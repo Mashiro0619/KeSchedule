@@ -107,4 +107,9 @@ class ExportService {
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
   bool get isWindows =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+  bool get usesDesktopFileSaveErrors =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.windows);
 }

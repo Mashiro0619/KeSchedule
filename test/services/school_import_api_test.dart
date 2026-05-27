@@ -29,6 +29,17 @@ class _DelayedResponseClient extends http.BaseClient {
   }
 }
 
+Map<String, dynamic> _minimalCourseJson([String name = 'Imported Course']) {
+  return {
+    'name': name,
+    'dayOfWeek': 1,
+    'semesterWeeks': [1],
+    'periods': [1],
+    'startMinutes': 480,
+    'endMinutes': 525,
+  };
+}
+
 void main() {
   group('SchoolImportApi.buildResponseFromPhpDone', () {
     Map<String, dynamic> timetableJson() {
@@ -188,19 +199,25 @@ void main() {
       );
     });
 
-    test('accepts explicit empty-course timetable payloads', () {
-      final response = SchoolImportApi.buildResponseFromPhpDone({
-        'done': true,
-        'ok': true,
-        'timetable': {
-          'name': 'Empty Course Timetable',
-          'startDate': '2026-02-23',
-          'courses': [],
-        },
-      });
-
-      expect(response.timetable.name, 'Empty Course Timetable');
-      expect(response.timetable.courses, isEmpty);
+    test('rejects explicit empty-course timetable payloads', () {
+      expect(
+        () => SchoolImportApi.buildResponseFromPhpDone({
+          'done': true,
+          'ok': true,
+          'timetable': {
+            'name': 'Empty Course Timetable',
+            'startDate': '2026-02-23',
+            'courses': [],
+          },
+        }),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Import response format is invalid.',
+          ),
+        ),
+      );
     });
   });
 
@@ -274,7 +291,7 @@ void main() {
           'startDate': '2026-02-23',
           'totalWeeks': 18,
           'periodTimeSet': {'name': '', 'periodTimes': []},
-          'courses': [],
+          'courses': [_minimalCourseJson('Segmented Course')],
         },
       };
       final encodedResponse = jsonEncode(responseJson);
@@ -678,7 +695,7 @@ void main() {
           'startDate': '2026-02-23',
           'totalWeeks': 18,
           'periodTimeSet': {'name': '', 'periodTimes': []},
-          'courses': [],
+          'courses': [_minimalCourseJson('Segmented Stream Course')],
         },
       };
       final encodedResponse = jsonEncode(responseJson);
@@ -756,7 +773,7 @@ void main() {
           'startDate': '2026-02-23',
           'totalWeeks': 18,
           'periodTimeSet': {'name': '', 'periodTimes': []},
-          'courses': [],
+          'courses': [_minimalCourseJson('Malformed Meta Course')],
         },
       };
       final sseBody =

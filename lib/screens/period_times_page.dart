@@ -496,10 +496,10 @@ class _PeriodTimesPageState extends State<PeriodTimesPage> {
         return;
       case ExportSaveStatus.failed:
         final shouldShare = await _showFailureDialog(
-          title: _exportService.isWindows
+          title: _exportService.usesDesktopFileSaveErrors
               ? l10n.fileSaveFailedTitle
               : l10n.fileSaveRestrictedTitle,
-          message: _exportService.isWindows
+          message: _exportService.usesDesktopFileSaveErrors
               ? l10n.fileSaveFailedWindowsMessage
               : l10n.fileSaveFailedGenericMessage,
         );

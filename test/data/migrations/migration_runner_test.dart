@@ -101,7 +101,7 @@ void main() {
     test('throws when schemaVersion is present but malformed', () {
       final runner = MigrationRunner(targetVersion: 1, migrations: const []);
 
-      for (final value in ['future', '1.0', 1.5, null]) {
+      for (final value in ['future', '1.0', 1.5, 0, -1, null]) {
         expect(
           () => runner.run({'schemaVersion': value}),
           throwsA(isA<MigrationException>()),

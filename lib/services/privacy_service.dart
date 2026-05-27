@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../utils/time_utils.dart';
+
 class PrivacyService {
   const PrivacyService({http.Client? client}) : _client = client;
 
@@ -36,9 +38,23 @@ String? extractPrivacyPolicyVersion(String html) {
       continue;
     }
     final version = attributes['content']?.trim();
-    return version == null || version.isEmpty ? null : version;
+    final normalized = _normalizePrivacyPolicyVersion(version);
+    if (normalized != null) {
+      return normalized;
+    }
   }
   return null;
+}
+
+String? _normalizePrivacyPolicyVersion(String? value) {
+  final trimmed = value?.trim() ?? '';
+  if (trimmed.isEmpty || trimmed.length > 32) {
+    return null;
+  }
+  if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(trimmed)) {
+    return null;
+  }
+  return tryParseStrictIsoDate(trimmed) == null ? null : trimmed;
 }
 
 Map<String, String> _parseHtmlAttributes(String tag) {

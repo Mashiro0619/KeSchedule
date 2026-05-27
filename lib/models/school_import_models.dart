@@ -38,11 +38,11 @@ String _stringValue(Object? value, [String fallback = '']) {
 }
 
 int? _intValue(Object? value) {
-  return value is num ? value.toInt() : null;
+  return value is num && value.isFinite ? value.toInt() : null;
 }
 
 double? _doubleValue(Object? value) {
-  return value is num ? value.toDouble() : null;
+  return value is num && value.isFinite ? value.toDouble() : null;
 }
 
 bool? _boolValue(Object? value) {
@@ -330,9 +330,16 @@ class SchoolImportResponse {
     if (!_hasTimetablePayload(timetableJson)) {
       throw const FormatException('Import response format is invalid.');
     }
+    if (timetableJson['courses'] is! List) {
+      throw const FormatException('Import response format is invalid.');
+    }
+    final timetable = SchoolImportTimetableDraft.fromJson(timetableJson);
+    if (timetable.courses.isEmpty) {
+      throw const FormatException('Import response format is invalid.');
+    }
     return SchoolImportResponse(
       meta: SchoolImportMeta.fromJson(_asStringKeyedMap(json['meta'])),
-      timetable: SchoolImportTimetableDraft.fromJson(timetableJson),
+      timetable: timetable,
     );
   }
 

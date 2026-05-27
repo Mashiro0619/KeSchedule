@@ -26,6 +26,23 @@ void main() {
       expect(service.isWeb, isFalse);
       expect(service.isAndroid, isFalse);
       expect(service.isWindows, isTrue);
+      expect(service.usesDesktopFileSaveErrors, isTrue);
+    });
+
+    test('uses desktop file-save errors on desktop platforms only', () {
+      const service = ExportService();
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      expect(service.usesDesktopFileSaveErrors, isTrue);
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      expect(service.usesDesktopFileSaveErrors, isTrue);
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      expect(service.usesDesktopFileSaveErrors, isFalse);
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      expect(service.usesDesktopFileSaveErrors, isFalse);
     });
   });
 }

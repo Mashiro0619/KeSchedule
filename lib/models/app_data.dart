@@ -72,7 +72,7 @@ int? _readOptionalIntegerVersion(
     return null;
   }
   final version = _tryDecodeIntegerVersion(json[key]);
-  if (version == null) {
+  if (version == null || version <= 0) {
     throw FormatException(errorMessage);
   }
   return version;
@@ -101,15 +101,35 @@ void _validateStorageObjectListField(
   String key, {
   required String errorMessage,
 }) {
+  _storageObjectListField(json, key, errorMessage: errorMessage);
+}
+
+List<Map<String, dynamic>> _storageObjectListField(
+  Map<String, dynamic> json,
+  String key, {
+  required String errorMessage,
+}) {
   final raw = json[key];
   if (raw == null) {
-    return;
+    return const [];
   }
   if (raw is! List) {
     throw FormatException(errorMessage);
   }
-  if (raw.isNotEmpty &&
-      raw.map(_asStringKeyedMap).whereType<Map<String, dynamic>>().isEmpty) {
+  final items = raw.map(_asStringKeyedMap).toList();
+  if (items.any((item) => item == null)) {
+    throw FormatException(errorMessage);
+  }
+  return items.cast<Map<String, dynamic>>();
+}
+
+void _validateStorageIsoDateTimeField(
+  Map<String, dynamic> json,
+  String key, {
+  required String errorMessage,
+}) {
+  final value = json[key];
+  if (value is! String || tryParseStrictIsoDateTime(value) == null) {
     throw FormatException(errorMessage);
   }
 }
@@ -136,11 +156,30 @@ void _validateStorageGeneralMode(Map<String, dynamic> json) {
   if (generalMode == null) {
     return;
   }
-  _validateStorageObjectListField(
+  final schedules = _storageObjectListField(
     generalMode,
     'schedules',
     errorMessage: 'Stored general schedules are invalid.',
   );
+  for (final schedule in schedules) {
+    final events = _storageObjectListField(
+      schedule,
+      'events',
+      errorMessage: 'Stored general events are invalid.',
+    );
+    for (final event in events) {
+      _validateStorageIsoDateTimeField(
+        event,
+        'start',
+        errorMessage: 'Stored general event dates are invalid.',
+      );
+      _validateStorageIsoDateTimeField(
+        event,
+        'end',
+        errorMessage: 'Stored general event dates are invalid.',
+      );
+    }
+  }
 }
 
 void _validateStorageSnapshotShape(Map<String, dynamic> json) {

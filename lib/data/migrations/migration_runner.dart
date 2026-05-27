@@ -72,13 +72,19 @@ class MigrationRunner {
       return 1;
     }
     final raw = json['schemaVersion'];
-    if (raw is int) return raw;
-    if (raw is num && raw.isFinite && raw % 1 == 0) return raw.toInt();
-    if (raw is String) {
+    int? version;
+    if (raw is int) {
+      version = raw;
+    } else if (raw is num && raw.isFinite && raw % 1 == 0) {
+      version = raw.toInt();
+    } else if (raw is String) {
       final trimmed = raw.trim();
       if (RegExp(r'^\d+$').hasMatch(trimmed)) {
-        return int.parse(trimmed);
+        version = int.parse(trimmed);
       }
+    }
+    if (version != null && version > 0) {
+      return version;
     }
     throw const MigrationException('Data schemaVersion is invalid.');
   }

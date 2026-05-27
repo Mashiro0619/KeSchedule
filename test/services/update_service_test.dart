@@ -190,6 +190,44 @@ void main() {
       expect(result.hasUpdate, isTrue);
     });
 
+    test(
+      'falls back when GitHub release URL is not a project HTTPS URL',
+      () async {
+        for (final url in [
+          'javascript:alert(1)',
+          'http://github.com/Mashiro0619/KeSchedule/releases/tag/v2.0.0',
+          'https://example.test/Mashiro0619/KeSchedule/releases/tag/v2.0.0',
+          'https://github.com/other/project/releases/tag/v2.0.0',
+        ]) {
+          final service = UpdateService(
+            client: MockClient((request) async {
+              if (request.url.toString().contains('/releases/latest')) {
+                return http.Response(
+                  jsonEncode({
+                    'tag_name': 'v2.0.0',
+                    'html_url': url,
+                    'body': 'notes',
+                  }),
+                  200,
+                );
+              }
+              return http.Response('not found', 404);
+            }),
+          );
+
+          final result = await service.checkForUpdates(
+            preferredLocale: const Locale('en'),
+          );
+
+          expect(
+            result.releaseUrl,
+            UpdateService.latestReleaseUrl,
+            reason: url,
+          );
+        }
+      },
+    );
+
     test('rejects malformed configured update version fields', () async {
       final service = UpdateService(
         client: MockClient((request) async {

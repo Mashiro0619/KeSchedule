@@ -5,6 +5,7 @@ import 'package:sked/data/migrations/app_data_migrations.dart';
 import 'package:sked/data/migrations/migration.dart';
 import 'package:sked/models/app_data.dart';
 import 'package:sked/models/app_mode.dart';
+import 'package:sked/utils/constants.dart';
 
 void main() {
   group('AppData schemaVersion', () {
@@ -57,10 +58,23 @@ void main() {
     });
 
     test('fromJson rejects malformed schemaVersion values', () {
-      for (final value in ['future', '1.0', 1.5, null]) {
+      for (final value in ['future', '1.0', 1.5, 0, -1, null]) {
         expect(
           () => AppData.fromJson({'schemaVersion': value}),
           throwsA(isA<MigrationException>()),
+        );
+      }
+    });
+
+    test('import/export envelopes reject non-positive versions', () {
+      for (final value in [0, -1]) {
+        expect(
+          () => ImportExportEnvelope.fromJson({
+            'schema': appDataSchema,
+            'version': value,
+            'data': <String, dynamic>{},
+          }),
+          throwsA(isA<FormatException>()),
         );
       }
     });

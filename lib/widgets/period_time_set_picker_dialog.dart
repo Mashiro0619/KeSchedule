@@ -59,6 +59,9 @@ Future<String?> showPeriodTimeSetPickerDialog(
                       ? null
                       : () => runBusy(() async {
                           final created = await provider.addPeriodTimeSet();
+                          if (!dialogContext.mounted || popped) {
+                            return;
+                          }
                           currentSelectedId = created.id;
                           await openPeriodTimePage(created.id);
                         }),
@@ -102,7 +105,7 @@ Future<String?> showPeriodTimeSetPickerDialog(
                                   currentSelectedId == item.id) {
                                 currentSelectedId =
                                     provider.activePeriodTimeSetOrNull?.id ??
-                                        '';
+                                    '';
                               }
                             }),
                       icon: const Icon(Icons.edit_outlined),

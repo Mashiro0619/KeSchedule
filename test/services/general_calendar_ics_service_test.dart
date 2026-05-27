@@ -347,6 +347,27 @@ END:VCALENDAR
     expect(event.notes, contains('backslash \\continued after folding'));
   });
 
+  test('unfolds tab-prefixed ICS continuations', () {
+    const source = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:tab-fold
+SUMMARY:Tab folded
+DTSTART:20260525T090000
+DTEND:20260525T100000
+DESCRIPTION:First part
+\tcontinued by tab
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final imported = service.importSchedules(source);
+    final event = imported.schedules.single.events.single;
+
+    expect(event.notes, contains('First partcontinued by tab'));
+  });
+
   test('keeps values after colons inside quoted ICS parameters', () {
     const source = '''
 BEGIN:VCALENDAR

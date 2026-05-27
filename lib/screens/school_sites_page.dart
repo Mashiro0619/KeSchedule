@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +9,7 @@ import '../models/school_site_models.dart';
 import '../providers/timetable_provider.dart';
 import '../services/export_service.dart';
 import '../services/school_site_service.dart';
+import '../utils/platform_capabilities.dart';
 import 'school_html_import_page.dart';
 import 'school_web_import_page.dart';
 
@@ -41,13 +41,10 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
   var _jsonImportInProgress = false;
   var _jsonShareInProgress = false;
   var _jsonSaveInProgress = false;
+  var _siteMutationInProgress = false;
   List<SchoolSite> _sites = const [];
 
-  bool get _supportsWebImport =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.windows);
+  bool get _supportsWebImport => supportsInAppWebView;
 
   ExportService get _exportService => widget.exportService;
   SchoolSiteService get _siteService => widget.siteService;
@@ -67,7 +64,9 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
         actions: [
           IconButton(
             tooltip: l10n.schoolSitesAdd,
-            onPressed: _editorDialogOpen ? null : _addSite,
+            onPressed: (_editorDialogOpen || _siteMutationInProgress)
+                ? null
+                : _addSite,
             icon: const Icon(Icons.add),
           ),
           IconButton(
@@ -293,7 +292,7 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
   }
 
   Future<void> _addSite() async {
-    if (_editorDialogOpen || !mounted) {
+    if (_editorDialogOpen || _siteMutationInProgress || !mounted) {
       return;
     }
     _setEditorDialogOpen(true);
@@ -309,7 +308,7 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
   }
 
   Future<void> _editSite(int index) async {
-    if (_editorDialogOpen || !mounted) {
+    if (_editorDialogOpen || _siteMutationInProgress || !mounted) {
       return;
     }
     _setEditorDialogOpen(true);
@@ -327,6 +326,9 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
   }
 
   Future<void> _deleteSite(int index) async {
+    if (_siteMutationInProgress || !mounted) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final site = _sites[index];
     final confirmed = await showDialog<bool>(
@@ -438,7 +440,11 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
   }
 
   Future<void> _persistSites(List<SchoolSite> sites) async {
+    if (_siteMutationInProgress || !mounted) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
+    setState(() => _siteMutationInProgress = true);
     try {
       await _siteService.saveSites(sites);
       if (!mounted) {
@@ -450,6 +456,10 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
       _showMessage(l10n.schoolSitesSaved);
     } catch (_) {
       _showMessage(l10n.saveFailedRetry);
+    } finally {
+      if (mounted) {
+        setState(() => _siteMutationInProgress = false);
+      }
     }
   }
 
@@ -580,10 +590,10 @@ class _SchoolSitesPageState extends State<SchoolSitesPage> {
         return;
       case ExportSaveStatus.failed:
         final shouldShare = await _showFailureDialog(
-          title: _exportService.isWindows
+          title: _exportService.usesDesktopFileSaveErrors
               ? l10n.fileSaveFailedTitle
               : l10n.fileSaveRestrictedTitle,
-          message: _exportService.isWindows
+          message: _exportService.usesDesktopFileSaveErrors
               ? l10n.fileSaveFailedWindowsMessage
               : l10n.fileSaveFailedGenericMessage,
         );
