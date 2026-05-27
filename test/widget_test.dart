@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:sked/config/app_config.dart';
 import 'package:sked/data/timetable_storage.dart';
 import 'package:sked/l10n/app_locale.dart' as app_locale;
 import 'package:sked/l10n/app_localizations.dart';
@@ -32,7 +31,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 /// 测试专用 JSON 存储实现，避免污染真实用户目录。
@@ -98,7 +96,7 @@ class FakeSuccessUpdateService extends UpdateService {
   final UpdateCheckResult result;
 
   @override
-  Future<UpdateCheckResult> checkForUpdates({Locale? preferredLocale}) async {
+  Future<UpdateCheckResult> checkForUpdates() async {
     return result;
   }
 }
@@ -109,7 +107,7 @@ class FakeThrowingUpdateService extends UpdateService {
   final Object error;
 
   @override
-  Future<UpdateCheckResult> checkForUpdates({Locale? preferredLocale}) async {
+  Future<UpdateCheckResult> checkForUpdates() async {
     throw error;
   }
 }
@@ -458,110 +456,6 @@ void main() {
         app_locale.resolveFirstLaunchLocaleCode(const Locale('tlh')),
         'en',
       );
-    });
-
-    test('中文系语言默认使用配置的更新接口', () {
-      expect(
-        prefersConfiguredUpdateSourceForLocale(const Locale('zh')),
-        isTrue,
-      );
-      expect(
-        prefersConfiguredUpdateSourceForLocale(const Locale('zh', 'CN')),
-        isTrue,
-      );
-      expect(
-        prefersConfiguredUpdateSourceForLocale(const Locale('zh', 'TW')),
-        isTrue,
-      );
-      expect(
-        prefersConfiguredUpdateSourceForLocale(
-          const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
-        ),
-        isTrue,
-      );
-    });
-
-    test('非中文系语言默认使用 GitHub 更新源', () {
-      expect(prefersConfiguredUpdateSourceForLocale(null), isFalse);
-      expect(
-        prefersConfiguredUpdateSourceForLocale(const Locale('en')),
-        isFalse,
-      );
-      expect(
-        prefersConfiguredUpdateSourceForLocale(const Locale('ja')),
-        isFalse,
-      );
-      expect(
-        prefersConfiguredUpdateSourceForLocale(const Locale('fr')),
-        isFalse,
-      );
-    });
-
-    test('中文系主源格式错误时会回退到 GitHub', () async {
-      PackageInfo.setMockInitialValues(
-        appName: 'KeSchedule',
-        packageName: 'com.mashiro.KeSchedule',
-        version: '1.0.0',
-        buildNumber: '1',
-        buildSignature: '',
-      );
-      final service = UpdateService(
-        client: MockClient((request) async {
-          if (request.url.toString() == AppConfig.updateVersionUrl) {
-            return http.Response('{"version":""}', 200);
-          }
-          if (request.url.toString().contains('/releases/latest')) {
-            return http.Response(
-              jsonEncode({
-                'tag_name': 'v1.2.0',
-                'html_url':
-                    'https://github.com/Mashiro0619/KeSchedule/releases/tag/v1.2.0',
-                'body': 'notes',
-              }),
-              200,
-            );
-          }
-          return http.Response('not found', 404);
-        }),
-      );
-
-      final result = await service.checkForUpdates(
-        preferredLocale: const Locale('zh'),
-      );
-
-      expect(result.remoteVersion, '1.2.0');
-      expect(result.hasUpdate, isTrue);
-    });
-
-    test('非中文系主源格式错误时会回退到配置接口', () async {
-      PackageInfo.setMockInitialValues(
-        appName: 'KeSchedule',
-        packageName: 'com.mashiro.KeSchedule',
-        version: '1.0.0',
-        buildNumber: '1',
-        buildSignature: '',
-      );
-      final service = UpdateService(
-        client: MockClient((request) async {
-          if (request.url.toString().contains('/releases/latest')) {
-            return http.Response('{"tag_name":""}', 200);
-          }
-          if (request.url.toString() == AppConfig.updateVersionUrl) {
-            return http.Response(
-              jsonEncode({'version': '1.3.0', 'updateContent': 'notes'}),
-              200,
-            );
-          }
-          return http.Response('not found', 404);
-        }),
-      );
-
-      final result = await service.checkForUpdates(
-        preferredLocale: const Locale('en'),
-      );
-
-      expect(result.remoteVersion, '1.3.0');
-      expect(result.hasUpdate, isTrue);
     });
 
     test('导入导出包装结构可以正确编码与解码', () {

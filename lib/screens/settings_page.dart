@@ -85,9 +85,7 @@ class AppUpdateCoordinator {
     final l10n = AppLocalizations.of(context);
     final showIgnoreButton = source == UpdateCheckSource.startup;
     try {
-      final result = await updateService.checkForUpdates(
-        preferredLocale: Localizations.localeOf(context),
-      );
+      final result = await updateService.checkForUpdates();
       if (!context.mounted) {
         return;
       }

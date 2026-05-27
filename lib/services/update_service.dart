@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -35,11 +34,6 @@ class _RemoteUpdateInfo {
   final String version;
   final String releaseUrl;
   final String updateContent;
-}
-
-bool prefersConfiguredUpdateSourceForLocale(Locale? locale) {
-  final languageCode = locale?.languageCode.toLowerCase();
-  return languageCode == 'zh';
 }
 
 String normalizeUpdateVersion(String value) {
@@ -109,11 +103,9 @@ class UpdateService {
   final http.Client? _client;
   final Duration _requestTimeout;
 
-  Future<UpdateCheckResult> checkForUpdates({Locale? preferredLocale}) async {
+  Future<UpdateCheckResult> checkForUpdates() async {
     final localVersion = await _getLocalVersion();
-    final remoteInfo = await _getRemoteUpdateInfo(
-      preferredLocale: preferredLocale,
-    );
+    final remoteInfo = await _getGithubLatestReleaseInfo();
     return UpdateCheckResult(
       localVersion: localVersion,
       remoteVersion: remoteInfo.version,
@@ -129,106 +121,42 @@ class UpdateService {
     return info.version;
   }
 
-  Future<_RemoteUpdateInfo> _getRemoteUpdateInfo({
-    Locale? preferredLocale,
-  }) async {
+  Future<_RemoteUpdateInfo> _getGithubLatestReleaseInfo() async {
     final client = _client ?? http.Client();
     final ownsClient = _client == null;
     try {
-      final locale = preferredLocale ?? _defaultPreferredLocale();
-      final tryCustomFirst = prefersConfiguredUpdateSourceForLocale(locale);
-      final fetchers = <Future<_RemoteUpdateInfo> Function()>[
-        if (tryCustomFirst && AppConfig.hasUpdateVersionUrl)
-          () => _getCustomUpdateInfo(client),
-        if (!tryCustomFirst) () => _getGithubLatestReleaseInfo(client),
-        if (tryCustomFirst) () => _getGithubLatestReleaseInfo(client),
-        if (!tryCustomFirst && AppConfig.hasUpdateVersionUrl)
-          () => _getCustomUpdateInfo(client),
-      ];
-      Object? lastError;
-      StackTrace? lastStackTrace;
-      for (final fetch in fetchers) {
-        try {
-          return await fetch();
-        } catch (error, stackTrace) {
-          lastError = error;
-          lastStackTrace = stackTrace;
-        }
+      final response = await client
+          .get(
+            Uri.parse(_githubLatestApi),
+            headers: const {'Accept': 'application/vnd.github+json'},
+          )
+          .timeout(_requestTimeout);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw const FormatException('Unable to fetch latest release version.');
       }
-      if (lastError != null) {
-        Error.throwWithStackTrace(lastError, lastStackTrace!);
+      final decoded = jsonDecode(
+        utf8.decode(response.bodyBytes, allowMalformed: true),
+      );
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('Invalid latest release response.');
       }
-      throw const FormatException('No update source is available.');
+      final version = _readRemoteVersionField(
+        decoded,
+        'tag_name',
+        invalidMessage: 'Invalid latest release response.',
+        emptyMessage: 'Latest release version is empty.',
+      );
+      final releaseUrl = _optionalStringField(decoded, 'html_url');
+      return _RemoteUpdateInfo(
+        version: version,
+        releaseUrl: _githubReleaseUrlOrFallback(releaseUrl),
+        updateContent: _optionalStringField(decoded, 'body'),
+      );
     } finally {
       if (ownsClient) {
         client.close();
       }
     }
-  }
-
-  Locale? _defaultPreferredLocale() {
-    final locales = PlatformDispatcher.instance.locales;
-    return locales.isEmpty ? null : locales.first;
-  }
-
-  Future<_RemoteUpdateInfo> _getCustomUpdateInfo(http.Client client) async {
-    final response = await client
-        .get(Uri.parse(AppConfig.updateVersionUrl))
-        .timeout(_requestTimeout);
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw http.ClientException(
-        'Unable to fetch custom update info.',
-        Uri.parse(AppConfig.updateVersionUrl),
-      );
-    }
-    final responseText = utf8.decode(response.bodyBytes, allowMalformed: true);
-    final decoded = jsonDecode(responseText);
-    if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Invalid custom update response.');
-    }
-    final version = _readRemoteVersionField(
-      decoded,
-      'version',
-      invalidMessage: 'Invalid custom update response.',
-      emptyMessage: 'Custom update version is empty.',
-    );
-    return _RemoteUpdateInfo(
-      version: version,
-      releaseUrl: latestReleaseUrl,
-      updateContent: _optionalStringField(decoded, 'updateContent'),
-    );
-  }
-
-  Future<_RemoteUpdateInfo> _getGithubLatestReleaseInfo(
-    http.Client client,
-  ) async {
-    final response = await client
-        .get(
-          Uri.parse(_githubLatestApi),
-          headers: const {'Accept': 'application/vnd.github+json'},
-        )
-        .timeout(_requestTimeout);
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw const FormatException('Unable to fetch latest release version.');
-    }
-    final decoded = jsonDecode(
-      utf8.decode(response.bodyBytes, allowMalformed: true),
-    );
-    if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Invalid latest release response.');
-    }
-    final version = _readRemoteVersionField(
-      decoded,
-      'tag_name',
-      invalidMessage: 'Invalid latest release response.',
-      emptyMessage: 'Latest release version is empty.',
-    );
-    final releaseUrl = _optionalStringField(decoded, 'html_url');
-    return _RemoteUpdateInfo(
-      version: version,
-      releaseUrl: _githubReleaseUrlOrFallback(releaseUrl),
-      updateContent: _optionalStringField(decoded, 'body'),
-    );
   }
 }
 

@@ -6,15 +6,8 @@ class AppConfig {
     defaultValue: 'https://mashiro.tech/KeSchedule/api.php',
   );
 
-  static const updateVersionUrl = String.fromEnvironment(
-    'SKED_UPDATE_VERSION_URL',
-    defaultValue: 'https://mashiro.tech/KeSchedule/update.json',
-  );
-
   static const officialWebsiteUrl = 'https://mashiro.tech/KeSchedule';
 
   static bool get hasSchoolImportApiBaseUrl =>
       schoolImportApiBaseUrl.trim().isNotEmpty;
-
-  static bool get hasUpdateVersionUrl => updateVersionUrl.trim().isNotEmpty;
 }
