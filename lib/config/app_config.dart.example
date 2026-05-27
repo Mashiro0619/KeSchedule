@@ -3,16 +3,15 @@ class AppConfig {
 
   static const schoolImportApiBaseUrl = String.fromEnvironment(
     'SCHOOL_IMPORT_API_BASE_URL',
-    defaultValue: '',
-    // 你的处理网页课表的ai接口
+    defaultValue: 'https://mashiro.tech/KeSchedule/api.php',
   );
 
   static const updateVersionUrl = String.fromEnvironment(
     'SKED_UPDATE_VERSION_URL',
-    defaultValue: '', //更新文档接口，参数version（v1.6.1）、updateContent
+    defaultValue: 'https://mashiro.tech/KeSchedule/update.json',
   );
 
-  static const officialWebsiteUrl = '; //官网页
+  static const officialWebsiteUrl = 'https://mashiro.tech/KeSchedule';
 
   static bool get hasSchoolImportApiBaseUrl =>
       schoolImportApiBaseUrl.trim().isNotEmpty;

@@ -18,6 +18,9 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Prepare app config
+        run: cp lib/config/app_config.dart.example lib/config/app_config.dart
+
       - name: Install dependencies
         run: flutter pub get
 
