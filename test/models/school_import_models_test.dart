@@ -88,6 +88,17 @@ void main() {
         'bad',
         const [],
         const ['bad'],
+        const [
+          {'foo': 'bar'},
+        ],
+        const [
+          {'name': 'No scheduled position'},
+        ],
+        const [
+          {
+            'periods': [1],
+          },
+        ],
       ]) {
         final timetable = <String, Object?>{'name': 'Imported'};
         if (courses != null) {

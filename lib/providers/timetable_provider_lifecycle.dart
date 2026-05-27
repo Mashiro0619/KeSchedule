@@ -43,7 +43,13 @@ mixin _TimetableProviderLifecycle on _TimetableProviderBase {
         );
         _appData = normalized;
         if (normalized.encode() != fileData.encode()) {
-          await _repository.save(normalized);
+          try {
+            await _repository.save(normalized);
+          } catch (e, st) {
+            debugPrint(
+              'Storage normalization save failed, keeping loaded data: $e\n$st',
+            );
+          }
         }
       } else {
         _appData = await _buildDefaultAppData();

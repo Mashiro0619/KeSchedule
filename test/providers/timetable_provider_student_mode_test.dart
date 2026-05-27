@@ -264,6 +264,40 @@ void main() {
       );
     });
 
+    test('keeps normalized loaded data when write-back fails', () async {
+      final original = appData(
+        activeTimetableId: 'dup',
+        timetables: [
+          timetable(
+            id: 'dup',
+            name: 'First',
+            periodTimeSetId: 'set1',
+            courses: [course(id: 'course')],
+          ),
+          timetable(
+            id: 'dup',
+            name: 'Second',
+            periodTimeSetId: 'set1',
+            courses: [course(id: 'course')],
+          ),
+        ],
+      );
+      final storage = _MemoryTimetableStorage(original)
+        ..saveFailures.add(Exception('disk full'));
+      final provider = TimetableProvider(
+        storage: storage,
+        systemLocaleCodeResolver: () => defaultLocaleCode,
+      );
+
+      await provider.load();
+
+      expect(provider.isLoaded, isTrue);
+      expect(provider.timetables, hasLength(2));
+      expect(provider.timetables.map((item) => item.id).toSet(), hasLength(2));
+      expect(storage.saveCount, 1);
+      expect(storage.data, same(original));
+    });
+
     test('saves and deletes courses through the facade', () async {
       final provider = providerWith(
         appData(

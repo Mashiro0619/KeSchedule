@@ -22,8 +22,10 @@ class AppRepository {
   final TimetableStorage _storage;
 
   AppData? _current;
+  AppData? _lastPersisted;
   RecoveryStatus _lastRecoveryStatus = RecoveryStatus.none;
   Future<void> _pendingWrite = Future.value();
+  var _currentRevision = 0;
 
   /// 上一次 [load] 的恢复状态。UI 必须消费这个值以决定是否给用户提示
   /// （比如 banner 或设置页通知）。
@@ -39,22 +41,18 @@ class AppRepository {
     final result = await _storage.load();
     _lastRecoveryStatus = result.recoveryStatus;
     _current = result.data;
+    _lastPersisted = result.data;
+    _currentRevision += 1;
     return _current;
   }
 
   /// 整份替换当前 AppData，并立即落盘（默认 flush=true，因为整份替换基本
   /// 都发生在导入、初始化等不能丢的场景）。
   Future<void> save(AppData data, {bool flush = true}) async {
-    final previous = _current;
-    _current = data;
-    _enqueueWrite(data);
+    final revision = _replaceCurrent(data);
+    final pendingWrite = _enqueueWrite(data);
     if (flush) {
-      try {
-        await _pendingWrite;
-      } catch (_) {
-        _current = previous;
-        rethrow;
-      }
+      await _awaitOrRollback(pendingWrite, revision);
     }
   }
 
@@ -69,15 +67,10 @@ class AppRepository {
     final current = _requireCurrent();
     final updatedSubtree = patch(current.generalMode);
     final updated = current.copyWith(generalMode: updatedSubtree);
-    _current = updated;
-    _enqueueWrite(updated);
+    final revision = _replaceCurrent(updated);
+    final pendingWrite = _enqueueWrite(updated);
     if (flush) {
-      try {
-        await _pendingWrite;
-      } catch (_) {
-        _current = current;
-        rethrow;
-      }
+      await _awaitOrRollback(pendingWrite, revision);
     }
   }
 
@@ -89,15 +82,10 @@ class AppRepository {
     final current = _requireCurrent();
     final updatedSubtree = patch(current.studentMode);
     final updated = current.copyWith(studentMode: updatedSubtree);
-    _current = updated;
-    _enqueueWrite(updated);
+    final revision = _replaceCurrent(updated);
+    final pendingWrite = _enqueueWrite(updated);
     if (flush) {
-      try {
-        await _pendingWrite;
-      } catch (_) {
-        _current = current;
-        rethrow;
-      }
+      await _awaitOrRollback(pendingWrite, revision);
     }
   }
 
@@ -111,15 +99,10 @@ class AppRepository {
   }) async {
     final current = _requireCurrent();
     final updated = patch(current);
-    _current = updated;
-    _enqueueWrite(updated);
+    final revision = _replaceCurrent(updated);
+    final pendingWrite = _enqueueWrite(updated);
     if (flush) {
-      try {
-        await _pendingWrite;
-      } catch (_) {
-        _current = current;
-        rethrow;
-      }
+      await _awaitOrRollback(pendingWrite, revision);
     }
   }
 
@@ -141,9 +124,30 @@ class AppRepository {
     return current;
   }
 
-  void _enqueueWrite(AppData data) {
-    _pendingWrite = _pendingWrite
-        .catchError((_) {})
-        .then((_) => _storage.save(data));
+  int _replaceCurrent(AppData data) {
+    _current = data;
+    _currentRevision += 1;
+    return _currentRevision;
+  }
+
+  Future<void> _awaitOrRollback(Future<void> pendingWrite, int revision) async {
+    try {
+      await pendingWrite;
+    } catch (_) {
+      if (_currentRevision == revision) {
+        _current = _lastPersisted;
+        _currentRevision += 1;
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _enqueueWrite(AppData data) {
+    final write = _pendingWrite.catchError((_) {}).then((_) async {
+      await _storage.save(data);
+      _lastPersisted = data;
+    });
+    _pendingWrite = write;
+    return write;
   }
 }

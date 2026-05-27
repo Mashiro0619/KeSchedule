@@ -257,6 +257,13 @@ class ImportedCourseDraft {
       customFields: _asStringKeyedMap(json['customFields']),
     );
   }
+
+  bool get isImportable {
+    final hasName = name.trim().isNotEmpty;
+    final hasSchedulePosition =
+        periods.isNotEmpty || (startMinutes >= 0 && endMinutes > startMinutes);
+    return hasName && hasSchedulePosition;
+  }
 }
 
 class SchoolImportTimetableDraft {
@@ -287,6 +294,7 @@ class SchoolImportTimetableDraft {
           .map(_asStringKeyedMap)
           .where((item) => item.isNotEmpty)
           .map(ImportedCourseDraft.fromJson)
+          .where((item) => item.isImportable)
           .toList(),
     );
   }

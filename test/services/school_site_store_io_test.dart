@@ -23,6 +23,8 @@ void main() {
     File mainFile() => File(path.join(tempDir.path, 'Sked_school_sites.json'));
     File backupFile() =>
         File(path.join(tempDir.path, 'Sked_school_sites.json.bak'));
+    File tempFile() =>
+        File(path.join(tempDir.path, 'Sked_school_sites.json.tmp'));
 
     test('saves with a backup of the previous content', () async {
       await store.save('[{"name":"A","loginUrl":"https://a.test"}]');
@@ -43,6 +45,22 @@ void main() {
 
       expect(loaded, first);
       expect(await mainFile().readAsString(), first);
+    });
+
+    test('failed save before main replace keeps previous main file', () async {
+      const first = '[{"name":"A","loginUrl":"https://a.test"}]';
+      const second = '[{"name":"B","loginUrl":"https://b.test"}]';
+      await store.save(first);
+      final failingStore = PlatformSchoolSiteStore(
+        directoryProvider: () async => tempDir,
+        beforeMainReplace: () async => throw Exception('crash before replace'),
+      );
+
+      await expectLater(failingStore.save(second), throwsException);
+
+      expect(await mainFile().readAsString(), first);
+      expect(await backupFile().readAsString(), first);
+      expect(await tempFile().readAsString(), second);
     });
 
     test('exposes backup as a candidate when main file is corrupt', () async {

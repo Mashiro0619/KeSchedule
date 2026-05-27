@@ -8,7 +8,9 @@ import 'school_site_store.dart';
 class PlatformSchoolSiteStore extends SchoolSiteStore {
   const PlatformSchoolSiteStore({
     Future<Directory> Function()? directoryProvider,
+    Future<void> Function()? beforeMainReplace,
   }) : _directoryProvider = directoryProvider,
+       _beforeMainReplace = beforeMainReplace,
        super.base();
 
   static const _fileName = 'Sked_school_sites.json';
@@ -16,6 +18,7 @@ class PlatformSchoolSiteStore extends SchoolSiteStore {
   static const _tempSuffix = '.tmp';
 
   final Future<Directory> Function()? _directoryProvider;
+  final Future<void> Function()? _beforeMainReplace;
 
   @override
   Future<String?> load() async {
@@ -74,9 +77,19 @@ class PlatformSchoolSiteStore extends SchoolSiteStore {
       if (await backup.exists()) {
         await backup.delete();
       }
-      await file.rename(backup.path);
+      await file.copy(backup.path);
+      await _flushParentDirectory(file);
     }
-    await tmp.rename(file.path);
+    await _beforeMainReplace?.call();
+    await tmp.copy(file.path);
+    try {
+      if (await tmp.exists()) {
+        await tmp.delete();
+      }
+    } catch (_) {
+      // A stale temp file is harmless; the next save truncates it.
+    }
+    await _flushParentDirectory(file);
   }
 
   @override
@@ -117,5 +130,21 @@ class PlatformSchoolSiteStore extends SchoolSiteStore {
       await main.delete();
     }
     await tmp.rename(main.path);
+    await _flushParentDirectory(main);
+  }
+
+  Future<void> _flushParentDirectory(File file) async {
+    if (!Platform.isLinux && !Platform.isMacOS) {
+      return;
+    }
+    RandomAccessFile? raf;
+    try {
+      raf = await File(path.dirname(file.path)).open(mode: FileMode.read);
+      await raf.flush();
+    } catch (_) {
+      // Directory fsync is best-effort; some platforms/filesystems reject it.
+    } finally {
+      await raf?.close();
+    }
   }
 }

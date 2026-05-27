@@ -13,6 +13,7 @@ class _FakeStorage implements TimetableStorage {
   AppData? lastSaved;
   final List<AppData> writeLog = [];
   final List<Object> saveFailures = [];
+  final List<Completer<void>> saveGates = [];
   Completer<void>? gate;
   int saveCount = 0;
 
@@ -22,8 +23,9 @@ class _FakeStorage implements TimetableStorage {
   @override
   Future<void> save(AppData data) async {
     saveCount += 1;
-    if (gate != null) {
-      await gate!.future;
+    final saveGate = saveGates.isNotEmpty ? saveGates.removeAt(0) : gate;
+    if (saveGate != null) {
+      await saveGate.future;
     }
     if (saveFailures.isNotEmpty) {
       throw saveFailures.removeAt(0);
@@ -299,6 +301,38 @@ void main() {
       expect(storage.saveCount, equals(2));
       expect(storage.writeLog.length, equals(1));
       expect(storage.lastSaved!.generalMode.dayStartHour, equals(8));
+    });
+
+    test('older flushed write failure does not roll back newer save', () async {
+      final initial = _emptyApp();
+      final firstGate = Completer<void>();
+      final storage =
+          _FakeStorage(
+              initialResult: StorageLoadResult(
+                data: initial,
+                recoveryStatus: RecoveryStatus.none,
+              ),
+            )
+            ..saveGates.add(firstGate)
+            ..saveFailures.add(Exception('first write failed'));
+      final repo = AppRepository(storage: storage);
+      await repo.load();
+      final first = initial.copyWith(activeMode: AppMode.student);
+      final second = initial.copyWith(themeMode: 'dark');
+
+      final firstSave = repo.save(first);
+      while (storage.saveCount < 1) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      final secondSave = repo.save(second);
+
+      firstGate.complete();
+      await expectLater(firstSave, throwsException);
+      await secondSave;
+
+      expect(repo.current, same(second));
+      expect(storage.lastSaved, same(second));
+      expect(storage.writeLog, [same(second)]);
     });
   });
 }

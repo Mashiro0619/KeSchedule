@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +14,7 @@ class _MemoryTimetableStorage implements TimetableStorage {
   _MemoryTimetableStorage(this.data);
 
   AppData? data;
+  Completer<void>? saveGate;
 
   @override
   Future<StorageLoadResult> load() async =>
@@ -19,6 +22,9 @@ class _MemoryTimetableStorage implements TimetableStorage {
 
   @override
   Future<void> save(AppData data) async {
+    if (saveGate != null) {
+      await saveGate!.future;
+    }
     this.data = data;
   }
 
@@ -26,11 +32,13 @@ class _MemoryTimetableStorage implements TimetableStorage {
   Future<String?> filePath() async => 'memory://period-picker-test';
 }
 
-Future<TimetableProvider> _createProvider() async {
+Future<TimetableProvider> _createProvider({
+  _MemoryTimetableStorage? storage,
+}) async {
   final provider = TimetableProvider(
-    storage: _MemoryTimetableStorage(
-      buildInitialAppData(buildDefaultPeriodTimes()),
-    ),
+    storage:
+        storage ??
+        _MemoryTimetableStorage(buildInitialAppData(buildDefaultPeriodTimes())),
     systemLocaleCodeResolver: () => defaultLocaleCode,
   );
   await provider.load();
@@ -84,11 +92,17 @@ void main() {
 
     expect(results, [isNull]);
     expect(find.byType(AlertDialog), findsNothing);
-    expect(find.text('Open'), findsOneWidget,
-        reason: 'Underlying screen must still be present after double-tap on cancel.');
+    expect(
+      find.text('Open'),
+      findsOneWidget,
+      reason:
+          'Underlying screen must still be present after double-tap on cancel.',
+    );
   });
 
-  testWidgets('item.onTap cannot pop twice when tapped rapidly', (tester) async {
+  testWidgets('item.onTap cannot pop twice when tapped rapidly', (
+    tester,
+  ) async {
     final provider = await _createProvider();
     final initialId = provider.periodTimeSets.first.id;
     final results = <String?>[];
@@ -129,5 +143,59 @@ void main() {
     expect(results, [initialId]);
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.text('Open'), findsOneWidget);
+  });
+
+  testWidgets('barrier does not dismiss while creating period set', (
+    tester,
+  ) async {
+    final saveGate = Completer<void>();
+    final storage = _MemoryTimetableStorage(
+      buildInitialAppData(buildDefaultPeriodTimes()),
+    )..saveGate = saveGate;
+    final provider = await _createProvider(storage: storage);
+    final results = <String?>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChangeNotifierProvider<TimetableProvider>.value(
+          value: provider,
+          child: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  final result = await showPeriodTimeSetPickerDialog(
+                    context,
+                    provider: provider,
+                    selectedPeriodTimeSetId: '',
+                  );
+                  results.add(result);
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    final newText = AppLocalizations.of(
+      tester.element(find.byType(AlertDialog)),
+    ).newItem;
+    await tester.tap(find.widgetWithText(TextButton, newText));
+    await tester.pump();
+
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pump();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(results, isEmpty);
+
+    saveGate.complete();
+    await tester.pumpAndSettle();
   });
 }
