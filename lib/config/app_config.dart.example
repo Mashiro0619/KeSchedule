@@ -6,8 +6,6 @@ class AppConfig {
     defaultValue: 'https://mashiro.tech/KeSchedule/api.php',
   );
 
-  static const officialWebsiteUrl = 'https://mashiro.tech/KeSchedule';
-
   static bool get hasSchoolImportApiBaseUrl =>
       schoolImportApiBaseUrl.trim().isNotEmpty;
 }

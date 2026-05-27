@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "ตรวจสอบการอัพเดท",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / เว็บไซต์อย่างเป็นทางการ / Google Play / Cloud drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "อยู่ในรุ่นล่าสุดแล้ว ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "การตรวจสอบการอัพเดทล้มเหลว",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "ไม่สามารถรับข้อมูลอัพเดทที่ถูกต้องจากแหล่งอัพเดทใด ๆ ได้ คุณยังสามารถใช้ลิงค์ด้านล่างเพื่ออัพเดทด้วยมือ",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "เก็บข้อมูล GitHub",
   "@githubRepository": {},

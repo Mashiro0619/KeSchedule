@@ -361,7 +361,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get checkForUpdates => '检测更新';
 
   @override
-  String get checkForUpdatesDesc => 'GitHub / 官网 / Google Play / 网盘';
+  String get checkForUpdatesDesc => 'GitHub';
 
   @override
   String alreadyLatestVersion(Object version) {
@@ -399,7 +399,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get updateCheckFailedTitle => '检测更新失败';
 
   @override
-  String get updateCheckFailedMessage => '无法从更新源获取有效版本信息。你仍可通过下方渠道手动获取更新。';
+  String get updateCheckFailedMessage =>
+      '无法从 GitHub 获取最新版本。你仍可打开下方 GitHub Releases 页面。';
 
   @override
   String get githubRepository => 'GitHub 仓库';
@@ -1959,7 +1960,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get checkForUpdates => '檢查更新';
 
   @override
-  String get checkForUpdatesDesc => 'GitHub / 官網 / Google Play / 雲端硬碟';
+  String get checkForUpdatesDesc => 'GitHub';
 
   @override
   String alreadyLatestVersion(Object version) {
@@ -1997,7 +1998,8 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get updateCheckFailedTitle => '檢查更新失敗';
 
   @override
-  String get updateCheckFailedMessage => '無法從更新來源取得有效版本資訊。你仍可透過下方管道手動取得更新。';
+  String get updateCheckFailedMessage =>
+      '無法從 GitHub 取得最新版本。你仍可開啟下方 GitHub Releases 頁面。';
 
   @override
   String get githubRepository => 'GitHub 倉庫';

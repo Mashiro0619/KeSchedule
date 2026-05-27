@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Tarkista päivitykset",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Virallinen verkkosivusto / Google Play / Cloud drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Jo uusimmassa versiossa ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Päivitystarkastus epäonnistui",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Ei voida saada voimassa olevia päivitystietoja mistään päivityslähteestä. Voit edelleen päivittää manuaalisesti alla olevien linkkien avulla.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "GitHub-varasto",
   "@githubRepository": {},

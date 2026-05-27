@@ -380,8 +380,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get checkForUpdates => 'Ellenőrizze a frissítéseket';
 
   @override
-  String get checkForUpdatesDesc =>
-      'GitHub / Hivatalos honlap / Google Play / Felhőmeghajtó';
+  String get checkForUpdatesDesc => 'GitHub';
 
   @override
   String alreadyLatestVersion(Object version) {
@@ -420,7 +419,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get updateCheckFailedMessage =>
-      'Nem sikerült érvényes frissítési információkat kapni bármelyik frissítési forrásból. A kézi frissítéshez az alábbi linkeket is használhatja.';
+      'Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.';
 
   @override
   String get githubRepository => 'GitHub tároló';

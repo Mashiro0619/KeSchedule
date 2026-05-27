@@ -376,8 +376,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkForUpdates => 'Verificați pentru actualizări';
 
   @override
-  String get checkForUpdatesDesc =>
-      'GitHub / Site-ul oficial / Google Play / Cloud drive';
+  String get checkForUpdatesDesc => 'GitHub';
 
   @override
   String alreadyLatestVersion(Object version) {
@@ -416,7 +415,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get updateCheckFailedMessage =>
-      'Imposibil de obţinut informaţii de actualizare valide din orice sursă de actualizare. Puteți folosi link-urile de mai jos pentru a actualiza manual.';
+      'Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.';
 
   @override
   String get githubRepository => 'Repozitoriul GitHub';

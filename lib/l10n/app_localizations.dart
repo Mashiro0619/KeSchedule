@@ -828,7 +828,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkForUpdatesDesc.
   ///
   /// In en, this message translates to:
-  /// **'GitHub / Official website / Google Play / Cloud drive'**
+  /// **'GitHub'**
   String get checkForUpdatesDesc;
 
   /// No description provided for @alreadyLatestVersion.
@@ -900,7 +900,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateCheckFailedMessage.
   ///
   /// In en, this message translates to:
-  /// **'Unable to get valid update information from any update source. You can still use the links below to update manually.'**
+  /// **'Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.'**
   String get updateCheckFailedMessage;
 
   /// No description provided for @githubRepository.

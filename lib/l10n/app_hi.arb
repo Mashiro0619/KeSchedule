@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "अपडेट जाँचें",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / आधिकारिक वेबसाइट / Google Play / क्लाउड ड्राइव",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "आप पहले से नवीनतम संस्करण ({version}) पर हैं",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "अपडेट जाँच विफल",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "किसी भी अपडेट स्रोत से मान्य अपडेट जानकारी नहीं मिल सकी। आप नीचे दिए गए लिंक से अभी भी मैन्युअल रूप से अपडेट कर सकते हैं।",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "GitHub रिपॉज़िटरी",
   "@githubRepository": {},

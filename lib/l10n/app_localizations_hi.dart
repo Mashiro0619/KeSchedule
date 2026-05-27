@@ -376,8 +376,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get checkForUpdates => 'अपडेट जाँचें';
 
   @override
-  String get checkForUpdatesDesc =>
-      'GitHub / आधिकारिक वेबसाइट / Google Play / क्लाउड ड्राइव';
+  String get checkForUpdatesDesc => 'GitHub';
 
   @override
   String alreadyLatestVersion(Object version) {
@@ -416,7 +415,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get updateCheckFailedMessage =>
-      'किसी भी अपडेट स्रोत से मान्य अपडेट जानकारी नहीं मिल सकी। आप नीचे दिए गए लिंक से अभी भी मैन्युअल रूप से अपडेट कर सकते हैं।';
+      'Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.';
 
   @override
   String get githubRepository => 'GitHub रिपॉज़िटरी';

@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Controlla aggiornamenti",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Sito ufficiale / Google Play / Cloud drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Hai già l'ultima versione ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Controllo aggiornamenti non riuscito",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Impossibile ottenere informazioni di aggiornamento valide da qualsiasi fonte. Puoi comunque usare i link qui sotto per aggiornare manualmente.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "Repository GitHub",
   "@githubRepository": {},

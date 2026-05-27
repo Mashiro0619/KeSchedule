@@ -4,14 +4,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../config/app_config.dart';
-
 class UpdateCheckResult {
   const UpdateCheckResult({
     required this.localVersion,
     required this.remoteVersion,
     required this.releaseUrl,
-    required this.officialWebsiteUrl,
     required this.updateContent,
     required this.hasUpdate,
   });
@@ -19,7 +16,6 @@ class UpdateCheckResult {
   final String localVersion;
   final String remoteVersion;
   final String releaseUrl;
-  final String officialWebsiteUrl;
   final String updateContent;
   final bool hasUpdate;
 }
@@ -110,7 +106,6 @@ class UpdateService {
       localVersion: localVersion,
       remoteVersion: remoteInfo.version,
       releaseUrl: remoteInfo.releaseUrl,
-      officialWebsiteUrl: AppConfig.officialWebsiteUrl,
       updateContent: remoteInfo.updateContent,
       hasUpdate: compareUpdateVersions(remoteInfo.version, localVersion) > 0,
     );

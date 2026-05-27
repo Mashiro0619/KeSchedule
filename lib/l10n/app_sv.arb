@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Kontrollera uppdateringar",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Officiell hemsida / Google Play / Cloud drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Redan på den senaste versionen ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Uppdateringskontroll misslyckades",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Kan inte få giltig uppdateringsinformation från någon uppdateringskälla. Du kan fortfarande använda länkarna nedan för att uppdatera manuellt.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "GitHub-arkiv",
   "@githubRepository": {},

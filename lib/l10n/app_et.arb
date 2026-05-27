@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Uuenduste kontrollimine",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Ametlik veebileht / Google Play / Cloud drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Juba viimase versiooniga ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Uuenduse kontroll nurjus",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Ei saa saada kehtivat värskenduste teavet mis tahes värskendusallikast. Siiski saate kasutada allpool olevaid linke käsitsi värskendamiseks.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "GitHubi hoidlus",
   "@githubRepository": {},

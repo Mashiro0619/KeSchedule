@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "檢查更新",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / 官網 / Google Play / 雲端硬碟",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "目前已是最新版本（{version}）",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "檢查更新失敗",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "無法從更新來源取得有效版本資訊。你仍可透過下方管道手動取得更新。",
+  "updateCheckFailedMessage": "無法從 GitHub 取得最新版本。你仍可開啟下方 GitHub Releases 頁面。",
   "@updateCheckFailedMessage": {},
   "githubRepository": "GitHub 倉庫",
   "@githubRepository": {},

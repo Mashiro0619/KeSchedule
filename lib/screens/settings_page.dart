@@ -67,14 +67,10 @@ enum _SettingsFlow {
 
 enum UpdateCheckSource { manual, startup }
 
-enum _UpdateAction { github, website, googlePlay, quark, ignore, cancel }
+enum _UpdateAction { github, ignore, cancel }
 
 class AppUpdateCoordinator {
   static const _updateService = UpdateService();
-  static const _googlePlayDeepLink = 'market://details?id=com.mashiro.sked';
-  static const _googlePlayUrl =
-      'https://play.google.com/store/apps/details?id=com.mashiro.sked';
-  static const _quarkPanUrl = 'https://pan.quark.cn/s/420966ed21ec';
 
   static Future<void> checkForUpdates(
     BuildContext context, {
@@ -123,7 +119,6 @@ class AppUpdateCoordinator {
         showIgnoreButton: showIgnoreButton,
         remoteVersion: result.remoteVersion,
         releaseUrl: result.releaseUrl,
-        websiteUrl: result.officialWebsiteUrl,
       );
     } catch (_) {
       if (!context.mounted) {
@@ -142,7 +137,6 @@ class AppUpdateCoordinator {
         action: action,
         showIgnoreButton: showIgnoreButton,
         releaseUrl: UpdateService.latestReleaseUrl,
-        websiteUrl: null,
       );
     }
   }
@@ -252,18 +246,6 @@ class AppUpdateCoordinator {
           onPressed: () => pop(_UpdateAction.ignore),
           child: Text(l10n.ignoreThisVersion),
         ),
-      TextButton(
-        onPressed: () => pop(_UpdateAction.website),
-        child: Text(l10n.officialWebsite),
-      ),
-      TextButton(
-        onPressed: () => pop(_UpdateAction.googlePlay),
-        child: Text(l10n.googlePlay),
-      ),
-      TextButton(
-        onPressed: () => pop(_UpdateAction.quark),
-        child: Text(l10n.cloudDrive),
-      ),
       FilledButton(
         onPressed: () => pop(_UpdateAction.github),
         child: Text(l10n.githubRepository),
@@ -278,7 +260,6 @@ class AppUpdateCoordinator {
     required bool showIgnoreButton,
     String? remoteVersion,
     String? releaseUrl,
-    String? websiteUrl,
   }) async {
     switch (action) {
       case _UpdateAction.github:
@@ -286,18 +267,6 @@ class AppUpdateCoordinator {
           context,
           releaseUrl ?? UpdateService.latestReleaseUrl,
         );
-        return;
-      case _UpdateAction.website:
-        await _openExternalPage(
-          context,
-          websiteUrl ?? 'https://mashiro.tech/KeSchedule',
-        );
-        return;
-      case _UpdateAction.googlePlay:
-        await _openGooglePlayPage(context);
-        return;
-      case _UpdateAction.quark:
-        await _openExternalPage(context, _quarkPanUrl);
         return;
       case _UpdateAction.ignore:
         if (showIgnoreButton &&
@@ -310,18 +279,6 @@ class AppUpdateCoordinator {
       case null:
         return;
     }
-  }
-
-  static Future<void> _openGooglePlayPage(BuildContext context) async {
-    final deepLinkUri = Uri.parse(_googlePlayDeepLink);
-    final openedDeepLink = await launchUrl(
-      deepLinkUri,
-      mode: LaunchMode.externalApplication,
-    );
-    if (openedDeepLink || !context.mounted) {
-      return;
-    }
-    await _openExternalPage(context, _googlePlayUrl);
   }
 
   static Future<void> _openExternalPage(

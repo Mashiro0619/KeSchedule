@@ -3087,7 +3087,7 @@ void main() {
       expect(find.textContaining(course.timeRange), findsOneWidget);
     });
 
-    testWidgets('手动检测更新时的更新弹窗包含官网 Google Play GitHub 和网盘按钮', (tester) async {
+    testWidgets('手动检测更新时的更新弹窗只包含 GitHub 更新入口', (tester) async {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(initialData: _buildTestAppData()),
       );
@@ -3104,7 +3104,6 @@ void main() {
             remoteVersion: '1.1.0',
             releaseUrl:
                 'https://github.com/Mashiro0619/KeSchedule/releases/latest',
-            officialWebsiteUrl: 'https://mashiro.tech/KeSchedule',
             updateContent: '更新说明',
             hasUpdate: true,
           ),
@@ -3113,10 +3112,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.text('官网'), findsOneWidget);
-      expect(find.text('Google Play'), findsOneWidget);
       expect(find.text('GitHub 仓库'), findsOneWidget);
-      expect(find.text('网盘'), findsOneWidget);
+      expect(find.text('官网'), findsNothing);
+      expect(find.text('Google Play'), findsNothing);
+      expect(find.text('网盘'), findsNothing);
       expect(find.text('忽略此版本'), findsNothing);
 
       await tester.tap(find.text('取消'));
@@ -3124,7 +3123,7 @@ void main() {
       await future;
     });
 
-    testWidgets('检测更新失败时会显示错误弹窗并提供官网 Google Play GitHub 和网盘按钮', (tester) async {
+    testWidgets('检测更新失败时会显示错误弹窗并提供 GitHub 更新入口', (tester) async {
       final provider = TimetableProvider(
         storage: MemoryTimetableStorage(initialData: _buildTestAppData()),
       );
@@ -3141,10 +3140,10 @@ void main() {
 
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text('检测更新失败'), findsOneWidget);
-      expect(find.text('官网'), findsOneWidget);
-      expect(find.text('Google Play'), findsOneWidget);
       expect(find.text('GitHub 仓库'), findsOneWidget);
-      expect(find.text('网盘'), findsOneWidget);
+      expect(find.text('官网'), findsNothing);
+      expect(find.text('Google Play'), findsNothing);
+      expect(find.text('网盘'), findsNothing);
       expect(find.text('忽略此版本'), findsNothing);
 
       await tester.tap(find.text('取消'));
@@ -3170,10 +3169,10 @@ void main() {
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text('检测更新失败'), findsOneWidget);
       expect(find.text('忽略此版本'), findsOneWidget);
-      expect(find.text('官网'), findsOneWidget);
-      expect(find.text('Google Play'), findsOneWidget);
       expect(find.text('GitHub 仓库'), findsOneWidget);
-      expect(find.text('网盘'), findsOneWidget);
+      expect(find.text('官网'), findsNothing);
+      expect(find.text('Google Play'), findsNothing);
+      expect(find.text('网盘'), findsNothing);
 
       await tester.tap(find.text('取消'));
       await tester.pumpAndSettle();

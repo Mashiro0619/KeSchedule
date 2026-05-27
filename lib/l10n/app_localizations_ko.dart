@@ -368,8 +368,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get checkForUpdates => '업데이트 확인';
 
   @override
-  String get checkForUpdatesDesc =>
-      'GitHub / 공식 웹사이트 / Google Play / 클라우드 드라이브';
+  String get checkForUpdatesDesc => 'GitHub';
 
   @override
   String alreadyLatestVersion(Object version) {
@@ -408,7 +407,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get updateCheckFailedMessage =>
-      '어느 업데이트 소스에서도 유효한 업데이트 정보를 가져오지 못했습니다. 아래 링크를 통해 수동으로 업데이트할 수 있습니다.';
+      'Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.';
 
   @override
   String get githubRepository => 'GitHub 저장소';

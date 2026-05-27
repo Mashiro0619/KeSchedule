@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Проверить обновления",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Официальный сайт / Google Play / Облачный диск",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Уже установлена последняя версия ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Не удалось проверить обновления",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Не удалось получить корректную информацию об обновлении ни из одного источника. Вы всё ещё можете воспользоваться ссылками ниже для ручного обновления.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "Репозиторий GitHub",
   "@githubRepository": {},

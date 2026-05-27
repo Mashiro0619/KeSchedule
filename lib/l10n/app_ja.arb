@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "アップデートを確認",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / 公式サイト / Google Play / クラウドドライブ",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "すでに最新バージョンです ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "アップデート確認に失敗しました",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "どの更新元からも有効な更新情報を取得できませんでした。以下のリンクから手動で更新することはできます。",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "GitHubリポジトリ",
   "@githubRepository": {},

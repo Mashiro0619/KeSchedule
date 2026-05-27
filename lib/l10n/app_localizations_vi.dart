@@ -377,8 +377,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get checkForUpdates => 'Kiểm tra cập nhật';
 
   @override
-  String get checkForUpdatesDesc =>
-      'GitHub / Trang web chính thức / Google Play / Cloud drive';
+  String get checkForUpdatesDesc => 'GitHub';
 
   @override
   String alreadyLatestVersion(Object version) {
@@ -417,7 +416,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get updateCheckFailedMessage =>
-      'Không thể nhận được thông tin cập nhật hợp lệ từ bất kỳ nguồn cập nhật nào. Bạn vẫn có thể sử dụng các liên kết dưới đây để cập nhật thủ công.';
+      'Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.';
 
   @override
   String get githubRepository => 'Kho lưu trữ GitHub';

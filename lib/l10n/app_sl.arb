@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Preveri posodobitve",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Uradna spletna stran / Google Play / Cloud Drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Že na najnovejši različici ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Preverjanje posodobitve ni uspelo",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Ni moč dobiti veljavnih informacij o posodobitvi iz katerega koli vira posodobitve. Še vedno lahko uporabite spodnje povezave za ročno posodobitev.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "Skladišče GitHub",
   "@githubRepository": {},

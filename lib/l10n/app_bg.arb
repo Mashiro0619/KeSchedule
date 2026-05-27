@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Проверете за актуализации",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Официален сайт / Google Play / Cloud drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Вече на най-новата версия ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Проверка на актуализацията не успя",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Не може да се получи валидна информация за актуализация от който и да е източник на актуализация. Все още можете да използвате връзките по-долу, за да актуализирате ръчно.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "GitHub хранилище",
   "@githubRepository": {},

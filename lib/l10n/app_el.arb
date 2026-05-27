@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Ελέγξτε για ενημερώσεις",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Επίσημη ιστοσελίδα / Google Play / Cloud drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Ήδη στην τελευταία έκδοση ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Ο έλεγχος ενημέρωσης απέτυχε",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Αδυναμία λήψης έγκυρων πληροφοριών ενημέρωσης από οποιαδήποτε πηγή ενημέρωσης. Μπορείτε ακόμα να χρησιμοποιήσετε τους παρακάτω συνδέσμους για να ενημερώσετε με μη αυτόματο τρόπο.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "Αποθήκευση GitHub",
   "@githubRepository": {},

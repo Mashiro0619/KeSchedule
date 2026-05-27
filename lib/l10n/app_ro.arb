@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Verificați pentru actualizări",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Site-ul oficial / Google Play / Cloud drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Deja pe cea mai recentă versiune ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Verificarea actualizării a eșuat",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Imposibil de obţinut informaţii de actualizare valide din orice sursă de actualizare. Puteți folosi link-urile de mai jos pentru a actualiza manual.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "Repozitoriul GitHub",
   "@githubRepository": {},

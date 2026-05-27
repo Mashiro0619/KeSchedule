@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Kiểm tra cập nhật",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Trang web chính thức / Google Play / Cloud drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Đã có phiên bản mới nhất ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Kiểm tra cập nhật không thành công",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Không thể nhận được thông tin cập nhật hợp lệ từ bất kỳ nguồn cập nhật nào. Bạn vẫn có thể sử dụng các liên kết dưới đây để cập nhật thủ công.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "Kho lưu trữ GitHub",
   "@githubRepository": {},

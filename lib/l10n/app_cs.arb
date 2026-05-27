@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Zkontrolujte aktualizace",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Oficiální stránky / Google Play / Cloud drive",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Již v nejnovější verzi ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "Kontrola aktualizace selhala",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Nelze získat platné informace o aktualizaci z jakéhokoli zdroje aktualizace. Přesto můžete použít níže uvedené odkazy k manuální aktualizaci.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "Úložiště GitHub",
   "@githubRepository": {},

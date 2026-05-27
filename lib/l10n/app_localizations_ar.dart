@@ -375,8 +375,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get checkForUpdates => 'تحقق من التحديثات';
 
   @override
-  String get checkForUpdatesDesc =>
-      'GitHub / الموقع الرسمي / جوجل بلاي / محرك الأقراص السحابي';
+  String get checkForUpdatesDesc => 'GitHub';
 
   @override
   String alreadyLatestVersion(Object version) {
@@ -415,7 +414,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get updateCheckFailedMessage =>
-      'غير قادر على الحصول على معلومات تحديث صالحة من أي مصدر تحديث. لا تزال يمكنك استخدام الروابط أدناه للتحديث يدويا.';
+      'Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.';
 
   @override
   String get githubRepository => 'مخزن GitHub';

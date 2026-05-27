@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "تحقق من التحديثات",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / الموقع الرسمي / جوجل بلاي / محرك الأقراص السحابي",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "بالفعل على أحدث إصدار ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "فشل فحص التحديث",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "غير قادر على الحصول على معلومات تحديث صالحة من أي مصدر تحديث. لا تزال يمكنك استخدام الروابط أدناه للتحديث يدويا.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "مخزن GitHub",
   "@githubRepository": {},

@@ -264,7 +264,7 @@
   "@openSourceLicensesDesc": {},
   "checkForUpdates": "Ellenőrizze a frissítéseket",
   "@checkForUpdates": {},
-  "checkForUpdatesDesc": "GitHub / Hivatalos honlap / Google Play / Felhőmeghajtó",
+  "checkForUpdatesDesc": "GitHub",
   "@checkForUpdatesDesc": {},
   "alreadyLatestVersion": "Már a legújabb verzió ({version})",
   "@alreadyLatestVersion": {
@@ -292,7 +292,7 @@
   "@openUpdatesFailed": {},
   "updateCheckFailedTitle": "A frissítés ellenőrzése nem sikerült",
   "@updateCheckFailedTitle": {},
-  "updateCheckFailedMessage": "Nem sikerült érvényes frissítési információkat kapni bármelyik frissítési forrásból. A kézi frissítéshez az alábbi linkeket is használhatja.",
+  "updateCheckFailedMessage": "Unable to fetch the latest version from GitHub. You can still open GitHub Releases below.",
   "@updateCheckFailedMessage": {},
   "githubRepository": "GitHub tároló",
   "@githubRepository": {},
