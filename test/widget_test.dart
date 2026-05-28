@@ -4296,24 +4296,6 @@ void main() {
       expect(decoded.data['num'], 42);
     });
 
-    test('ImportExportEnvelope accepts legacy KeSchedule schemas', () {
-      final source = ImportExportEnvelope(
-        schema: 'KeSchedule-period-times',
-        version: importExportVersion,
-        data: {
-          'periodTimes': [
-            {'index': 7, 'startMinutes': 600, 'endMinutes': 645},
-          ],
-        },
-      ).encode();
-
-      final decoded = decodePeriodTimesEnvelope(source);
-
-      expect(decoded, hasLength(1));
-      expect(decoded.single.index, 7);
-      expect(decoded.single.startMinutes, 600);
-    });
-
     test(
       'bundled default period times asset uses a supported schema',
       () async {

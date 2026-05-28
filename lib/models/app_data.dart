@@ -445,15 +445,8 @@ void _ensureSupportedEnvelope(
   }
 }
 
-bool isImportExportSchema(String schema, String expectedSchema) {
-  if (schema == expectedSchema) {
-    return true;
-  }
-  const legacyPrefix = 'KeSchedule-';
-  const currentPrefix = 'Sked-';
-  return expectedSchema.startsWith(currentPrefix) &&
-      schema == expectedSchema.replaceFirst(currentPrefix, legacyPrefix);
-}
+bool isImportExportSchema(String schema, String expectedSchema) =>
+    schema == expectedSchema;
 
 String encodeAppDataEnvelope(AppData data) {
   return ImportExportEnvelope(
