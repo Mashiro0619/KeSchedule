@@ -1,4 +1,4 @@
-{
+﻿{
   "@@locale": "sv",
   "appTitle": "Klasskamrat",
   "@appTitle": {},
@@ -858,6 +858,8 @@
   "@viewDay": {},
   "viewList": "List",
   "@viewList": {},
+  "viewMonth": "Month",
+  "@viewMonth": {},
   "eventDuplicated": "Event duplicated",
   "@eventDuplicated": {},
   "searchEvents": "Search events",

@@ -1,4 +1,4 @@
-{
+﻿{
   "@@locale": "pl",
   "appTitle": "Kolegowie z klasy",
   "@appTitle": {},
@@ -858,6 +858,8 @@
   "@viewDay": {},
   "viewList": "List",
   "@viewList": {},
+  "viewMonth": "Month",
+  "@viewMonth": {},
   "eventDuplicated": "Event duplicated",
   "@eventDuplicated": {},
   "searchEvents": "Search events",

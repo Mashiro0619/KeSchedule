@@ -1,4 +1,4 @@
-{
+﻿{
   "@@locale": "zh_Hant",
   "appTitle": "Sked",
   "@appTitle": {},
@@ -860,6 +860,8 @@
   "@viewDay": {},
   "viewList": "列表",
   "@viewList": {},
+  "viewMonth": "月",
+  "@viewMonth": {},
   "eventDuplicated": "已複製日程",
   "@eventDuplicated": {},
   "searchEvents": "搜尋日程",

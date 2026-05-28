@@ -1315,6 +1315,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get viewList => '列表';
 
   @override
+  String get viewMonth => '月';
+
+  @override
   String get eventDuplicated => '已复制日程';
 
   @override
@@ -2912,6 +2915,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get viewList => '列表';
+
+  @override
+  String get viewMonth => '月';
 
   @override
   String get eventDuplicated => '已複製日程';

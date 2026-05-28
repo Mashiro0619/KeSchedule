@@ -6,6 +6,7 @@ import 'general_schedule.dart';
 const generalViewWeek = 'week';
 const generalViewDay = 'day';
 const generalViewList = 'list';
+const generalViewMonth = 'month';
 const generalScheduleSchemaVersion = 3;
 
 Map<String, dynamic>? _asStringKeyedMap(Object? value) {
@@ -113,6 +114,7 @@ String normalizeGeneralView(String? value) {
   switch (value) {
     case generalViewDay:
     case generalViewList:
+    case generalViewMonth:
     case generalViewWeek:
       return value!;
     default:

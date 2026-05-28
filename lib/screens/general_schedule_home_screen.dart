@@ -18,6 +18,7 @@ part 'general_schedule_reminder_strip.dart';
 part 'general_schedule_filter_bar.dart';
 part 'general_schedule_timeline_view.dart';
 part 'general_schedule_calendar_manager.dart';
+part 'general_schedule_month_view.dart';
 
 class GeneralScheduleHomeScreen extends StatefulWidget {
   const GeneralScheduleHomeScreen({super.key});
@@ -74,7 +75,15 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
         titleSpacing: 12,
         title: InkWell(
           borderRadius: BorderRadius.circular(24),
-          onTap: _datePickerOpen ? null : () => _pickDate(context, provider),
+          onTap: _datePickerOpen
+              ? null
+              : () {
+                  if (view == generalViewMonth) {
+                    _goToToday(provider);
+                  } else {
+                    _pickDate(context, provider);
+                  }
+                },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Column(
@@ -83,7 +92,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
               children: [
                 Text('Sked', style: Theme.of(context).textTheme.titleLarge),
                 Text(
-                  _yearLabel(selectedDate, view),
+                  _yearLabel(selectedDate, view, context),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelLarge,
@@ -134,63 +143,75 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SegmentedButton<String>(
-                      segments: [
-                        ButtonSegment(
-                          value: generalViewWeek,
-                          icon: const Icon(Icons.view_week_outlined),
-                          label: Text(l10n.viewWeek),
-                        ),
-                        ButtonSegment(
-                          value: generalViewDay,
-                          icon: const Icon(Icons.view_day_outlined),
-                          label: Text(l10n.viewDay),
-                        ),
-                        ButtonSegment(
-                          value: generalViewList,
-                          icon: const Icon(Icons.list_alt_outlined),
-                          label: Text(l10n.viewList),
-                        ),
-                      ],
-                      selected: {view},
-                      showSelectedIcon: false,
-                      onSelectionChanged: (selection) {
-                        setState(() => _view = selection.first);
-                      },
-                    ),
+              child: SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(
+                    value: generalViewWeek,
+                    icon: const Icon(Icons.view_week_outlined),
+                    label: Text(l10n.viewWeek),
+                  ),
+                  ButtonSegment(
+                    value: generalViewDay,
+                    icon: const Icon(Icons.view_day_outlined),
+                    label: Text(l10n.viewDay),
+                  ),
+                  ButtonSegment(
+                    value: generalViewList,
+                    icon: const Icon(Icons.list_alt_outlined),
+                    label: Text(l10n.viewList),
+                  ),
+                  ButtonSegment(
+                    value: generalViewMonth,
+                    icon: const Icon(Icons.calendar_view_month_outlined),
+                    label: Text(l10n.viewMonth),
                   ),
                 ],
+                selected: {view},
+                showSelectedIcon: false,
+                onSelectionChanged: (selection) {
+                  setState(() {
+                    _view = selection.first;
+                    if (_view == generalViewMonth) {
+                      _searchController.clear();
+                      _searchQuery = '';
+                      _colorFilterValue = null;
+                    }
+                  });
+                },
               ),
             ),
-            _FilterBar(
-              controller: _searchController,
-              colorValue: _colorFilterValue,
-              colorOptions: colorOptions,
-              onSearchChanged: (value) => setState(() {
-                _searchQuery = value;
-              }),
-              onClearSearch: () => setState(() {
-                _searchController.clear();
-                _searchQuery = '';
-              }),
-              onColorChanged: (value) => setState(() {
-                _colorFilterValue = value;
-              }),
-            ),
-            _ReminderStrip(
-              provider: provider,
-              filter: filter,
-              onOccurrenceTap: (occurrence) =>
-                  _openDetails(context, provider, occurrence),
-            ),
+            if (view != generalViewMonth) ...[
+              _FilterBar(
+                controller: _searchController,
+                colorValue: _colorFilterValue,
+                colorOptions: colorOptions,
+                onSearchChanged: (value) => setState(() {
+                  _searchQuery = value;
+                }),
+                onClearSearch: () => setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }),
+                onColorChanged: (value) => setState(() {
+                  _colorFilterValue = value;
+                }),
+              ),
+              _ReminderStrip(
+                provider: provider,
+                filter: filter,
+                onOccurrenceTap: (occurrence) =>
+                    _openDetails(context, provider, occurrence),
+              ),
+            ],
             Expanded(
-              child: ScrollConfiguration(
-                behavior: const MaterialScrollBehavior().copyWith(
-                  dragDevices: {
-                    PointerDeviceKind.touch,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: view == generalViewMonth ? 72 : 0,
+                ),
+                child: ScrollConfiguration(
+                  behavior: const MaterialScrollBehavior().copyWith(
+                    dragDevices: {
+                      PointerDeviceKind.touch,
                     PointerDeviceKind.mouse,
                     PointerDeviceKind.trackpad,
                     PointerDeviceKind.stylus,
@@ -216,6 +237,14 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                     onOccurrenceTap: (occurrence) =>
                         _openDetails(context, provider, occurrence),
                   ),
+                  generalViewMonth => _MonthCalendarView(
+                    date: selectedDate,
+                    provider: provider,
+                    filter: filter,
+                    onDaySelected: provider.setSelectedGeneralDate,
+                    onOccurrenceTap: (occurrence) =>
+                        _openDetails(context, provider, occurrence),
+                  ),
                   _ => _WeekCalendarView(
                     date: selectedDate,
                     provider: provider,
@@ -227,6 +256,7 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                         _openDetails(context, provider, occurrence),
                   ),
                 },
+              ),
               ),
             ),
           ],
@@ -497,7 +527,11 @@ List<int> _availableFilterColors(
   return values.toList()..sort();
 }
 
-String _yearLabel(DateTime date, String view) {
+String _yearLabel(DateTime date, String view, BuildContext context) {
+  if (view == generalViewMonth) {
+    final localizations = MaterialLocalizations.of(context);
+    return localizations.formatMonthYear(date);
+  }
   if (view != generalViewWeek) {
     return date.year.toString();
   }

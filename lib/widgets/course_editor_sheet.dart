@@ -150,14 +150,27 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 16),
-                      TextField(
-                        controller: _nameController,
-                        decoration: InputDecoration(labelText: l10n.courseName),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _locationController,
-                        decoration: InputDecoration(labelText: l10n.location),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: TextField(
+                              controller: _nameController,
+                              decoration: InputDecoration(labelText: l10n.courseName),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 1,
+                            child: TextField(
+                              controller: _locationController,
+                              decoration: InputDecoration(
+                                labelText: l10n.location,
+                                hintText: '地点',
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
                       Row(

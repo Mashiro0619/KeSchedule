@@ -1346,6 +1346,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get viewList => 'List';
 
   @override
+  String get viewMonth => 'Month';
+
+  @override
   String get eventDuplicated => 'Event duplicated';
 
   @override

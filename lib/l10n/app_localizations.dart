@@ -2601,6 +2601,12 @@ abstract class AppLocalizations {
   /// **'List'**
   String get viewList;
 
+  /// No description provided for @viewMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get viewMonth;
+
   /// No description provided for @eventDuplicated.
   ///
   /// In en, this message translates to:

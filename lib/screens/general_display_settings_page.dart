@@ -37,6 +37,11 @@ class GeneralDisplaySettingsPage extends StatelessWidget {
                       icon: const Icon(Icons.list_alt_outlined),
                       label: Text(l10n.viewList),
                     ),
+                    ButtonSegment(
+                      value: generalViewMonth,
+                      icon: const Icon(Icons.calendar_view_month_outlined),
+                      label: Text(l10n.viewMonth),
+                    ),
                   ],
                   selected: {provider.generalDefaultView},
                   showSelectedIcon: false,
