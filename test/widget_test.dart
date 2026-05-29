@@ -87,7 +87,7 @@ class MemoryTimetableStorage implements TimetableStorage {
   }
 
   @override
-  Future<String?> filePath() async => 'memory://KeSchedule-test';
+  Future<String?> filePath() async => 'memory://Sked-test';
 }
 
 class FakeSuccessUpdateService extends UpdateService {
@@ -388,7 +388,7 @@ void main() {
 
     test('provider 会在首次加载时创建 JSON 文件并可再次读取', () async {
       final tempRoot = Directory.systemTemp.path;
-      final file = File('$tempRoot/KeSchedule_provider_test.json');
+      final file = File('$tempRoot/Sked_provider_test.json');
       if (await file.exists()) {
         await file.delete();
       }
@@ -3103,7 +3103,7 @@ void main() {
             localVersion: '1.0.0',
             remoteVersion: '1.1.0',
             releaseUrl:
-                'https://github.com/Mashiro0619/KeSchedule/releases/latest',
+                'https://github.com/Mashiro0619/Sked/releases/latest',
             updateContent: '更新说明',
             hasUpdate: true,
           ),

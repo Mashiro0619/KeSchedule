@@ -3,7 +3,7 @@ class AppConfig {
 
   static const schoolImportApiBaseUrl = String.fromEnvironment(
     'SCHOOL_IMPORT_API_BASE_URL',
-    defaultValue: 'https://mashiro.tech/KeSchedule/api.php',
+    defaultValue: 'https://mashiro.tech/Sked/api.php',
   );
 
   static bool get hasSchoolImportApiBaseUrl =>

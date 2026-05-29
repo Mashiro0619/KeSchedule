@@ -53,7 +53,7 @@ void main() {
               jsonEncode({
                 'tag_name': 'v1.10.0+2',
                 'html_url':
-                    'https://github.com/Mashiro0619/KeSchedule/releases/tag/v1.10.0',
+                    'https://github.com/Mashiro0619/Sked/releases/tag/v1.10.0',
                 'body': 'notes',
               }),
               200,
@@ -124,7 +124,7 @@ void main() {
               jsonEncode({
                 'tag_name': 'future',
                 'html_url':
-                    'https://github.com/Mashiro0619/KeSchedule/releases/tag/future',
+                    'https://github.com/Mashiro0619/Sked/releases/tag/future',
                 'body': 'bad version',
               }),
               200,
@@ -176,8 +176,8 @@ void main() {
       () async {
         for (final url in [
           'javascript:alert(1)',
-          'http://github.com/Mashiro0619/KeSchedule/releases/tag/v2.0.0',
-          'https://example.test/Mashiro0619/KeSchedule/releases/tag/v2.0.0',
+          'http://github.com/Mashiro0619/Sked/releases/tag/v2.0.0',
+          'https://example.test/Mashiro0619/Sked/releases/tag/v2.0.0',
           'https://github.com/other/project/releases/tag/v2.0.0',
         ]) {
           final service = UpdateService(

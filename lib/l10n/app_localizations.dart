@@ -672,7 +672,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubRepositoryUrl.
   ///
   /// In en, this message translates to:
-  /// **'github.com/Mashiro0619/KeSchedule'**
+  /// **'github.com/Mashiro0619/Sked'**
   String get githubRepositoryUrl;
 
   /// No description provided for @apiResponseTitle.

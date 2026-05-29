@@ -665,7 +665,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _openPrivacyPolicyPage() async {
     await _guardFlow(_SettingsFlow.privacyPolicy, () async {
-      final uri = Uri.parse('https://mashiro.tech/KeSchedule/privacy.html');
+      final uri = Uri.parse('https://mashiro.tech/Sked/privacy.html');
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     });
   }
@@ -753,7 +753,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _openGithubRepo() async {
     await _guardFlow(_SettingsFlow.githubRepo, () async {
-      final uri = Uri.parse('https://github.com/Mashiro0619/KeSchedule');
+      final uri = Uri.parse('https://github.com/Mashiro0619/Sked');
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!opened && mounted) {
         _showMessage(AppLocalizations.of(context).openGithubFailed);

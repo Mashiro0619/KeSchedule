@@ -92,9 +92,9 @@ class UpdateService {
        _requestTimeout = requestTimeout;
 
   static const _githubLatestApi =
-      'https://api.github.com/repos/Mashiro0619/KeSchedule/releases/latest';
+      'https://api.github.com/repos/Mashiro0619/Sked/releases/latest';
   static const latestReleaseUrl =
-      'https://github.com/Mashiro0619/KeSchedule/releases/latest';
+      'https://github.com/Mashiro0619/Sked/releases/latest';
 
   final http.Client? _client;
   final Duration _requestTimeout;
@@ -190,7 +190,7 @@ String _githubReleaseUrlOrFallback(String value) {
   final segments = uri.pathSegments;
   if (segments.length < 4 ||
       segments[0] != 'Mashiro0619' ||
-      segments[1] != 'KeSchedule' ||
+      segments[1] != 'Sked' ||
       segments[2] != 'releases') {
     return UpdateService.latestReleaseUrl;
   }

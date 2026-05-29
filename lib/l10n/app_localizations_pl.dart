@@ -297,7 +297,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get languageEnglish => 'angielski';
 
   @override
-  String get githubRepositoryUrl => 'github.com/Mashiro0619/KeSchedule';
+  String get githubRepositoryUrl => 'github.com/Mashiro0619/Sked';
 
   @override
   String get apiResponseTitle => 'Odpowiedź API';

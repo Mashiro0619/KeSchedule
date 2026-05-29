@@ -8,9 +8,9 @@
 English
 </p>
 
-[![GitHub release](https://img.shields.io/github/v/release/Mashiro0619/KeSchedule?color=black&label=Stable&logo=github)](https://github.com/Mashiro0619/KeSchedule/releases/latest/)
-[![GitHub all releases](https://img.shields.io/github/downloads/Mashiro0619/KeSchedule/total?label=Downloads&logo=github)](https://github.com/Mashiro0619/KeSchedule/releases/)
-[![GitHub Repo stars](https://img.shields.io/github/stars/Mashiro0619/KeSchedule?color=informational&label=Stars)](https://github.com/Mashiro0619/KeSchedule/stargazers)
+[![GitHub release](https://img.shields.io/github/v/release/Mashiro0619/Sked?color=black&label=Stable&logo=github)](https://github.com/Mashiro0619/Sked/releases/latest/)
+[![GitHub all releases](https://img.shields.io/github/downloads/Mashiro0619/Sked/total?label=Downloads&logo=github)](https://github.com/Mashiro0619/Sked/releases/)
+[![GitHub Repo stars](https://img.shields.io/github/stars/Mashiro0619/Sked?color=informational&label=Stars)](https://github.com/Mashiro0619/Sked/stargazers)
 [![Flutter](https://img.shields.io/badge/Flutter-App-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![License](https://img.shields.io/badge/License-AGPL%20v3-A42E2B?logo=gnu)](LICENSE)
 
@@ -21,7 +21,7 @@ English
     <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="100">
   </a>
   <br>
-  <a href="https://github.com/Mashiro0619/KeSchedule/releases">
+  <a href="https://github.com/Mashiro0619/Sked/releases">
     <img src="https://img.shields.io/badge/Get%20it%20on-GitHub%20Releases-blue?style=for-the-badge&logo=github" alt="Get it on GitHub Releases" height="28">
   </a>
 </p>
@@ -78,14 +78,14 @@ web/
 Timetables, timetable settings, period-time sets, and school-site configuration are stored locally on your device or in the browser, and are not automatically uploaded to the developer's server.
 Only when you actively use features such as import, export, sharing, external links, update checks, or webpage parsing will the app read related content or hand the corresponding operation off to the system or your configured parsing endpoint.
 
-A privacy policy consent dialog is shown on first launch. The full privacy policy is available at [https://mashiro.tech/KeSchedule/privacy.html](https://mashiro.tech/KeSchedule/privacy.html).
+A privacy policy consent dialog is shown on first launch. The full privacy policy is available at [https://mashiro.tech/Sked/privacy.html](https://mashiro.tech/Sked/privacy.html).
 
 ## School import backend
 
 The project includes a self-hostable PHP relay endpoint: [web/api.php](web/api.php). By default, the app reads the school webpage import endpoint and update feed URL from [lib/config/app_config.dart](lib/config/app_config.dart), and both can be overridden with `--dart-define`.
 
 - `SCHOOL_IMPORT_API_BASE_URL`: school webpage / HTML import endpoint
-- `KeSchedule_UPDATE_VERSION_URL`: custom update feed URL
+- `Sked_UPDATE_VERSION_URL`: custom update feed URL
 
 ### Backend configuration
 

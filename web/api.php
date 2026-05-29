@@ -90,7 +90,7 @@ function get_client_ip(): string
 function get_rate_limit_file_path(string $ip): string
 {
     $safeIp = preg_replace('/[^a-zA-Z0-9_.:-]/', '_', $ip) ?: 'unknown';
-    return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'KeSchedule_import_rate_' . date('Ymd') . '_' . $safeIp . '.json';
+    return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'Sked_import_rate_' . date('Ymd') . '_' . $safeIp . '.json';
 }
 
 function assert_rate_limit(string $ip, int $maxParsesPerDay): void

@@ -115,7 +115,7 @@ extension _HomeScreenPrivacy on _HomeScreenState {
   }
 
   Future<void> _openPrivacyPolicyPage() async {
-    final uri = Uri.parse('https://mashiro.tech/KeSchedule/privacy.html');
+    final uri = Uri.parse('https://mashiro.tech/Sked/privacy.html');
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
