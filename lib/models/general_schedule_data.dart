@@ -129,6 +129,7 @@ class GeneralScheduleData {
     this.selectedDateIso,
     this.defaultView = generalViewWeek,
     this.showWeekends = true,
+    this.showLunarCalendar = true,
     this.dayStartHour = 6,
     this.dayEndHour = 23,
     this.timeGridMinutes = 60,
@@ -141,6 +142,7 @@ class GeneralScheduleData {
   final String? selectedDateIso;
   final String defaultView;
   final bool showWeekends;
+  final bool showLunarCalendar;
   final int dayStartHour;
   final int dayEndHour;
   final int timeGridMinutes;
@@ -179,6 +181,7 @@ class GeneralScheduleData {
     if (selectedDateIso != null) 'selectedDateIso': selectedDateIso,
     'defaultView': normalizeGeneralView(defaultView),
     'showWeekends': showWeekends,
+    'showLunarCalendar': showLunarCalendar,
     'dayStartHour': dayStartHour,
     'dayEndHour': dayEndHour,
     'timeGridMinutes': timeGridMinutes,
@@ -233,6 +236,7 @@ class GeneralScheduleData {
         _nullableStringValue(json['defaultView']),
       ),
       showWeekends: _boolValue(json['showWeekends']) ?? true,
+      showLunarCalendar: _boolValue(json['showLunarCalendar']) ?? true,
       dayStartHour: (_intValue(json['dayStartHour']) ?? 6).clamp(0, 23).toInt(),
       dayEndHour: (_intValue(json['dayEndHour']) ?? 23).clamp(1, 24).toInt(),
       timeGridMinutes: _normalizeGridMinutes(
@@ -263,6 +267,7 @@ class GeneralScheduleData {
     Object? selectedDateIso = _keepNullable,
     String? defaultView,
     bool? showWeekends,
+    bool? showLunarCalendar,
     int? dayStartHour,
     int? dayEndHour,
     int? timeGridMinutes,
@@ -277,6 +282,7 @@ class GeneralScheduleData {
           : selectedDateIso as String?,
       defaultView: normalizeGeneralView(defaultView ?? this.defaultView),
       showWeekends: showWeekends ?? this.showWeekends,
+      showLunarCalendar: showLunarCalendar ?? this.showLunarCalendar,
       dayStartHour: dayStartHour ?? this.dayStartHour,
       dayEndHour: dayEndHour ?? this.dayEndHour,
       timeGridMinutes: timeGridMinutes ?? this.timeGridMinutes,
@@ -374,6 +380,7 @@ class GeneralScheduleData {
       selectedDateIso: selectedDateIso ?? _dateIso(DateTime.now()),
       defaultView: normalizeGeneralView(defaultView),
       showWeekends: showWeekends,
+      showLunarCalendar: showLunarCalendar,
       dayStartHour: start,
       dayEndHour: end,
       timeGridMinutes: _normalizeGridMinutes(timeGridMinutes),

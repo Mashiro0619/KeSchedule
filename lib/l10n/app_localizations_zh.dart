@@ -1602,8 +1602,35 @@ class AppLocalizationsZh extends AppLocalizations {
       'App data was restored from the previous backup because the main file failed to load.';
 
   @override
-  String get dataBackupRestoreFailedNotice =>
-      'Both the main data file and its backup are damaged. The app is now using a fresh state.';
+  String get dataBackupRestoreFailedNotice => '主数据文件和备份文件均已损坏。应用已使用全新状态启动。';
+
+  @override
+  String get previousMonth => '上个月';
+
+  @override
+  String get nextMonth => '下个月';
+
+  @override
+  String timeGridMinutes(int minutes) {
+    return '$minutes 分钟';
+  }
+
+  @override
+  String get reminderInProgress => '进行中';
+
+  @override
+  String get deleteCourseTitle => '删除课程';
+
+  @override
+  String get deleteCourseMessage => '删除这门课程？';
+
+  @override
+  String get showLunarCalendar => '显示农历';
+
+  @override
+  String monthDayEvents(int day, int count) {
+    return '$day日，$count 个事件';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -3204,6 +3231,33 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
       'App data was restored from the previous backup because the main file failed to load.';
 
   @override
-  String get dataBackupRestoreFailedNotice =>
-      'Both the main data file and its backup are damaged. The app is now using a fresh state.';
+  String get dataBackupRestoreFailedNotice => '主資料檔案和備份檔案均已損壞。應用程式已使用全新狀態啟動。';
+
+  @override
+  String get previousMonth => '上個月';
+
+  @override
+  String get nextMonth => '下個月';
+
+  @override
+  String timeGridMinutes(int minutes) {
+    return '$minutes 分鐘';
+  }
+
+  @override
+  String get reminderInProgress => '進行中';
+
+  @override
+  String get deleteCourseTitle => '刪除課程';
+
+  @override
+  String get deleteCourseMessage => '刪除這門課程？';
+
+  @override
+  String get showLunarCalendar => '顯示農曆';
+
+  @override
+  String monthDayEvents(int day, int count) {
+    return '$day日，$count 個事件';
+  }
 }

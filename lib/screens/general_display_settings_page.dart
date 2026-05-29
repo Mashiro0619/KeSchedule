@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_locale.dart' as app_locale;
 import '../l10n/app_localizations.dart';
 import '../models/timetable_models.dart';
 import '../providers/timetable_provider.dart';
@@ -13,6 +14,7 @@ class GeneralDisplaySettingsPage extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
+        final localeCode = app_locale.normalizeLocaleCode(provider.localeCode);
         return Scaffold(
           appBar: AppBar(title: Text(l10n.generalDisplaySettings)),
           body: ListView(
@@ -58,6 +60,14 @@ class GeneralDisplaySettingsPage extends StatelessWidget {
                 onChanged: (value) =>
                     provider.updateGeneralDisplaySettings(showWeekends: value),
               ),
+              if (localeCode == 'zh' || localeCode == 'zh-Hant')
+                SwitchListTile(
+                  title: Text(l10n.showLunarCalendar),
+                  value: provider.generalShowLunarCalendar,
+                  onChanged: (value) => provider.updateGeneralDisplaySettings(
+                    showLunarCalendar: value,
+                  ),
+                ),
               _HourTile(
                 title: l10n.startHour,
                 value: provider.generalDayStartHour,
@@ -79,10 +89,19 @@ class GeneralDisplaySettingsPage extends StatelessWidget {
                 title: Text(l10n.timeGridDensity),
                 trailing: DropdownButton<int>(
                   value: provider.generalTimeGridMinutes,
-                  items: const [
-                    DropdownMenuItem(value: 15, child: Text('15 min')),
-                    DropdownMenuItem(value: 30, child: Text('30 min')),
-                    DropdownMenuItem(value: 60, child: Text('60 min')),
+                  items: [
+                    DropdownMenuItem(
+                      value: 15,
+                      child: Text(l10n.timeGridMinutes(15)),
+                    ),
+                    DropdownMenuItem(
+                      value: 30,
+                      child: Text(l10n.timeGridMinutes(30)),
+                    ),
+                    DropdownMenuItem(
+                      value: 60,
+                      child: Text(l10n.timeGridMinutes(60)),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value != null) {

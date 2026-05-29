@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
+import 'package:lunar/lunar.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
@@ -15,7 +16,6 @@ import 'settings_page.dart';
 
 part 'general_schedule_list_view.dart';
 part 'general_schedule_reminder_strip.dart';
-part 'general_schedule_filter_bar.dart';
 part 'general_schedule_timeline_view.dart';
 part 'general_schedule_calendar_manager.dart';
 part 'general_schedule_month_view.dart';
@@ -29,10 +29,7 @@ class GeneralScheduleHomeScreen extends StatefulWidget {
 }
 
 class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
-  final _searchController = TextEditingController();
   String? _view;
-  String _searchQuery = '';
-  int? _colorFilterValue;
   bool _initializedView = false;
   bool _datePickerOpen = false;
   bool _editorSheetOpen = false;
@@ -50,25 +47,12 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final provider = context.watch<TimetableProvider>();
     final l10n = AppLocalizations.of(context);
     final selectedDate = provider.selectedGeneralDate;
     final view = normalizeGeneralView(_view ?? provider.generalDefaultView);
-    final filter = _GeneralOccurrenceFilter(
-      query: _searchQuery,
-      colorValue: _colorFilterValue,
-    );
-    final colorOptions = _availableFilterColors(
-      provider.visibleGeneralSchedules,
-      query: _searchQuery,
-    );
+    const filter = _GeneralOccurrenceFilter(query: '', colorValue: null);
 
     return Scaffold(
       appBar: AppBar(
@@ -90,7 +74,10 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Sked', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  l10n.appTitle,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 Text(
                   _yearLabel(selectedDate, view, context),
                   maxLines: 1,
@@ -171,38 +158,17 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                 onSelectionChanged: (selection) {
                   setState(() {
                     _view = selection.first;
-                    if (_view == generalViewMonth) {
-                      _searchController.clear();
-                      _searchQuery = '';
-                      _colorFilterValue = null;
-                    }
                   });
                 },
               ),
             ),
-            if (view != generalViewMonth) ...[
-              _FilterBar(
-                controller: _searchController,
-                colorValue: _colorFilterValue,
-                colorOptions: colorOptions,
-                onSearchChanged: (value) => setState(() {
-                  _searchQuery = value;
-                }),
-                onClearSearch: () => setState(() {
-                  _searchController.clear();
-                  _searchQuery = '';
-                }),
-                onColorChanged: (value) => setState(() {
-                  _colorFilterValue = value;
-                }),
-              ),
+            if (view != generalViewMonth)
               _ReminderStrip(
                 provider: provider,
                 filter: filter,
                 onOccurrenceTap: (occurrence) =>
                     _openDetails(context, provider, occurrence),
               ),
-            ],
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(
@@ -212,51 +178,54 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
                   behavior: const MaterialScrollBehavior().copyWith(
                     dragDevices: {
                       PointerDeviceKind.touch,
-                    PointerDeviceKind.mouse,
-                    PointerDeviceKind.trackpad,
-                    PointerDeviceKind.stylus,
-                    PointerDeviceKind.invertedStylus,
+                      PointerDeviceKind.mouse,
+                      PointerDeviceKind.trackpad,
+                      PointerDeviceKind.stylus,
+                      PointerDeviceKind.invertedStylus,
+                    },
+                  ),
+                  child: switch (view) {
+                    generalViewDay => _DayCalendarView(
+                      date: selectedDate,
+                      provider: provider,
+                      filter: filter,
+                      onDaySelected: provider.setSelectedGeneralDate,
+                      onEmptySlotTap: (date) =>
+                          _openEditor(context, provider, initialDate: date),
+                      onOccurrenceTap: (occurrence) =>
+                          _openDetails(context, provider, occurrence),
+                    ),
+                    generalViewList => _ListCalendarView(
+                      date: selectedDate,
+                      provider: provider,
+                      filter: filter,
+                      onToday: () => _goToToday(provider),
+                      onPickDate: () => _pickDate(context, provider),
+                      onOccurrenceTap: (occurrence) =>
+                          _openDetails(context, provider, occurrence),
+                    ),
+                    generalViewMonth => _MonthCalendarView(
+                      date: selectedDate,
+                      provider: provider,
+                      filter: filter,
+                      onDaySelected: provider.setSelectedGeneralDate,
+                      onEmptySlotTap: (date) =>
+                          _openEditor(context, provider, initialDate: date),
+                      onOccurrenceTap: (occurrence) =>
+                          _openDetails(context, provider, occurrence),
+                    ),
+                    _ => _WeekCalendarView(
+                      date: selectedDate,
+                      provider: provider,
+                      filter: filter,
+                      onDaySelected: provider.setSelectedGeneralDate,
+                      onEmptySlotTap: (date) =>
+                          _openEditor(context, provider, initialDate: date),
+                      onOccurrenceTap: (occurrence) =>
+                          _openDetails(context, provider, occurrence),
+                    ),
                   },
                 ),
-                child: switch (view) {
-                  generalViewDay => _DayCalendarView(
-                    date: selectedDate,
-                    provider: provider,
-                    filter: filter,
-                    onEmptySlotTap: (date) =>
-                        _openEditor(context, provider, initialDate: date),
-                    onOccurrenceTap: (occurrence) =>
-                        _openDetails(context, provider, occurrence),
-                  ),
-                  generalViewList => _ListCalendarView(
-                    date: selectedDate,
-                    provider: provider,
-                    filter: filter,
-                    onToday: () => _goToToday(provider),
-                    onPickDate: () => _pickDate(context, provider),
-                    onOccurrenceTap: (occurrence) =>
-                        _openDetails(context, provider, occurrence),
-                  ),
-                  generalViewMonth => _MonthCalendarView(
-                    date: selectedDate,
-                    provider: provider,
-                    filter: filter,
-                    onDaySelected: provider.setSelectedGeneralDate,
-                    onOccurrenceTap: (occurrence) =>
-                        _openDetails(context, provider, occurrence),
-                  ),
-                  _ => _WeekCalendarView(
-                    date: selectedDate,
-                    provider: provider,
-                    filter: filter,
-                    onDaySelected: provider.setSelectedGeneralDate,
-                    onEmptySlotTap: (date) =>
-                        _openEditor(context, provider, initialDate: date),
-                    onOccurrenceTap: (occurrence) =>
-                        _openDetails(context, provider, occurrence),
-                  ),
-                },
-              ),
               ),
             ),
           ],
@@ -337,12 +306,30 @@ class _GeneralScheduleHomeScreenState extends State<GeneralScheduleHomeScreen> {
         ),
       );
 
-      if (result == null || !mounted) return;
+      if (result == null || !mounted || !context.mounted) return;
 
       if (result.delete && event != null) {
-        await provider.deleteGeneralEvent(event.id);
+        try {
+          await provider.deleteGeneralEvent(event.id);
+        } catch (_) {
+          if (!mounted || !context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).saveFailedRetry),
+            ),
+          );
+        }
       } else if (result.event != null) {
-        await provider.saveGeneralEvent(result.event!);
+        try {
+          await provider.saveGeneralEvent(result.event!);
+        } catch (_) {
+          if (!mounted || !context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).saveFailedRetry),
+            ),
+          );
+        }
       }
     } finally {
       _setUiBusyFlag(() => _editorSheetOpen = false);
@@ -504,27 +491,30 @@ List<DateTime> _visibleWeekDays(DateTime weekStart, bool showWeekends) {
   ];
 }
 
-List<int> _availableFilterColors(
-  List<GeneralSchedule> schedules, {
-  String query = '',
-}) {
-  final values = <int>{};
-  final normalizedQuery = query.trim().toLowerCase();
-  for (final schedule in schedules) {
-    for (final event in schedule.events) {
-      if (normalizedQuery.isNotEmpty &&
-          ![
-            event.title,
-            event.location,
-            event.notes,
-            schedule.name,
-          ].any((value) => value.toLowerCase().contains(normalizedQuery))) {
-        continue;
-      }
-      values.add(event.colorValue ?? schedule.colorValue);
-    }
+class _GeneralOccurrenceFilter {
+  const _GeneralOccurrenceFilter({
+    required this.query,
+    required this.colorValue,
+  });
+
+  final String query;
+  final int? colorValue;
+
+  bool get isActive => query.trim().isNotEmpty || colorValue != null;
+
+  GeneralOccurrenceQuery toQuery({
+    required DateTime startInclusive,
+    required DateTime endExclusive,
+    bool onlyVisibleCalendars = true,
+  }) {
+    return GeneralOccurrenceQuery(
+      startInclusive: startInclusive,
+      endExclusive: endExclusive,
+      onlyVisibleCalendars: onlyVisibleCalendars,
+      searchQuery: query,
+      colorValue: colorValue,
+    );
   }
-  return values.toList()..sort();
 }
 
 String _yearLabel(DateTime date, String view, BuildContext context) {

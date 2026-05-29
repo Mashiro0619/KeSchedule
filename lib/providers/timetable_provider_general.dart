@@ -15,6 +15,7 @@ mixin _TimetableProviderGeneral on _TimetableProviderBase {
 
   String get generalDefaultView => _appData.generalMode.defaultView;
   bool get generalShowWeekends => _appData.generalMode.showWeekends;
+  bool get generalShowLunarCalendar => _appData.generalMode.showLunarCalendar;
   int get generalDayStartHour => _appData.generalMode.dayStartHour;
   int get generalDayEndHour => _appData.generalMode.dayEndHour;
   int get generalTimeGridMinutes => _appData.generalMode.timeGridMinutes;
@@ -99,6 +100,7 @@ mixin _TimetableProviderGeneral on _TimetableProviderBase {
   Future<void> updateGeneralDisplaySettings({
     String? defaultView,
     bool? showWeekends,
+    bool? showLunarCalendar,
     int? dayStartHour,
     int? dayEndHour,
     int? timeGridMinutes,
@@ -109,6 +111,7 @@ mixin _TimetableProviderGeneral on _TimetableProviderBase {
         _appData.generalMode,
         defaultView: defaultView,
         showWeekends: showWeekends,
+        showLunarCalendar: showLunarCalendar,
         dayStartHour: dayStartHour,
         dayEndHour: dayEndHour,
         timeGridMinutes: timeGridMinutes,

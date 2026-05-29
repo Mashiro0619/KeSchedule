@@ -350,6 +350,61 @@ void main() {
       expect(items.single.status, equals(GeneralReminderStatus.overdue));
     });
 
+    test('classifies as in progress when event has started but not ended', () {
+      final now = DateTime(2026, 5, 24, 10, 30);
+      final start = DateTime(2026, 5, 24, 10);
+      final data = buildData(
+        events: [
+          buildEvent(
+            id: 'a',
+            title: 'current',
+            start: start,
+            reminders: const [GeneralEventReminder(minutesBefore: 10)],
+          ),
+        ],
+      );
+
+      final items = service.reminderItems(data, now: now);
+
+      expect(items, hasLength(1));
+      expect(items.single.status, equals(GeneralReminderStatus.inProgress));
+    });
+
+    test('classifies as in progress when event starts exactly now', () {
+      final now = DateTime(2026, 5, 24, 10);
+      final data = buildData(
+        events: [
+          buildEvent(
+            id: 'a',
+            title: 'current',
+            start: now,
+            reminders: const [GeneralEventReminder(minutesBefore: 10)],
+          ),
+        ],
+      );
+
+      final items = service.reminderItems(data, now: now);
+
+      expect(items, hasLength(1));
+      expect(items.single.status, equals(GeneralReminderStatus.inProgress));
+    });
+
+    test('does not classify as in progress when event ends exactly now', () {
+      final now = DateTime(2026, 5, 24, 11);
+      final data = buildData(
+        events: [
+          buildEvent(
+            id: 'a',
+            title: 'finished',
+            start: DateTime(2026, 5, 24, 10),
+            reminders: const [GeneralEventReminder(minutesBefore: 10)],
+          ),
+        ],
+      );
+
+      expect(service.reminderItems(data, now: now), isEmpty);
+    });
+
     test('excludes occurrences already marked handled', () {
       final now = DateTime(2026, 5, 24, 9, 55);
       final start = DateTime(2026, 5, 24, 10);

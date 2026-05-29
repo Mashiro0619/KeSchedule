@@ -89,7 +89,7 @@ class GeneralOccurrenceService {
   /// 应用内提醒条的数据源。
   ///
   /// 不会触发系统通知/锁屏推送（本轮明确不做）；仅返回此刻应该在 UI 上展示的
-  /// upcoming / overdue 列表。已被用户标记 handled 的 occurrence 被排除。
+  /// upcoming / in-progress / overdue 列表。已被用户标记 handled 的 occurrence 被排除。
   List<GeneralReminderItem> reminderItems(
     GeneralScheduleData general, {
     DateTime? now,
@@ -128,7 +128,22 @@ class GeneralOccurrenceService {
                 status: GeneralReminderStatus.overdue,
               ),
             );
-    return [...upcoming, ...overdue]..sort((a, b) {
+    final inProgress =
+        occurrencesForRange(
+              general,
+              startInclusive: anchor.subtract(overdueWindow),
+              endExclusive: anchor.add(const Duration(microseconds: 1)),
+            )
+            .where((o) => occurrenceFilter?.matches(o) ?? true)
+            .where((o) => !isReminderHandled(general, o))
+            .where((o) => !o.start.isAfter(anchor) && o.end.isAfter(anchor))
+            .map(
+              (o) => GeneralReminderItem(
+                occurrence: o,
+                status: GeneralReminderStatus.inProgress,
+              ),
+            );
+    return [...upcoming, ...inProgress, ...overdue]..sort((a, b) {
       final statusCompare = a.status.index.compareTo(b.status.index);
       if (statusCompare != 0) return statusCompare;
       return a.occurrence.start.compareTo(b.occurrence.start);

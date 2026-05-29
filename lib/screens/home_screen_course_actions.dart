@@ -98,11 +98,31 @@ extension _HomeScreenCourseActions on _HomeScreenState {
         return;
       }
       if (result.delete && course != null) {
-        await provider.deleteCourse(course.id);
+        try {
+          await provider.deleteCourse(course.id);
+        } catch (_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context).saveFailedRetry),
+              ),
+            );
+          }
+        }
         return;
       }
       if (result.course != null) {
-        await provider.saveCourse(result.course!);
+        try {
+          await provider.saveCourse(result.course!);
+        } catch (_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context).saveFailedRetry),
+              ),
+            );
+          }
+        }
       }
     } finally {
       _setCourseEditorOpen(false);

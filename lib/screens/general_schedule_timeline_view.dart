@@ -1,6 +1,16 @@
 part of 'general_schedule_home_screen.dart';
 
-class _WeekCalendarView extends StatelessWidget {
+const _generalTimelineInitialPage = 10000;
+const _generalWeekPagerKey = ValueKey<String>('general-week-pager');
+const _generalDayPagerKey = ValueKey<String>('general-day-pager');
+const _generalDayWeekPickerPagerKey = ValueKey<String>(
+  'general-day-week-picker-pager',
+);
+const _generalDayPickerSelectionIndicatorKey = ValueKey<String>(
+  'general-day-picker-selection-indicator',
+);
+
+class _WeekCalendarView extends StatefulWidget {
   const _WeekCalendarView({
     required this.date,
     required this.provider,
@@ -18,8 +28,135 @@ class _WeekCalendarView extends StatelessWidget {
   final ValueChanged<GeneralEventOccurrence> onOccurrenceTap;
 
   @override
+  State<_WeekCalendarView> createState() => _WeekCalendarViewState();
+}
+
+class _WeekCalendarViewState extends State<_WeekCalendarView> {
+  late final DateTime _baseWeekStart;
+  late final PageController _controller;
+  late int _currentPage;
+
+  @override
+  void initState() {
+    super.initState();
+    _baseWeekStart = startOfWeekMonday(_visibleDayForDate(widget.date));
+    _currentPage = _generalTimelineInitialPage;
+    _controller = PageController(initialPage: _currentPage);
+    _syncVisibleSelectedDate();
+  }
+
+  @override
+  void didUpdateWidget(covariant _WeekCalendarView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncVisibleSelectedDate();
+    final targetPage = _pageForWeek(
+      startOfWeekMonday(_visibleDayForDate(widget.date)),
+    );
+    if (targetPage != _currentPage) {
+      _currentPage = targetPage;
+      if (_controller.hasClients) {
+        _controller.jumpToPage(targetPage);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  int _pageForWeek(DateTime weekStart) {
+    final deltaDays = weekStart.difference(_baseWeekStart).inDays;
+    return _generalTimelineInitialPage + deltaDays ~/ 7;
+  }
+
+  DateTime _weekStartForPage(int page) {
+    final deltaWeeks = page - _generalTimelineInitialPage;
+    return _baseWeekStart.add(Duration(days: deltaWeeks * 7));
+  }
+
+  bool _isVisibleDay(DateTime date) {
+    return widget.provider.generalShowWeekends ||
+        date.weekday <= DateTime.friday;
+  }
+
+  DateTime _visibleDayForDate(DateTime date) {
+    final normalized = normalizeDateOnly(date);
+    if (_isVisibleDay(normalized)) {
+      return normalized;
+    }
+    return normalized.add(Duration(days: 8 - normalized.weekday));
+  }
+
+  void _syncVisibleSelectedDate() {
+    final visibleDate = _visibleDayForDate(widget.date);
+    if (_sameDay(visibleDate, widget.date)) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onDaySelected(visibleDate);
+      }
+    });
+  }
+
+  int _selectedWeekdayOffset() {
+    final selected = _visibleDayForDate(widget.date);
+    return selected.difference(startOfWeekMonday(selected)).inDays;
+  }
+
+  void _handlePageChanged(int page) {
+    _currentPage = page;
+    final nextDate = _weekStartForPage(
+      page,
+    ).add(Duration(days: _selectedWeekdayOffset()));
+    widget.onDaySelected(nextDate);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final weekStart = startOfWeekMonday(date);
+    return PageView.builder(
+      key: _generalWeekPagerKey,
+      controller: _controller,
+      onPageChanged: _handlePageChanged,
+      itemBuilder: (context, index) {
+        final weekStart = _weekStartForPage(index);
+        return _WeekTimelinePage(
+          weekStart: weekStart,
+          selectedDate: weekStart.add(Duration(days: _selectedWeekdayOffset())),
+          provider: widget.provider,
+          filter: widget.filter,
+          onDaySelected: widget.onDaySelected,
+          onEmptySlotTap: widget.onEmptySlotTap,
+          onOccurrenceTap: widget.onOccurrenceTap,
+        );
+      },
+    );
+  }
+}
+
+class _WeekTimelinePage extends StatelessWidget {
+  const _WeekTimelinePage({
+    required this.weekStart,
+    required this.selectedDate,
+    required this.provider,
+    required this.filter,
+    required this.onDaySelected,
+    required this.onEmptySlotTap,
+    required this.onOccurrenceTap,
+  });
+
+  final DateTime weekStart;
+  final DateTime selectedDate;
+  final TimetableProvider provider;
+  final _GeneralOccurrenceFilter filter;
+  final ValueChanged<DateTime> onDaySelected;
+  final ValueChanged<DateTime> onEmptySlotTap;
+  final ValueChanged<GeneralEventOccurrence> onOccurrenceTap;
+
+  @override
+  Widget build(BuildContext context) {
     final days = _visibleWeekDays(weekStart, provider.generalShowWeekends);
     final occurrences = provider.generalOccurrencesForQuery(
       filter.toQuery(
@@ -29,11 +166,12 @@ class _WeekCalendarView extends StatelessWidget {
     );
     return _CalendarTimeline(
       days: days,
-      selectedDate: date,
+      selectedDate: selectedDate,
       occurrences: occurrences,
       startHour: provider.generalDayStartHour,
       endHour: provider.generalDayEndHour,
       gridMinutes: provider.generalTimeGridMinutes,
+      showHeader: true,
       onDaySelected: onDaySelected,
       onEmptySlotTap: onEmptySlotTap,
       onOccurrenceTap: onOccurrenceTap,
@@ -41,11 +179,12 @@ class _WeekCalendarView extends StatelessWidget {
   }
 }
 
-class _DayCalendarView extends StatelessWidget {
+class _DayCalendarView extends StatefulWidget {
   const _DayCalendarView({
     required this.date,
     required this.provider,
     required this.filter,
+    required this.onDaySelected,
     required this.onEmptySlotTap,
     required this.onOccurrenceTap,
   });
@@ -53,6 +192,271 @@ class _DayCalendarView extends StatelessWidget {
   final DateTime date;
   final TimetableProvider provider;
   final _GeneralOccurrenceFilter filter;
+  final ValueChanged<DateTime> onDaySelected;
+  final ValueChanged<DateTime> onEmptySlotTap;
+  final ValueChanged<GeneralEventOccurrence> onOccurrenceTap;
+
+  @override
+  State<_DayCalendarView> createState() => _DayCalendarViewState();
+}
+
+class _DayCalendarViewState extends State<_DayCalendarView> {
+  late final DateTime _baseDate;
+  late final DateTime _baseWeekStart;
+  late final PageController _dayController;
+  late final PageController _weekController;
+  late int _currentDayPage;
+  late int _currentWeekPage;
+  bool _syncingWeekPickerFromDay = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _baseDate = _visibleDayForDate(widget.date);
+    _baseWeekStart = startOfWeekMonday(_baseDate);
+    _currentDayPage = _generalTimelineInitialPage;
+    _currentWeekPage = _generalTimelineInitialPage;
+    _dayController = PageController(initialPage: _currentDayPage);
+    _weekController = PageController(initialPage: _currentWeekPage);
+    _dayController.addListener(_syncWeekPickerToDayPage);
+    _syncVisibleSelectedDate();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DayCalendarView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncVisibleSelectedDate();
+    final selectedDate = _visibleDayForDate(widget.date);
+    final targetDayPage = _pageForDay(selectedDate);
+    if (targetDayPage != _currentDayPage) {
+      _currentDayPage = targetDayPage;
+      if (_dayController.hasClients) {
+        _dayController.jumpToPage(targetDayPage);
+      }
+    }
+    final targetWeekPage = _pageForWeek(startOfWeekMonday(selectedDate));
+    if (targetWeekPage != _currentWeekPage) {
+      _currentWeekPage = targetWeekPage;
+      if (_weekController.hasClients) {
+        _weekController.jumpToPage(targetWeekPage);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _dayController.removeListener(_syncWeekPickerToDayPage);
+    _dayController.dispose();
+    _weekController.dispose();
+    super.dispose();
+  }
+
+  int _pageForDay(DateTime date) {
+    final selectedDate = _visibleDayForDate(date);
+    if (widget.provider.generalShowWeekends) {
+      return _generalTimelineInitialPage +
+          selectedDate.difference(_baseDate).inDays;
+    }
+    return _generalTimelineInitialPage +
+        _visibleDayDifference(_baseDate, selectedDate);
+  }
+
+  DateTime _dayForPage(int page) {
+    final deltaDays = page - _generalTimelineInitialPage;
+    if (widget.provider.generalShowWeekends) {
+      return _baseDate.add(Duration(days: deltaDays));
+    }
+    return _addVisibleDays(_baseDate, deltaDays);
+  }
+
+  int _pageForWeek(DateTime weekStart) {
+    final deltaDays = weekStart.difference(_baseWeekStart).inDays;
+    return _generalTimelineInitialPage + deltaDays ~/ 7;
+  }
+
+  DateTime _weekStartForPage(int page) {
+    final deltaWeeks = page - _generalTimelineInitialPage;
+    return _baseWeekStart.add(Duration(days: deltaWeeks * 7));
+  }
+
+  double _pageControllerValue(PageController controller, int fallback) {
+    if (!controller.hasClients) {
+      return fallback.toDouble();
+    }
+    final page = controller.page;
+    if (page == null || !page.isFinite) {
+      return fallback.toDouble();
+    }
+    return page;
+  }
+
+  double _weekPageForDayPage(double dayPage) {
+    final lowerDayPage = dayPage.floor();
+    final upperDayPage = dayPage.ceil();
+    final progress = dayPage - lowerDayPage;
+    final lowerWeekPage = _pageForWeek(
+      startOfWeekMonday(_dayForPage(lowerDayPage)),
+    );
+    final upperWeekPage = _pageForWeek(
+      startOfWeekMonday(_dayForPage(upperDayPage)),
+    );
+    return lowerWeekPage + (upperWeekPage - lowerWeekPage) * progress;
+  }
+
+  void _syncWeekPickerToDayPage() {
+    if (!_dayController.hasClients || !_weekController.hasClients) {
+      return;
+    }
+    final position = _weekController.position;
+    if (!position.hasViewportDimension) {
+      return;
+    }
+    final viewportWidth = position.viewportDimension;
+    if (!viewportWidth.isFinite || viewportWidth <= 0) {
+      return;
+    }
+    final targetPage = _weekPageForDayPage(
+      _pageControllerValue(_dayController, _currentDayPage),
+    );
+    final targetPixels = targetPage * viewportWidth;
+    if ((position.pixels - targetPixels).abs() < 0.5) {
+      return;
+    }
+    _syncingWeekPickerFromDay = true;
+    try {
+      _weekController.jumpTo(targetPixels);
+    } finally {
+      _syncingWeekPickerFromDay = false;
+    }
+  }
+
+  int _selectedWeekdayOffset() {
+    final selected = _visibleDayForDate(widget.date);
+    return selected.difference(startOfWeekMonday(selected)).inDays;
+  }
+
+  bool _isVisibleDay(DateTime date) {
+    return widget.provider.generalShowWeekends ||
+        date.weekday <= DateTime.friday;
+  }
+
+  DateTime _visibleDayForDate(DateTime date) {
+    final normalized = normalizeDateOnly(date);
+    if (_isVisibleDay(normalized)) {
+      return normalized;
+    }
+    return normalized.add(Duration(days: 8 - normalized.weekday));
+  }
+
+  void _syncVisibleSelectedDate() {
+    final visibleDate = _visibleDayForDate(widget.date);
+    if (_sameDay(visibleDate, widget.date)) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onDaySelected(visibleDate);
+      }
+    });
+  }
+
+  DateTime _addVisibleDays(DateTime date, int deltaDays) {
+    var result = _visibleDayForDate(date);
+    final step = deltaDays < 0 ? -1 : 1;
+    var remaining = deltaDays.abs();
+    while (remaining > 0) {
+      result = result.add(Duration(days: step));
+      if (_isVisibleDay(result)) {
+        remaining -= 1;
+      }
+    }
+    return result;
+  }
+
+  int _visibleDayDifference(DateTime start, DateTime end) {
+    final from = _visibleDayForDate(start);
+    final to = _visibleDayForDate(end);
+    var cursor = from;
+    var difference = 0;
+    final step = to.isBefore(from) ? -1 : 1;
+    while (!_sameDay(cursor, to)) {
+      cursor = cursor.add(Duration(days: step));
+      if (_isVisibleDay(cursor)) {
+        difference += step;
+      }
+    }
+    return difference;
+  }
+
+  void _handleDayPageChanged(int page) {
+    _currentDayPage = page;
+    widget.onDaySelected(_dayForPage(page));
+  }
+
+  void _handleWeekPageChanged(int page) {
+    if (_syncingWeekPickerFromDay) {
+      return;
+    }
+    _currentWeekPage = page;
+    final nextDate = _weekStartForPage(
+      page,
+    ).add(Duration(days: _selectedWeekdayOffset()));
+    widget.onDaySelected(nextDate);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final day = _visibleDayForDate(widget.date);
+    return Column(
+      children: [
+        _DayWeekPicker(
+          controller: _weekController,
+          selectionController: _dayController,
+          selectedDate: day,
+          selectedDayPageFallback: _currentDayPage,
+          showWeekends: widget.provider.generalShowWeekends,
+          dayPageForDate: _pageForDay,
+          weekStartForPage: _weekStartForPage,
+          onPageChanged: _handleWeekPageChanged,
+          onDaySelected: widget.onDaySelected,
+        ),
+        Expanded(
+          child: PageView.builder(
+            key: _generalDayPagerKey,
+            controller: _dayController,
+            onPageChanged: _handleDayPageChanged,
+            itemBuilder: (context, index) {
+              final pageDay = _dayForPage(index);
+              return _DayTimelinePage(
+                date: pageDay,
+                provider: widget.provider,
+                filter: widget.filter,
+                onDaySelected: widget.onDaySelected,
+                onEmptySlotTap: widget.onEmptySlotTap,
+                onOccurrenceTap: widget.onOccurrenceTap,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DayTimelinePage extends StatelessWidget {
+  const _DayTimelinePage({
+    required this.date,
+    required this.provider,
+    required this.filter,
+    required this.onDaySelected,
+    required this.onEmptySlotTap,
+    required this.onOccurrenceTap,
+  });
+
+  final DateTime date;
+  final TimetableProvider provider;
+  final _GeneralOccurrenceFilter filter;
+  final ValueChanged<DateTime> onDaySelected;
   final ValueChanged<DateTime> onEmptySlotTap;
   final ValueChanged<GeneralEventOccurrence> onOccurrenceTap;
 
@@ -72,9 +476,248 @@ class _DayCalendarView extends StatelessWidget {
       startHour: provider.generalDayStartHour,
       endHour: provider.generalDayEndHour,
       gridMinutes: provider.generalTimeGridMinutes,
-      onDaySelected: (_) {},
+      showHeader: false,
+      onDaySelected: onDaySelected,
       onEmptySlotTap: onEmptySlotTap,
       onOccurrenceTap: onOccurrenceTap,
+    );
+  }
+}
+
+class _DayWeekPicker extends StatelessWidget {
+  const _DayWeekPicker({
+    required this.controller,
+    required this.selectionController,
+    required this.selectedDate,
+    required this.selectedDayPageFallback,
+    required this.showWeekends,
+    required this.dayPageForDate,
+    required this.weekStartForPage,
+    required this.onPageChanged,
+    required this.onDaySelected,
+  });
+
+  final PageController controller;
+  final PageController selectionController;
+  final DateTime selectedDate;
+  final int selectedDayPageFallback;
+  final bool showWeekends;
+  final int Function(DateTime date) dayPageForDate;
+  final DateTime Function(int page) weekStartForPage;
+  final ValueChanged<int> onPageChanged;
+  final ValueChanged<DateTime> onDaySelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return AnimatedBuilder(
+      animation: Listenable.merge([controller, selectionController]),
+      builder: (context, _) {
+        final selectedDayPage = _pageControllerValue(
+          selectionController,
+          selectedDayPageFallback,
+        );
+        return Container(
+          height: 66,
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: Border(
+              bottom: BorderSide(
+                color: colorScheme.outlineVariant.withAlpha(160),
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              _MonthRail(date: selectedDate),
+              Expanded(
+                child: PageView.builder(
+                  key: _generalDayWeekPickerPagerKey,
+                  controller: controller,
+                  onPageChanged: onPageChanged,
+                  itemBuilder: (context, index) {
+                    final weekStart = weekStartForPage(index);
+                    final days = _visibleWeekDays(weekStart, showWeekends);
+                    return _DayWeekPickerRow(
+                      days: days,
+                      selectedDate: selectedDate,
+                      selectedDayPage: selectedDayPage,
+                      dayPageForDate: dayPageForDate,
+                      onDaySelected: onDaySelected,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  double _pageControllerValue(PageController controller, int fallback) {
+    if (!controller.hasClients) {
+      return fallback.toDouble();
+    }
+    final page = controller.page;
+    if (page == null || !page.isFinite) {
+      return fallback.toDouble();
+    }
+    return page;
+  }
+}
+
+class _DayWeekPickerRow extends StatelessWidget {
+  const _DayWeekPickerRow({
+    required this.days,
+    required this.selectedDate,
+    required this.selectedDayPage,
+    required this.dayPageForDate,
+    required this.onDaySelected,
+  });
+
+  final List<DateTime> days;
+  final DateTime selectedDate;
+  final double selectedDayPage;
+  final int Function(DateTime date) dayPageForDate;
+  final ValueChanged<DateTime> onDaySelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (days.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final selectedPosition = _selectedPosition();
+    final activeIndex = selectedPosition
+        .round()
+        .clamp(0, days.length - 1)
+        .toInt();
+    final showIndicatorKey = days.any((day) => _sameDay(day, selectedDate));
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final colorScheme = Theme.of(context).colorScheme;
+          final cellWidth = constraints.maxWidth / days.length;
+          final indicatorLeft = selectedPosition * cellWidth + 2;
+          final indicatorWidth = math.max(0.0, cellWidth - 4);
+          return Stack(
+            fit: StackFit.expand,
+            clipBehavior: Clip.hardEdge,
+            children: [
+              Positioned(
+                left: indicatorLeft,
+                top: 0,
+                bottom: 0,
+                width: indicatorWidth,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    key: showIndicatorKey
+                        ? _generalDayPickerSelectionIndicatorKey
+                        : null,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  for (var index = 0; index < days.length; index++)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: _DayPickerItem(
+                          date: days[index],
+                          selected: index == activeIndex,
+                          onTap: () => onDaySelected(days[index]),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  double _selectedPosition() {
+    final firstPage = dayPageForDate(days.first).toDouble();
+    final lastPage = dayPageForDate(days.last).toDouble();
+    final minPage = math.min(firstPage, lastPage) - 1.0;
+    final maxPage = math.max(firstPage, lastPage) + 1.0;
+    if (selectedDayPage >= minPage && selectedDayPage <= maxPage) {
+      return selectedDayPage - firstPage;
+    }
+    final sameWeekdayIndex = days.indexWhere(
+      (day) => day.weekday == selectedDate.weekday,
+    );
+    if (sameWeekdayIndex != -1) {
+      return sameWeekdayIndex.toDouble();
+    }
+    return 0;
+  }
+}
+
+class _DayPickerItem extends StatelessWidget {
+  const _DayPickerItem({
+    required this.date,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final DateTime date;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isToday = _sameDay(date, DateTime.now());
+    final foreground = selected
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
+    return Material(
+      color: isToday && !selected
+          ? colorScheme.secondaryContainer.withAlpha(130)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _weekdayLabel(context, date),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  date.day.toString(),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: foreground,
+                    fontWeight: selected || isToday
+                        ? FontWeight.w800
+                        : FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -87,6 +730,7 @@ class _CalendarTimeline extends StatelessWidget {
     required this.startHour,
     required this.endHour,
     required this.gridMinutes,
+    required this.showHeader,
     required this.onDaySelected,
     required this.onEmptySlotTap,
     required this.onOccurrenceTap,
@@ -102,6 +746,7 @@ class _CalendarTimeline extends StatelessWidget {
   final int startHour;
   final int endHour;
   final int gridMinutes;
+  final bool showHeader;
   final ValueChanged<DateTime> onDaySelected;
   final ValueChanged<DateTime> onEmptySlotTap;
   final ValueChanged<GeneralEventOccurrence> onOccurrenceTap;
@@ -116,6 +761,12 @@ class _CalendarTimeline extends StatelessWidget {
     final endMinutes = endHour * 60;
     final contentHeight = math.max(1, endHour - startHour) * _hourHeight;
     final minuteHeight = _hourHeight / 60;
+    final allDayOccurrencesByDay = [
+      for (final day in days) _allDayOccurrencesFor(day),
+    ];
+    final hasAllDayOccurrences = allDayOccurrencesByDay.any(
+      (items) => items.isNotEmpty,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -128,50 +779,59 @@ class _CalendarTimeline extends StatelessWidget {
           width: metrics.totalWidth,
           child: Column(
             children: [
-              SizedBox(
-                height: _headerHeight,
-                child: Row(
-                  children: [
-                    SizedBox(width: metrics.timeColumnWidth),
-                    for (final day in days)
-                      _DayHeader(
-                        date: day,
-                        width: metrics.dayWidth,
-                        selected: _sameDay(day, selectedDate),
-                        onTap: () => onDaySelected(day),
-                      ),
-                  ],
+              if (showHeader)
+                SizedBox(
+                  height: _headerHeight,
+                  child: Row(
+                    children: [
+                      _MonthRail(date: selectedDate),
+                      for (final day in days)
+                        _DayHeader(
+                          date: day,
+                          width: metrics.dayWidth,
+                          selected: _sameDay(day, selectedDate),
+                          onTap: () => onDaySelected(day),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              SizedBox(
-                height: _allDayHeight,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      width: metrics.timeColumnWidth,
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            l10n.allDay,
-                            style: Theme.of(context).textTheme.labelSmall,
-                            textAlign: TextAlign.center,
+              if (showHeader || hasAllDayOccurrences)
+                SizedBox(
+                  height: _allDayHeight,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(
+                        width: metrics.timeColumnWidth,
+                        child: Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              l10n.allDay,
+                              style: Theme.of(context).textTheme.labelSmall,
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    for (final day in days)
-                      _AllDayColumn(
-                        date: day,
-                        width: metrics.dayWidth,
-                        occurrences: _allDayOccurrencesFor(day),
-                        onTap: onOccurrenceTap,
-                      ),
-                  ],
+                      for (var index = 0; index < days.length; index++)
+                        _AllDayColumn(
+                          date: days[index],
+                          width: metrics.dayWidth,
+                          occurrences: allDayOccurrencesByDay[index],
+                          onTap: onOccurrenceTap,
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const Divider(height: 1),
+              if (showHeader || hasAllDayOccurrences)
+                const Divider(height: 1)
+              else
+                Container(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  margin: EdgeInsets.only(left: metrics.timeColumnWidth),
+                ),
               Expanded(
                 child: SingleChildScrollView(
                   child: SizedBox(
@@ -197,7 +857,7 @@ class _CalendarTimeline extends StatelessWidget {
                             height: contentHeight,
                             child: GestureDetector(
                               behavior: HitTestBehavior.translucent,
-                              onTapDown: (details) {
+                              onTapUp: (details) {
                                 final minutes = _snapMinutes(
                                   startMinutes +
                                       (details.localPosition.dy / minuteHeight)
@@ -333,23 +993,45 @@ class _TimelineMetrics {
     required this.dayWidth,
   });
 
+  static const monthRailWidth = 52.0;
+
   final double totalWidth;
   final double timeColumnWidth;
   final double dayWidth;
 
   factory _TimelineMetrics.fromWidth(double width, {required int dayCount}) {
     final safeWidth = width.isFinite && width > 0 ? width : 360.0;
-    final timeColumnWidth = safeWidth < 600
-        ? 34.0
-        : safeWidth < 840
-        ? 42.0
-        : 52.0;
+    const timeColumnWidth = monthRailWidth;
     final availableDaysWidth = math.max(safeWidth - timeColumnWidth, 0.0);
     final effectiveDayCount = math.max(dayCount, 1);
     return _TimelineMetrics(
       totalWidth: safeWidth,
       timeColumnWidth: timeColumnWidth,
       dayWidth: availableDaysWidth / effectiveDayCount,
+    );
+  }
+}
+
+class _MonthRail extends StatelessWidget {
+  const _MonthRail({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: _TimelineMetrics.monthRailWidth,
+      child: Center(
+        child: Text(
+          '${date.month}月',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
     );
   }
 }
@@ -685,7 +1367,10 @@ class _OccurrenceCard extends StatelessWidget {
               vertical: dense ? 3 : 6,
             ),
             child: dense
-                ? Align(alignment: Alignment.centerLeft, child: title)
+                ? Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: title,
+                  )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

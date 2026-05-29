@@ -97,7 +97,7 @@ GeneralOccurrenceKeyParts? _parseVersionedGeneralOccurrenceKey(
   }
 }
 
-enum GeneralReminderStatus { upcoming, overdue }
+enum GeneralReminderStatus { upcoming, inProgress, overdue }
 
 class GeneralReminderItem {
   const GeneralReminderItem({required this.occurrence, required this.status});

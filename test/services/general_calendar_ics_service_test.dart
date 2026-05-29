@@ -647,7 +647,7 @@ END:VCALENDAR
     expect(warning.values, contains('RRULE:BYDAY=MO,WE'));
     expect(
       event.notes,
-      contains('Unsupported RRULE parts ignored: BYDAY=MO,WE'),
+      contains('Unsupported RRULE parts disabled recurrence: BYDAY=MO,WE'),
     );
   });
 
@@ -756,7 +756,10 @@ END:VCALENDAR
 
     expect(event.recurrenceRule.isRepeating, false);
     expect(warning.values, contains('RRULE:UNTIL=20260231'));
-    expect(event.notes, contains('Unsupported RRULE parts ignored'));
+    expect(
+      event.notes,
+      contains('Unsupported RRULE parts disabled recurrence'),
+    );
   });
 
   test('rejects invalid RRULE UNTIL date-times', () {
@@ -781,7 +784,10 @@ END:VCALENDAR
 
     expect(event.recurrenceRule.isRepeating, false);
     expect(warning.values, contains('RRULE:UNTIL=20260615T999999Z'));
-    expect(event.notes, contains('Unsupported RRULE parts ignored'));
+    expect(
+      event.notes,
+      contains('Unsupported RRULE parts disabled recurrence'),
+    );
   });
 
   test('deduplicates repeated imported UIDs inside one calendar', () {

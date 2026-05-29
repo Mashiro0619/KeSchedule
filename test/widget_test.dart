@@ -3179,7 +3179,7 @@ void main() {
       await future;
     });
 
-    testWidgets('通用模式主页支持搜索过滤事件', (tester) async {
+    testWidgets('通用模式主页不显示搜索和筛选栏', (tester) async {
       final calendar = GeneralSchedule(
         id: 'cal1',
         name: 'Work',
@@ -3229,18 +3229,8 @@ void main() {
 
       expect(find.text('Dentist'), findsOneWidget);
       expect(find.text('Review'), findsOneWidget);
-
-      await tester.enterText(find.byType(TextField).first, 'dentist');
-      await tester.pumpAndSettle();
-
-      expect(find.text('Dentist'), findsOneWidget);
-      expect(find.text('Review'), findsNothing);
-
-      await tester.tap(find.byTooltip('Filter by color'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('#FF123456'), findsOneWidget);
-      expect(find.text('#FFABCDEF'), findsNothing);
+      expect(find.text('Search events'), findsNothing);
+      expect(find.byTooltip('Filter by color'), findsNothing);
     });
 
     testWidgets('general reminder strip can mark an occurrence handled', (

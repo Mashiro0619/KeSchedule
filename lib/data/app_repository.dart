@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../models/app_data.dart';
 import '../models/general_schedule_data.dart';
 import '../models/student_mode_data.dart';
@@ -143,10 +145,16 @@ class AppRepository {
   }
 
   Future<void> _enqueueWrite(AppData data) {
-    final write = _pendingWrite.catchError((_) {}).then((_) async {
-      await _storage.save(data);
-      _lastPersisted = data;
-    });
+    final write = _pendingWrite
+        .catchError((e) {
+          debugPrint(
+            'AppRepository: previous write failed; continuing queue: $e',
+          );
+        })
+        .then((_) async {
+          await _storage.save(data);
+          _lastPersisted = data;
+        });
     _pendingWrite = write;
     return write;
   }

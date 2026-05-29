@@ -190,8 +190,8 @@ class GeneralCalendarIcsService {
       lines.add('DTSTART;VALUE=DATE:${_formatDate(start)}');
       lines.add('DTEND;VALUE=DATE:${_formatDate(end)}');
     } else {
-      lines.add('DTSTART:${_formatLocalDateTime(start)}');
-      lines.add('DTEND:${_formatLocalDateTime(end)}');
+      lines.add('DTSTART:${_formatUtcDateTime(start.toUtc())}');
+      lines.add('DTEND:${_formatUtcDateTime(end.toUtc())}');
     }
     if (event.location.trim().isNotEmpty) {
       lines.add('LOCATION:${_escapeText(event.location.trim())}');
@@ -339,7 +339,7 @@ class GeneralCalendarIcsService {
       if (duplicateRRuleParts.isNotEmpty)
         'Duplicate RRULE parts overwritten: ${duplicateRRuleParts.join(', ')}',
       if (unsupportedRRuleParts.isNotEmpty)
-        'Unsupported RRULE parts ignored: ${unsupportedRRuleParts.join(', ')}',
+        'Unsupported RRULE parts disabled recurrence: ${unsupportedRRuleParts.join(', ')}',
     ].join('\n\n');
     final unsupported = [
       ...unsupportedFields,
@@ -813,13 +813,13 @@ GeneralEventRecurrenceRule _parseRRule(
         ..sort();
   if (unsupported.isNotEmpty) {
     unsupportedParts?.addAll(unsupported);
-    return const GeneralEventRecurrenceRule();
   }
   final freq = parts['FREQ'];
   final unsupportedValues = <String>[];
   final rawInterval = parts['INTERVAL'];
-  final interval = rawInterval == null ? 1 : int.tryParse(rawInterval) ?? -1;
-  if (interval < 1) {
+  final parsedInterval = rawInterval == null ? null : int.tryParse(rawInterval);
+  final interval = parsedInterval ?? 1;
+  if (rawInterval != null && (parsedInterval == null || interval < 1)) {
     unsupportedValues.add('INTERVAL=$rawInterval');
   }
   final rawCount = parts['COUNT'];
@@ -851,6 +851,11 @@ GeneralEventRecurrenceRule _parseRRule(
   }
   if (unsupportedValues.isNotEmpty) {
     unsupportedParts?.addAll(unsupportedValues..sort());
+  }
+  if (unsupported.isNotEmpty || unsupportedValues.isNotEmpty) {
+    return const GeneralEventRecurrenceRule();
+  }
+  if (unit == null && unsupportedValues.any((v) => v.startsWith('FREQ='))) {
     return const GeneralEventRecurrenceRule();
   }
   if (unit == null) {

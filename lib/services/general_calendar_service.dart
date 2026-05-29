@@ -113,6 +113,7 @@ class GeneralCalendarService {
     GeneralScheduleData data, {
     String? defaultView,
     bool? showWeekends,
+    bool? showLunarCalendar,
     int? dayStartHour,
     int? dayEndHour,
     int? timeGridMinutes,
@@ -121,6 +122,7 @@ class GeneralCalendarService {
     return data.copyWith(
       defaultView: defaultView,
       showWeekends: showWeekends,
+      showLunarCalendar: showLunarCalendar,
       dayStartHour: dayStartHour,
       dayEndHour: dayEndHour,
       timeGridMinutes: timeGridMinutes,

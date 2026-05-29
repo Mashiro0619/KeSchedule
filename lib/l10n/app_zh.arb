@@ -1215,7 +1215,38 @@
 ,
   "dataRestoredFromBackupNotice": "App data was restored from the previous backup because the main file failed to load.",
   "@dataRestoredFromBackupNotice": {},
-  "dataBackupRestoreFailedNotice": "Both the main data file and its backup are damaged. The app is now using a fresh state.",
-  "@dataBackupRestoreFailedNotice": {}
+  "dataBackupRestoreFailedNotice": "主数据文件和备份文件均已损坏。应用已使用全新状态启动。",
+  "@dataBackupRestoreFailedNotice": {},
+  "previousMonth": "上个月",
+  "@previousMonth": {},
+  "nextMonth": "下个月",
+  "@nextMonth": {},
+  "timeGridMinutes": "{minutes} 分钟",
+  "@timeGridMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderInProgress": "进行中",
+  "@reminderInProgress": {},
+  "deleteCourseTitle": "删除课程",
+  "@deleteCourseTitle": {},
+  "deleteCourseMessage": "删除这门课程？",
+  "@deleteCourseMessage": {},
+  "showLunarCalendar": "显示农历",
+  "@showLunarCalendar": {},
+  "monthDayEvents": "{day}日，{count} 个事件",
+  "@monthDayEvents": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 
 }

@@ -26,11 +26,15 @@ class _ReminderStrip extends StatelessWidget {
         .where((item) => item.status == GeneralReminderStatus.upcoming)
         .take(3)
         .toList();
+    final inProgress = items
+        .where((item) => item.status == GeneralReminderStatus.inProgress)
+        .take(3)
+        .toList();
     final overdue = items
         .where((item) => item.status == GeneralReminderStatus.overdue)
         .take(3)
         .toList();
-    if (upcoming.isEmpty && overdue.isEmpty) {
+    if (upcoming.isEmpty && inProgress.isEmpty && overdue.isEmpty) {
       return const SizedBox(height: 4);
     }
     final theme = Theme.of(context);
@@ -46,6 +50,14 @@ class _ReminderStrip extends StatelessWidget {
               item: item,
               statusLabel: l10n.reminderUpcoming,
               color: theme.colorScheme.primary,
+              onTap: () => onOccurrenceTap(item.occurrence),
+              onDismiss: () => provider.dismissGeneralReminder(item.occurrence),
+            ),
+          for (final item in inProgress)
+            _GeneralReminderItemPill(
+              item: item,
+              statusLabel: l10n.reminderInProgress,
+              color: theme.colorScheme.tertiary,
               onTap: () => onOccurrenceTap(item.occurrence),
               onDismiss: () => provider.dismissGeneralReminder(item.occurrence),
             ),
@@ -96,12 +108,14 @@ class _GeneralReminderItemPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.only(left: 12, right: 2),
+            padding: const EdgeInsetsDirectional.only(start: 12, end: 2),
             child: Row(
               children: [
                 Icon(
                   item.status == GeneralReminderStatus.upcoming
                       ? Icons.notifications_active_outlined
+                      : item.status == GeneralReminderStatus.inProgress
+                      ? Icons.play_circle_outline
                       : Icons.pending_actions_outlined,
                   size: 16,
                   color: color,

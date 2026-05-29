@@ -3134,6 +3134,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Both the main data file and its backup are damaged. The app is now using a fresh state.'**
   String get dataBackupRestoreFailedNotice;
+
+  /// No description provided for @previousMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get previousMonth;
+
+  /// No description provided for @nextMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get nextMonth;
+
+  /// No description provided for @timeGridMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String timeGridMinutes(int minutes);
+
+  /// No description provided for @reminderInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get reminderInProgress;
+
+  /// No description provided for @deleteCourseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete course'**
+  String get deleteCourseTitle;
+
+  /// No description provided for @deleteCourseMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this course?'**
+  String get deleteCourseMessage;
+
+  /// No description provided for @showLunarCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Show lunar calendar'**
+  String get showLunarCalendar;
+
+  /// No description provided for @monthDayEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'{day}, {count} events'**
+  String monthDayEvents(int day, int count);
 }
 
 class _AppLocalizationsDelegate

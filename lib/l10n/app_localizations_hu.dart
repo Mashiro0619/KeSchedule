@@ -1688,4 +1688,32 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get dataBackupRestoreFailedNotice =>
       'Both the main data file and its backup are damaged. The app is now using a fresh state.';
+
+  @override
+  String get previousMonth => 'Previous month';
+
+  @override
+  String get nextMonth => 'Next month';
+
+  @override
+  String timeGridMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get reminderInProgress => 'In progress';
+
+  @override
+  String get deleteCourseTitle => 'Delete course';
+
+  @override
+  String get deleteCourseMessage => 'Delete this course?';
+
+  @override
+  String get showLunarCalendar => 'Show lunar calendar';
+
+  @override
+  String monthDayEvents(int day, int count) {
+    return '$day, $count events';
+  }
 }

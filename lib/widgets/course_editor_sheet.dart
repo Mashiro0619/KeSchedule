@@ -156,7 +156,9 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                             flex: 2,
                             child: TextField(
                               controller: _nameController,
-                              decoration: InputDecoration(labelText: l10n.courseName),
+                              decoration: InputDecoration(
+                                labelText: l10n.courseName,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -166,7 +168,6 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                               controller: _locationController,
                               decoration: InputDecoration(
                                 labelText: l10n.location,
-                                hintText: '地点',
                               ),
                             ),
                           ),
@@ -315,7 +316,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                     TextButton(
                       onPressed: _hasPopped
                           ? null
-                          : () => _popOnce(const CourseEditorResult.delete()),
+                          : () => _confirmDelete(context),
                       child: Text(l10n.delete),
                     ),
                   const Spacer(),
@@ -670,7 +671,18 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
   void _submit() {
     final startMinutes = _minutesFromTimeOfDay(_startTime);
     final endMinutes = _minutesFromTimeOfDay(_endTime);
+    final l10n = AppLocalizations.of(context);
     if (_nameController.text.trim().isEmpty || startMinutes >= endMinutes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _nameController.text.trim().isEmpty
+                ? l10n.eventTitleRequired
+                : l10n.endTimeMustBeLater,
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
       return;
     }
 
@@ -695,6 +707,30 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       customFields: _parseCustomFields(_customFieldsController.text),
     );
     _popOnce(CourseEditorResult.save(course));
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.deleteCourseTitle),
+        content: Text(l10n.deleteCourseMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && !_hasPopped) {
+      _popOnce(const CourseEditorResult.delete());
+    }
   }
 
   void _popOnce([CourseEditorResult? result]) {

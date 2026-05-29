@@ -186,6 +186,7 @@ class TimetableProvider extends _TimetableProviderBase
         _appData = previous;
         _selectedWeek = _currentWeekForActiveTimetable();
       }
+      notifyListeners();
       rethrow;
     }
     notifyListeners();

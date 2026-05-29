@@ -121,6 +121,11 @@ DateTime startOfWeekMonday(DateTime date) {
   );
 }
 
+DateTime startOfWeekSunday(DateTime date) {
+  final normalized = normalizeDateOnly(date);
+  return normalized.subtract(Duration(days: normalized.weekday % 7));
+}
+
 String buildTimeRange(int startMinutes, int endMinutes) {
   return '${formatMinutes(startMinutes)} - ${formatMinutes(endMinutes)}';
 }
